@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Dashboard — Proof of Claw</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #06080d;
+  --bg-secondary: #0c1018;
+  --bg-card: #0f1520;
+  --bg-card-hover: #141c2a;
+  --cyan: #00e5ff;
+  --cyan-dim: #00a3b5;
+  --cyan-glow: rgba(0, 229, 255, 0.15);
+  --amber: #ffb300;
+  --green: #00e676;
+  --red: #ff3d5a;
+  --text-primary: #e8ecf4;
+  --text-secondary: #8892a4;
+  --text-dim: #4a5568;
+  --border: rgba(255, 255, 255, 0.06);
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-mono);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--cyan);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--cyan);
+  box-shadow: 0 0 20px var(--cyan-glow);
+}
+
+.card-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  color: var(--cyan);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.metric:last-child {
+  border-bottom: none;
+}
+
+.metric-label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
+.metric-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.metric-value.success { color: var(--green); }
+.metric-value.warning { color: var(--amber); }
+.metric-value.error { color: var(--red); }
+
+.activity-list {
+  list-style: none;
+}
+
+.activity-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 0.75rem;
+  transition: all 0.2s ease;
+}
+
+.activity-item:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--cyan);
+}
+
+.activity-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.activity-icon.proof { background: var(--cyan-glow); color: var(--cyan); }
+.activity-icon.message { background: rgba(255, 179, 0, 0.12); color: var(--amber); }
+.activity-icon.approval { background: rgba(0, 230, 118, 0.12); color: var(--green); }
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.activity-meta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--cyan);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.btn:hover {
+  background: var(--cyan-dim);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px var(--cyan-glow);
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--cyan);
+}
+
+.pending-approvals {
+  background: linear-gradient(135deg, rgba(255, 179, 0, 0.05), rgba(255, 61, 90, 0.05));
+  border: 1px solid var(--amber);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.approval-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.approval-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--amber);
+}
+
+.approval-count {
+  background: var(--amber);
+  color: var(--bg-primary);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.code-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.hash {
+  color: var(--cyan);
+  word-break: break-all;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">Proof of Claw</div>
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span>Agent Running</span>
+    </div>
+  </header>
+
+  <!-- Pending Approvals -->
+  <div id="pending-approvals" class="pending-approvals" style="display: none;">
+    <div class="approval-header">
+      <div class="approval-title">⚠️ Pending Ledger Approvals</div>
+      <div class="approval-count" id="approval-count">0</div>
+    </div>
+    <div id="approval-list"></div>
+  </div>
+
+  <!-- Dashboard Grid -->
+  <div class="dashboard-grid">
+    <!-- Agent Status -->
+    <div class="card">
+      <div class="card-title">Agent Status</div>
+      <div class="metric">
+        <span class="metric-label">Agent ID</span>
+        <span class="metric-value" id="agent-id">alice-agent</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">ENS Name</span>
+        <span class="metric-value" id="ens-name">alice.proofclaw.eth</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Uptime</span>
+        <span class="metric-value success" id="uptime">0h 0m</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Policy Hash</span>
+        <span class="metric-value hash" id="policy-hash">0x1234...5678</span>
+      </div>
+    </div>
+
+    <!-- Execution Stats -->
+    <div class="card">
+      <div class="card-title">Execution Stats</div>
+      <div class="metric">
+        <span class="metric-label">Total Actions</span>
+        <span class="metric-value" id="total-actions">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Autonomous</span>
+        <span class="metric-value success" id="autonomous-actions">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Ledger Approved</span>
+        <span class="metric-value warning" id="approved-actions">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Policy Violations</span>
+        <span class="metric-value error" id="violations">0</span>
+      </div>
+    </div>
+
+    <!-- Proof Generation -->
+    <div class="card">
+      <div class="card-title">Proof Generation</div>
+      <div class="metric">
+        <span class="metric-label">Proofs Generated</span>
+        <span class="metric-value" id="proofs-generated">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Verified On-Chain</span>
+        <span class="metric-value success" id="proofs-verified">0</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Avg. Proof Time</span>
+        <span class="metric-value" id="avg-proof-time">~45s</span>
+      </div>
+      <div class="metric">
+        <span class="metric-label">Provider</span>
+        <span class="metric-value" id="proof-provider">Boundless</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="card">
+    <div class="card-title">Recent Activity</div>
+    <ul class="activity-list" id="activity-list">
+      <li class="activity-item">
+        <div class="activity-icon proof">⟁</div>
+        <div class="activity-content">
+          <div class="activity-title">Proof Generated</div>
+          <div class="activity-meta">Swap 100 USDC → ETH • Autonomous • 2 min ago</div>
+        </div>
+      </li>
+      <li class="activity-item">
+        <div class="activity-icon message">✉</div>
+        <div class="activity-content">
+          <div class="activity-title">DM3 Message Received</div>
+          <div class="activity-meta">From bob.proofclaw.eth • 5 min ago</div>
+        </div>
+      </li>
+      <li class="activity-item">
+        <div class="activity-icon approval">✓</div>
+        <div class="activity-content">
+          <div class="activity-title">Ledger Approval Granted</div>
+          <div class="activity-meta">Transfer 500 USDC • 10 min ago</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Actions -->
+  <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+    <button class="btn" onclick="viewProofs()">View Proofs</button>
+    <button class="btn-secondary btn" onclick="viewMessages()">DM3 Messages</button>
+    <button class="btn-secondary btn" onclick="viewPolicy()">Policy Config</button>
+  </div>
+</div>
+
+<script>
+// Mock data - in production, this would connect to the agent's API
+let startTime = Date.now();
+let stats = {
+  totalActions: 0,
+  autonomousActions: 0,
+  approvedActions: 0,
+  violations: 0,
+  proofsGenerated: 0,
+  proofsVerified: 0
+};
+
+// Update uptime
+function updateUptime() {
+  const elapsed = Date.now() - startTime;
+  const hours = Math.floor(elapsed / 3600000);
+  const minutes = Math.floor((elapsed % 3600000) / 60000);
+  document.getElementById('uptime').textContent = `${hours}h ${minutes}m`;
+}
+
+setInterval(updateUptime, 1000);
+
+// Simulate activity
+function addActivity(type, title, meta) {
+  const list = document.getElementById('activity-list');
+  const item = document.createElement('li');
+  item.className = 'activity-item';
+  
+  const icons = { proof: '⟁', message: '✉', approval: '✓' };
+  
+  item.innerHTML = `
+    <div class="activity-icon ${type}">${icons[type]}</div>
+    <div class="activity-content">
+      <div class="activity-title">${title}</div>
+      <div class="activity-meta">${meta}</div>
+    </div>
+  `;
+  
+  list.insertBefore(item, list.firstChild);
+  if (list.children.length > 10) {
+    list.removeChild(list.lastChild);
+  }
+}
+
+// Simulate pending approval
+function showPendingApproval() {
+  const container = document.getElementById('pending-approvals');
+  const list = document.getElementById('approval-list');
+  const count = document.getElementById('approval-count');
+  
+  container.style.display = 'block';
+  count.textContent = '1';
+  
+  list.innerHTML = `
+    <div class="activity-item">
+      <div class="activity-icon approval">🔐</div>
+      <div class="activity-content">
+        <div class="activity-title">High-Value Transfer Requires Approval</div>
+        <div class="activity-meta">Transfer 500 USDC to 0x1234...5678</div>
+        <div class="code-block">
+          Action Value: 500 USDC ($500.00)<br>
+          Autonomous Limit: 100 USDC<br>
+          <span class="hash">Output Commitment: 0xabcd...ef01</span>
+        </div>
+        <div style="margin-top: 1rem; display: flex; gap: 0.5rem;">
+          <button class="btn" onclick="approveLedger()">Approve on Ledger</button>
+          <button class="btn-secondary btn" onclick="rejectAction()">Reject</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function approveLedger() {
+  alert('Opening Ledger approval flow...\n\nIn production, this would:\n1. Connect to Ledger device\n2. Display Clear Signing (ERC-7730)\n3. Request physical approval\n4. Submit signed transaction');
+  document.getElementById('pending-approvals').style.display = 'none';
+  addActivity('approval', 'Ledger Approval Granted', 'Transfer 500 USDC • Just now');
+  stats.approvedActions++;
+  stats.totalActions++;
+  updateStats();
+}
+
+function rejectAction() {
+  document.getElementById('pending-approvals').style.display = 'none';
+  addActivity('approval', 'Action Rejected', 'Transfer 500 USDC • Just now');
+}
+
+function updateStats() {
+  document.getElementById('total-actions').textContent = stats.totalActions;
+  document.getElementById('autonomous-actions').textContent = stats.autonomousActions;
+  document.getElementById('approved-actions').textContent = stats.approvedActions;
+  document.getElementById('violations').textContent = stats.violations;
+  document.getElementById('proofs-generated').textContent = stats.proofsGenerated;
+  document.getElementById('proofs-verified').textContent = stats.proofsVerified;
+}
+
+function viewProofs() {
+  window.location.href = 'proofs.html';
+}
+
+function viewMessages() {
+  window.location.href = 'messages.html';
+}
+
+function viewPolicy() {
+  alert('Policy Configuration:\n\nAllowed Tools: swap_tokens, transfer, query\nMax Autonomous Value: 100 USDC\nEndpoint Allowlist: api.uniswap.org, api.0x.org\nPolicy Hash: 0x1234...5678');
+}
+
+// Simulate some activity after 3 seconds
+setTimeout(() => {
+  showPendingApproval();
+}, 3000);
+
+// Simulate proof generation
+setTimeout(() => {
+  addActivity('proof', 'Proof Generated', 'Query balance • Autonomous • Just now');
+  stats.proofsGenerated++;
+  stats.proofsVerified++;
+  stats.autonomousActions++;
+  stats.totalActions++;
+  updateStats();
+}, 8000);
+</script>
+
+</body>
+</html>

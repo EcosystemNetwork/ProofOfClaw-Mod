@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proof Verification — Proof of Claw</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-primary: #06080d;
+  --bg-secondary: #0c1018;
+  --bg-card: #0f1520;
+  --bg-card-hover: #141c2a;
+  --cyan: #00e5ff;
+  --cyan-dim: #00a3b5;
+  --cyan-glow: rgba(0, 229, 255, 0.15);
+  --amber: #ffb300;
+  --green: #00e676;
+  --red: #ff3d5a;
+  --text-primary: #e8ecf4;
+  --text-secondary: #8892a4;
+  --text-dim: #4a5568;
+  --border: rgba(255, 255, 255, 0.06);
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+body {
+  font-family: var(--font-mono);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2rem;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--cyan);
+}
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--cyan);
+}
+
+.page-title {
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(135deg, var(--cyan), var(--amber));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.page-desc {
+  color: var(--text-secondary);
+  margin-bottom: 2rem;
+}
+
+.proof-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.proof-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--cyan);
+  box-shadow: 0 0 20px var(--cyan-glow);
+}
+
+.proof-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.proof-id {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.proof-status {
+  padding: 0.4rem 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.proof-status.verified {
+  background: rgba(0, 230, 118, 0.12);
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.proof-status.pending {
+  background: rgba(255, 179, 0, 0.12);
+  color: var(--amber);
+  border: 1px solid var(--amber);
+}
+
+.proof-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-label {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail-value {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.hash {
+  color: var(--cyan);
+  word-break: break-all;
+  font-size: 0.85rem;
+}
+
+.code-block {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+.json-key {
+  color: var(--cyan);
+}
+
+.json-string {
+  color: var(--green);
+}
+
+.json-number {
+  color: var(--amber);
+}
+
+.json-boolean {
+  color: var(--red);
+}
+
+.expand-btn {
+  background: none;
+  border: none;
+  color: var(--cyan);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+  margin-top: 0.5rem;
+}
+
+.expand-btn:hover {
+  text-decoration: underline;
+}
+
+.proof-content {
+  display: none;
+  margin-top: 1rem;
+}
+
+.proof-content.expanded {
+  display: block;
+}
+
+.policy-checks {
+  list-style: none;
+  margin-top: 1rem;
+}
+
+.policy-check {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.check-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.check-icon.pass {
+  background: rgba(0, 230, 118, 0.12);
+  color: var(--green);
+}
+
+.check-icon.block {
+  background: rgba(255, 61, 90, 0.12);
+  color: var(--red);
+}
+
+.check-content {
+  flex: 1;
+}
+
+.check-rule {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.check-details {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="logo">Proof of Claw</div>
+    <a href="dashboard.html" class="btn">← Back to Dashboard</a>
+  </header>
+
+  <h1 class="page-title">Proof Verification</h1>
+  <p class="page-desc">RISC Zero zkVM proofs of agent policy compliance</p>
+
+  <div id="proofs-container">
+    <!-- Proof 1 -->
+    <div class="proof-card">
+      <div class="proof-header">
+        <div class="proof-id">Proof #1234</div>
+        <div class="proof-status verified">✓ Verified On-Chain</div>
+      </div>
+
+      <div class="proof-details">
+        <div class="detail-item">
+          <div class="detail-label">Agent ID</div>
+          <div class="detail-value">alice-agent</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Action</div>
+          <div class="detail-value">swap_tokens</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Value</div>
+          <div class="detail-value">100 USDC</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Approval Type</div>
+          <div class="detail-value">Autonomous</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Timestamp</div>
+          <div class="detail-value">2026-04-03 16:45:32 UTC</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Proof Time</div>
+          <div class="detail-value">42s (Boundless)</div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-label">Output Commitment</div>
+        <div class="detail-value hash">0xabcd1234ef567890abcd1234ef567890abcd1234ef567890abcd1234ef567890</div>
+      </div>
+
+      <button class="expand-btn" onclick="toggleProof(this)">▼ Show Details</button>
+
+      <div class="proof-content">
+        <ul class="policy-checks">
+          <li class="policy-check">
+            <div class="check-icon pass">✓</div>
+            <div class="check-content">
+              <div class="check-rule">Tool Allowlist</div>
+              <div class="check-details">swap_tokens is in allowed tools list</div>
+            </div>
+          </li>
+          <li class="policy-check">
+            <div class="check-icon pass">✓</div>
+            <div class="check-content">
+              <div class="check-rule">Value Threshold</div>
+              <div class="check-details">100 USDC ≤ 100 USDC autonomous limit</div>
+            </div>
+          </li>
+          <li class="policy-check">
+            <div class="check-icon pass">✓</div>
+            <div class="check-content">
+              <div class="check-rule">Endpoint Allowlist</div>
+              <div class="check-details">api.uniswap.org is approved</div>
+            </div>
+          </li>
+          <li class="policy-check">
+            <div class="check-icon pass">✓</div>
+            <div class="check-content">
+              <div class="check-rule">Prompt Injection</div>
+              <div class="check-details">No injection patterns detected</div>
+            </div>
+          </li>
+        </ul>
+
+        <div class="code-block">
+<span class="json-key">"verified_output"</span>: {
+  <span class="json-key">"agent_id"</span>: <span class="json-string">"alice-agent"</span>,
+  <span class="json-key">"policy_hash"</span>: <span class="json-string">"0x1234...5678"</span>,
+  <span class="json-key">"output_commitment"</span>: <span class="json-string">"0xabcd...7890"</span>,
+  <span class="json-key">"all_checks_passed"</span>: <span class="json-boolean">true</span>,
+  <span class="json-key">"requires_ledger_approval"</span>: <span class="json-boolean">false</span>,
+  <span class="json-key">"action_value"</span>: <span class="json-number">100000000</span>
+}
+        </div>
+
+        <div class="detail-item" style="margin-top: 1rem;">
+          <div class="detail-label">Transaction Hash</div>
+          <div class="detail-value hash">0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba</div>
+        </div>
+
+        <div class="detail-item" style="margin-top: 0.5rem;">
+          <div class="detail-label">Block Number</div>
+          <div class="detail-value">12,345,678</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proof 2 -->
+    <div class="proof-card">
+      <div class="proof-header">
+        <div class="proof-id">Proof #1235</div>
+        <div class="proof-status verified">✓ Verified On-Chain</div>
+      </div>
+
+      <div class="proof-details">
+        <div class="detail-item">
+          <div class="detail-label">Agent ID</div>
+          <div class="detail-value">alice-agent</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Action</div>
+          <div class="detail-value">transfer</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Value</div>
+          <div class="detail-value">500 USDC</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Approval Type</div>
+          <div class="detail-value" style="color: var(--amber);">Ledger Approved</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Timestamp</div>
+          <div class="detail-value">2026-04-03 16:30:15 UTC</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Proof Time</div>
+          <div class="detail-value">38s (Boundless)</div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-label">Output Commitment</div>
+        <div class="detail-value hash">0xef012345ab678901ef012345ab678901ef012345ab678901ef012345ab678901</div>
+      </div>
+
+      <button class="expand-btn" onclick="toggleProof(this)">▼ Show Details</button>
+
+      <div class="proof-content">
+        <ul class="policy-checks">
+          <li class="policy-check">
+            <div class="check-icon pass">✓</div>
+            <div class="check-content">
+              <div class="check-rule">Tool Allowlist</div>
+              <div class="check-details">transfer is in allowed tools list</div>
+            </div>
+          </li>
+          <li class="policy-check">
+            <div class="check-icon pass">✓</div>
+            <div class="check-content">
+              <div class="check-rule">Value Threshold</div>
+              <div class="check-details">500 USDC > 100 USDC → Ledger approval required</div>
+            </div>
+          </li>
+          <li class="policy-check">
+            <div class="check-icon pass">✓</div>
+            <div class="check-content">
+              <div class="check-rule">Ledger Signature</div>
+              <div class="check-details">Valid signature from owner's Ledger device</div>
+            </div>
+          </li>
+          <li class="policy-check">
+            <div class="check-icon pass">✓</div>
+            <div class="check-content">
+              <div class="check-rule">Clear Signing</div>
+              <div class="check-details">ERC-7730 metadata displayed on Ledger screen</div>
+            </div>
+          </li>
+        </ul>
+
+        <div class="code-block">
+<span class="json-key">"verified_output"</span>: {
+  <span class="json-key">"agent_id"</span>: <span class="json-string">"alice-agent"</span>,
+  <span class="json-key">"policy_hash"</span>: <span class="json-string">"0x1234...5678"</span>,
+  <span class="json-key">"output_commitment"</span>: <span class="json-string">"0xef01...8901"</span>,
+  <span class="json-key">"all_checks_passed"</span>: <span class="json-boolean">true</span>,
+  <span class="json-key">"requires_ledger_approval"</span>: <span class="json-boolean">true</span>,
+  <span class="json-key">"action_value"</span>: <span class="json-number">500000000</span>
+}
+        </div>
+
+        <div class="detail-item" style="margin-top: 1rem;">
+          <div class="detail-label">Transaction Hash</div>
+          <div class="detail-value hash">0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef</div>
+        </div>
+
+        <div class="detail-item" style="margin-top: 0.5rem;">
+          <div class="detail-label">Block Number</div>
+          <div class="detail-value">12,345,650</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Proof 3 - Pending -->
+    <div class="proof-card">
+      <div class="proof-header">
+        <div class="proof-id">Proof #1236</div>
+        <div class="proof-status pending">⏳ Generating...</div>
+      </div>
+
+      <div class="proof-details">
+        <div class="detail-item">
+          <div class="detail-label">Agent ID</div>
+          <div class="detail-value">alice-agent</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Action</div>
+          <div class="detail-value">query</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Value</div>
+          <div class="detail-value">0 USDC</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Approval Type</div>
+          <div class="detail-value">Autonomous</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Timestamp</div>
+          <div class="detail-value">2026-04-03 16:50:00 UTC</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">Proof Time</div>
+          <div class="detail-value">~15s remaining</div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-label">Output Commitment</div>
+        <div class="detail-value hash">0x5678abcd9012ef345678abcd9012ef345678abcd9012ef345678abcd9012ef34</div>
+      </div>
+
+      <p style="margin-top: 1rem; color: var(--text-secondary); font-size: 0.85rem;">
+        Proof generation in progress via Boundless proving marketplace...
+      </p>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleProof(btn) {
+  const content = btn.nextElementSibling;
+  content.classList.toggle('expanded');
+  btn.textContent = content.classList.contains('expanded') ? '▲ Hide Details' : '▼ Show Details';
+}
+
+// Simulate proof generation completion
+setTimeout(() => {
+  const pendingProof = document.querySelectorAll('.proof-status.pending')[0];
+  if (pendingProof) {
+    pendingProof.className = 'proof-status verified';
+    pendingProof.textContent = '✓ Verified On-Chain';
+    
+    const timeElement = pendingProof.closest('.proof-card').querySelector('.detail-value:last-of-type');
+    if (timeElement && timeElement.textContent.includes('remaining')) {
+      timeElement.textContent = '15s (Boundless)';
+    }
+  }
+}, 5000);
+</script>
+
+</body>
+</html>
