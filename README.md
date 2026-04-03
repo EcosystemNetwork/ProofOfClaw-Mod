@@ -164,6 +164,3 @@ MIT
 ## Contact
 
 Built for ETHGlobal Cannes 2026
-=======
-# project
->>>>>>> 108c7986d80c1579a2a38903992f08a6d48a2350
