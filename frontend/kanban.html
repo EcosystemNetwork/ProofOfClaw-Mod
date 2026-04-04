@@ -484,7 +484,14 @@
 <main class="main-content" id="kanban-main" role="main">
   <header class="top-bar" role="banner">
     <div class="top-bar-title">ZK Kanban</div>
-    <div class="eth-badge">&#x29C9; RISC Zero Verified</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+      <div id="wallet-display" style="display:none;align-items:center;gap:6px;">
+        <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
+        <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
+      </div>
+      <div class="eth-badge">&#x29C9; RISC Zero Verified</div>
+    </div>
   </header>
 
   <div class="page-body">
@@ -546,6 +553,8 @@
   </div>
 </main>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
 <script src="shared.js"></script>
 <script>
 const state = {

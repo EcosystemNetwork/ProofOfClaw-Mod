@@ -1681,6 +1681,7 @@
 </div>
 
 <script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
 <script src="shared.js"></script>
 <script>
 // ═══════════════════════════════════════
@@ -3219,60 +3220,6 @@ async function doConfirmConnect() {
 }
 
 // ═══════════════════════════════════════
-// VIEM WALLET INTEGRATION
-// ═══════════════════════════════════════
-
-let walletState = { connected: false, address: null };
-
-async function connectWalletUI() {
-  if (!window.PocViem) {
-    alert('Wallet module loading... Please try again in a moment.');
-    return;
-  }
-
-  const btn = document.getElementById('wallet-connect-btn');
-  btn.disabled = true;
-  btn.textContent = 'Connecting...';
-
-  try {
-    const { address } = await window.PocViem.connectWallet();
-    updateWalletUI(address);
-  } catch (e) {
-    alert('Wallet connection failed: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = 'Connect Wallet';
-  }
-}
-
-function updateWalletUI(address) {
-  walletState = { connected: true, address };
-  document.getElementById('wallet-connect-btn').style.display = 'none';
-  document.getElementById('wallet-display').style.display = 'flex';
-  document.getElementById('wallet-address').textContent = window.PocViem.formatAddress(address);
-}
-
-function disconnectWalletUI() {
-  walletState = { connected: false, address: null };
-  if (window.PocViem) window.PocViem.disconnectWallet();
-  document.getElementById('wallet-connect-btn').style.display = '';
-  document.getElementById('wallet-connect-btn').textContent = 'Connect Wallet';
-  document.getElementById('wallet-connect-btn').disabled = false;
-  document.getElementById('wallet-display').style.display = 'none';
-}
-
-// Check for existing connection on load
-async function checkWalletConnection() {
-  if (!window.PocViem) {
-    setTimeout(checkWalletConnection, 500);
-    return;
-  }
-  const state = window.PocViem.getWalletState();
-  if (state.connected) {
-    updateWalletUI(state.address);
-  }
-}
-
-// ═══════════════════════════════════════
 // ONCHAIN DEPLOYMENT
 // ═══════════════════════════════════════
 
@@ -3285,7 +3232,7 @@ async function doOnchainDeploy() {
   if (!state.connected) {
     // Try to connect first
     await connectWalletUI();
-    if (!walletState.connected) {
+    if (!getWalletState().connected) {
       throw new Error('Wallet connection required for onchain deployment');
     }
   }

@@ -309,7 +309,12 @@ body.sidebar-collapsed .main-content { margin-left: 60px; }
 <header class="topbar" role="banner">
   <h1 class="topbar-title">Soul Vault</h1>
   <div class="topbar-right">
-    <span class="badge badge-count" style="background:var(--purple-glow);color:var(--purple);border:1px solid rgba(179,136,255,0.2);padding:4px 12px;border-radius:100px;font-size:11px;letter-spacing:0.06em;">Agent Registration</span>
+    <button id="wallet-connect-btn" class="btn-wizard" style="background:transparent;border:1px solid var(--border-cyan);color:var(--cyan);padding:6px 16px;font-size:12px;" onclick="connectWalletUI()">Connect Wallet</button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:8px;margin-left:8px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);"></span>
+      <span class="status-dot online" style="display:inline-block;"></span>
+    </div>
+    <span class="badge badge-count" style="background:var(--purple-glow);color:var(--purple);border:1px solid rgba(179,136,255,0.2);padding:4px 12px;border-radius:100px;font-size:11px;letter-spacing:0.06em;margin-left:8px;">Agent Registration</span>
   </div>
 </header>
 
@@ -514,6 +519,8 @@ body.sidebar-collapsed .main-content { margin-left: 60px; }
   </div>
 </main>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
 <script src="shared.js"></script>
 <script>
 // ═══════════════════════════════════════

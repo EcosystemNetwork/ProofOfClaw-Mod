@@ -506,6 +506,11 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
       </select>
     </div>
     <div class="topbar-badges">
+      <button id="wallet-connect-btn" class="badge" style="background:rgba(0,229,255,0.1);border:1px solid var(--border-cyan);color:var(--cyan);cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+      <div id="wallet-display" style="display:none;align-items:center;gap:6px;margin-right:8px;">
+        <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
+        <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
+      </div>
       <span class="badge badge-encrypted">&#x1F512; E2E Encrypted</span>
 
     </div>
@@ -546,6 +551,8 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
   </div>
 </div>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
 <script src="shared.js"></script>
 <script src="poc-api.js"></script>
 <script>
