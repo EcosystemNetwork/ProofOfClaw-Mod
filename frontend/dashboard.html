@@ -407,7 +407,7 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
   .topbar { height: 52px; }
   .main-content { margin-top: 52px; padding: 1rem 0.75rem; }
   .topbar-title { font-size: 0.9rem; }
-  .agent-selector { font-size: 0.7rem; padding: 0.3rem 0.5rem; max-width: 140px; }
+  .agent-selector { font-size: 0.7rem; padding: 0.3rem 0.5rem; min-width: 140px; max-width: 180px; }
 }
 
 /* ======================================== */
@@ -510,9 +510,9 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
   <div class="topbar-left">
     <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
     <span class="topbar-title">Agent Dashboard</span>
-    <select id="agent-selector" class="agent-selector" aria-label="Select agent" onchange="switchAgent(this.value)">
-      <option value="">Loading...</option>
-    </select>
+    <div class="agent-search-wrap">
+      <input type="text" id="agent-selector" class="agent-selector" placeholder="Search ENS or agent name..." aria-label="Search agent by ENS name" autocomplete="off">
+    </div>
   </div>
   <div class="topbar-right">
     <div class="status-badge live-badge" id="live-badge" style="display:none;">
@@ -1050,14 +1050,65 @@ function loadAgents() {
 }
 
 function populateSelector() {
-  const sel = document.getElementById('agent-selector');
-  sel.innerHTML = '';
-  agents.forEach(a => {
-    const opt = document.createElement('option');
-    opt.value = a.id;
-    opt.textContent = a.icon ? a.icon + ' ' + a.name : a.name;
-    if (currentAgent && a.id === currentAgent.id) opt.selected = true;
-    sel.appendChild(opt);
+  const input = document.getElementById('agent-selector');
+  const wrap = input.closest('.agent-search-wrap');
+
+  // Create dropdown
+  let dropdown = wrap.querySelector('.agent-search-dropdown');
+  if (!dropdown) {
+    dropdown = document.createElement('div');
+    dropdown.className = 'agent-search-dropdown';
+    wrap.appendChild(dropdown);
+  }
+
+  // Show current agent name in input
+  if (currentAgent) {
+    input.value = currentAgent.ens || currentAgent.name + '.proofofclaw.eth';
+  }
+
+  function renderDropdown(filter) {
+    const q = (filter || '').toLowerCase();
+    const matches = agents.filter(a => {
+      const ens = (a.ens || a.name + '.proofofclaw.eth').toLowerCase();
+      return !q || a.name.toLowerCase().includes(q) || ens.includes(q) || a.id.toLowerCase().includes(q);
+    });
+    dropdown.innerHTML = '';
+    matches.forEach(a => {
+      const item = document.createElement('div');
+      item.className = 'agent-search-item';
+      const ens = a.ens || a.name + '.proofofclaw.eth';
+      item.innerHTML = '<span>' + (a.icon ? a.icon + ' ' : '') + a.name + '</span><span class="ens-hint">' + ens + '</span>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.location.href = 'dashboard.html?agent=' + encodeURIComponent(a.id);
+      });
+      dropdown.appendChild(item);
+    });
+    dropdown.classList.toggle('open', matches.length > 0);
+  }
+
+  input.addEventListener('focus', function() {
+    input.select();
+    renderDropdown(input.value);
+  });
+
+  input.addEventListener('input', function() {
+    renderDropdown(input.value);
+  });
+
+  input.addEventListener('blur', function() {
+    dropdown.classList.remove('open');
+  });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const first = dropdown.querySelector('.agent-search-item');
+      if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+    }
+    if (e.key === 'Escape') {
+      dropdown.classList.remove('open');
+      input.blur();
+    }
   });
 }
 
