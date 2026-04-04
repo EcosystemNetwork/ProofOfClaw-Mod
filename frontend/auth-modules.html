@@ -3,137 +3,182 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Auth modules — Proof of Claw</title>
 <meta name="description" content="OAuth and agent auth modules: GitHub, Google, Discord, Telegram, Slack, and custom credentials.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Auth Modules — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="auth-modules-panel.css" id="poc-auth-modules-stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="auth-modules-panel.css">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-:root {
-  --bg-primary: #06080d;
-  --cyan: #00e5ff;
-  --text-primary: #e8ecf4;
-  --text-secondary: #8892a4;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-cyan: rgba(0, 229, 255, 0.2);
-  --cyan-glow: rgba(0, 229, 255, 0.15);
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-body {
-  font-family: var(--font-mono);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  font-size: 14px;
-  min-height: 100vh;
-}
-body::after {
-  content: '';
+/* ═══ TOPBAR ═══ */
+.topbar {
   position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events: none;
-  z-index: 9999;
-}
-.grid-bg {
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-  z-index: 0;
-}
-nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 100;
-  padding: 1rem 2rem;
+  top: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  height: var(--topbar-h);
+  background: rgba(6, 8, 13, 0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(6, 8, 13, 0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
+  padding: 0 1.75rem;
+  z-index: 150;
+  transition: left 0.25s ease;
 }
-.nav-logo {
+
+body.sidebar-collapsed .topbar { left: var(--sidebar-w-collapsed); }
+
+.topbar-left {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
+  gap: 1.25rem;
 }
-.nav-logo .claw-icon { width: 32px; height: 32px; position: relative; }
-.nav-logo .claw-icon::before {
-  content: '\29C1';
-  font-size: 28px;
-  color: var(--cyan);
-  filter: drop-shadow(0 0 8px var(--cyan));
-}
-.nav-title {
+
+.topbar-title {
   font-family: var(--font-display);
-  font-weight: 800;
   font-size: 1.1rem;
-  letter-spacing: -0.02em;
+  font-weight: 700;
   color: var(--text-primary);
 }
-.nav-links { display: flex; gap: 1.75rem; list-style: none; flex-wrap: wrap; }
-.nav-links a {
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-weight: 500;
-  transition: color 0.2s;
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
-.nav-links a:hover, .nav-links a.active { color: var(--cyan); }
-.nav-badge {
-  padding: 0.35rem 0.9rem;
-  border: 1px solid var(--border-cyan);
-  border-radius: 100px;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--cyan);
-  background: var(--cyan-glow);
-  text-decoration: none;
-  transition: all 0.2s;
+
+/* ═══ MAIN CONTENT ═══ */
+.main-content {
+  position: relative;
+  z-index: 1;
+  margin-left: var(--sidebar-w);
+  margin-top: var(--topbar-h);
+  padding: 1.75rem;
+  min-height: calc(100vh - var(--topbar-h));
+  transition: margin-left 0.25s ease;
 }
-.nav-badge:hover {
-  background: rgba(0, 229, 255, 0.22);
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.12);
+
+body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 768px) {
+  .topbar { left: 0; }
+  .main-content { margin-left: 0; }
 }
-@media (max-width: 640px) { .nav-links { display: none; } }
 </style>
 </head>
 <body>
-<div class="grid-bg" aria-hidden="true"></div>
+<a href="#main-content" class="skip-link">Skip to auth modules</a>
 
-<nav>
-  <a href="index.html" class="nav-logo">
-    <span class="claw-icon"></span>
-    <span class="nav-title">Proof of Claw</span>
+<div class="grid-bg"></div>
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
+  <a href="index.html" class="sidebar-logo">
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
+    <span class="logo-text">Proof of Claw</span>
   </a>
-  <ul class="nav-links">
-    <li><a href="index.html">Home</a></li>
-    <li><a href="docs.html">Docs</a></li>
-    <li><a href="auth-modules.html" class="active">Auth</a></li>
-    <li><a href="agents.html">Agents</a></li>
-    <li><a href="dashboard.html">Dashboard</a></li>
-  </ul>
-  <a href="agents.html" class="nav-badge">Launch App</a>
-</nav>
+  <nav class="sidebar-nav" aria-label="App navigation">
+    <a href="agents.html">
+      <span class="nav-icon">&#x2726;</span> Agents
+    </a>
+    <a href="dashboard.html">
+      <span class="nav-icon">&#x25A3;</span> Dashboard
+    </a>
+    <a href="auth-modules.html" class="active">
+      <span class="nav-icon">&#x1F512;</span> Auth Modules
+    </a>
+    <a href="messages.html">
+      <span class="nav-icon">&#x2709;</span> Messages
+    </a>
+    <a href="proofs.html">
+      <span class="nav-icon">&#x2731;</span> Proofs
+    </a>
+    <a href="kanban.html">
+      <span class="nav-icon">&#x25A0;</span> Kanban
+    </a>
+    <a href="soul-vault.html">
+      <span class="nav-icon">&#x2B23;</span> Soul Vault
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div id="poc-connection-slot"></div>
+    <a href="soul-vault.html" class="sidebar-btn primary">+ New Agent</a>
+    <a href="index.html" class="sidebar-btn ghost">Back to Home</a>
+  </div>
+</aside>
 
-<div class="auth-standalone-shell">
-  <div id="auth-standalone-root"></div>
-</div>
+<!-- ═══════ TOPBAR ═══════ -->
+<header class="topbar" role="banner">
+  <div class="topbar-left">
+    <span class="topbar-title">Authentication Modules</span>
+  </div>
+  <div class="topbar-right">
+    <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:8px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);"></span>
+      <span class="status-dot" style="background:var(--green);display:inline-block;width:8px;height:8px;border-radius:50%;"></span>
+    </div>
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span>Online</span>
+    </div>
+  </div>
+</header>
 
+<!-- ═══════ MAIN CONTENT ═══════ -->
+<main class="main-content" id="main-content" role="main">
+  <div id="auth-modules-root"></div>
+</main>
+
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
+<script src="shared.js"></script>
+<script src="poc-api.js"></script>
 <script src="auth-modules-panel.js"></script>
 <script>
-  PocAuthModules.mount(document.getElementById('auth-standalone-root'));
+document.addEventListener('DOMContentLoaded', function() {
+  // Configure your Google OAuth Client ID here
+  // Get one at: https://console.cloud.google.com/apis/credentials
+  const GOOGLE_CLIENT_ID = null; // Replace with: 'YOUR_CLIENT_ID.apps.googleusercontent.com'
+  
+  // Backend API auth keys (for proxy/calendar API)
+  const USER_AUTH_KEY = 'ce87c003337354d7e906d4dbd30d133affce711449801f16b58ff1c6b2ddf327';
+  const OPERATOR_AUTH_KEY = 'ce87c003337354d7e906d4dbd30d133affce711449801f16b58ff1c6b2ddf327';
+  
+  // 1clawAI Configuration - REAL API CREDENTIALS
+  // From https://docs.1claw.xyz dashboard
+  const ONECLAW_API_KEY = 'ocv_XsJpRrM_b5aB7dcd-tzzg6yUzZSIuz2dlLs431DBs4U';
+  const ONECLAW_ENDPOINT = 'https://api.1claw.xyz/v1';
+  const AGENT_ID = '61a7016a-b417-4f49-87f1-ade2ed1cf99b';
+  const VAULT_ID = '358ff77c-4c0d-4d1a-85a1-b25bde541cd8'; // Your first vault
+  
+  PocAuthModules.mount('auth-modules-root', {
+    googleClientId: GOOGLE_CLIENT_ID,
+    userAuthKey: USER_AUTH_KEY,
+    operatorAuthKey: OPERATOR_AUTH_KEY,
+    oneclawApiKey: ONECLAW_API_KEY,
+    oneclawEndpoint: ONECLAW_ENDPOINT,
+    agentId: AGENT_ID,
+    vaultId: VAULT_ID,
+    onConnect: function(moduleId) {
+      console.log('Connected to:', moduleId);
+    },
+    onDisconnect: function(moduleId) {
+      console.log('Disconnected from:', moduleId);
+    }
+  });
+
+  if (typeof updateWalletDisplay === 'function') {
+    updateWalletDisplay();
+  }
+});
 </script>
 </body>
 </html>

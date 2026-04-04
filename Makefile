@@ -1,9 +1,12 @@
-.PHONY: all build-agent build-zkvm build-contracts test clean
+.PHONY: all build-agent build-zkvm build-contracts build-poc-server test clean
 
-all: build-agent build-contracts
+all: build-agent build-contracts build-poc-server
 
 build-agent:
 	cd agent && cargo build --release
+
+build-poc-server:
+	cd agent && cargo build -p proof_of_claw --bin poc-server --release
 
 build-zkvm:
 	cd zkvm && cargo build --release
@@ -13,6 +16,9 @@ build-contracts:
 
 test-agent:
 	cd agent && cargo test
+
+test-poc:
+	cd agent && cargo test -p proof_of_claw
 
 test-contracts:
 	cd contracts && forge test
@@ -37,6 +43,30 @@ deploy-sepolia:
 
 run-agent:
 	cd agent && cargo run
+
+run-poc-server:
+	cd agent && RUST_LOG=proof_of_claw=info cargo run -p proof_of_claw --bin poc-server
+
+run-delivery-service:
+	cd delivery-service && npm start
+
+run-swarm-bridge:
+	cd swarm-bridge && npm start
+
+install-bridge:
+	cd swarm-bridge && npm install
+
+register-swarm:
+	cd swarm-bridge && node bridge.mjs --register-only
+
+run-all-services:
+	@echo "Starting DM3 delivery service..."
+	cd delivery-service && npm start &
+	@sleep 2
+	@echo "Starting Swarm bridge..."
+	cd swarm-bridge && npm start &
+	@echo "Starting POC agent server..."
+	cd agent && RUST_LOG=proof_of_claw=info cargo run -p proof_of_claw --bin poc-server
 
 clean:
 	cd agent && cargo clean

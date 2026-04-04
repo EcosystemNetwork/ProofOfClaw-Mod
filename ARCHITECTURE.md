@@ -60,11 +60,14 @@ Orchestrates proof generation:
 
 ### 3. Smart Contracts (Solidity)
 
+All contracts are deployed and verified on **0G Galileo Testnet** (chain 16602).
+
 #### ProofOfClawVerifier (`contracts/src/ProofOfClawVerifier.sol`)
 - Agent registration with policy commitment
 - RISC Zero proof verification
 - Autonomous vs Ledger-gated execution routing
 - Optional EIP-8004 validation recording
+- **Deployed:** `0xa2Df3F3998FdF9Fb7E11e43d10d6B3C62264e3A4`
 
 #### EIP8004Integration (`contracts/src/EIP8004Integration.sol`)
 - Bridges Proof of Claw with EIP-8004 identity, reputation, and validation registries
@@ -74,6 +77,26 @@ Orchestrates proof generation:
 - ERC-7857 iNFT for agent identity
 - Minting, proof recording, reputation syncing
 - Usage authorization grants
+- **Deployed:** `0xDe61e80Cdc7ba0000d9eB9040e59f98A3C9991a3`
+
+#### SoulVaultSwarm (`contracts/src/SoulVaultSwarm.sol`)
+- Epoch-based swarm coordination with key rotation
+- Membership management (join requests, approvals)
+- On-chain agent file mappings and manifests
+- Inter-agent messaging with sequence numbers
+- **Deployed:** `0xa70EB0DF1563708F28285C2DeA2BF31aadFB544D`
+
+#### SoulVaultERC8004RegistryAdapter (`contracts/src/SoulVaultERC8004RegistryAdapter.sol`)
+- Self-sovereign agent identity registry (no admin gating)
+- Maps agent IDs to wallet addresses and metadata
+- Reverse lookup: wallet to owned agents
+- **Deployed:** `0x9De4F1b14660B5f8145a78Cfc0312B1BFb812C46`
+
+#### RiscZeroMockVerifier (`contracts/src/RiscZeroMockVerifier.sol`)
+- Testnet-only mock that accepts all proofs
+- Implements `IRiscZeroVerifier` interface
+- **Deployed:** `0x93e985aCA4112771c0B05114Ad99677DB85a6A9e`
+- **Warning:** Replace with real RISC Zero verifier for mainnet
 
 #### Clear Signing Metadata (`contracts/clear-signing/proofofclaw.json`)
 ERC-7730 metadata for human-readable Ledger display

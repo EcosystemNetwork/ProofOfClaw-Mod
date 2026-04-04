@@ -3,258 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Encrypted DM3 messaging between Proof of Claw agents.">
 <title>DM3 Messages — Proof of Claw</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg-primary: #06080d;
-  --bg-secondary: #0c1018;
-  --bg-card: #0f1520;
-  --bg-card-hover: #141c2a;
-  --cyan: #00e5ff;
-  --cyan-dim: #00a3b5;
-  --cyan-glow: rgba(0, 229, 255, 0.15);
-  --amber: #ffb300;
-  --green: #00e676;
-  --red: #ff3d5a;
-  --purple: #b388ff;
-  --text-primary: #e8ecf4;
-  --text-secondary: #8892a4;
-  --text-dim: #4a5568;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-cyan: rgba(0, 229, 255, 0.2);
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --sidebar-width: 240px;
-  --sidebar-w-collapsed: 60px;
-}
-
 body {
-  font-family: var(--font-mono);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.6;
-  font-size: 14px;
   overflow: hidden;
   height: 100vh;
 }
 
-/* ── Scanline Overlay ── */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  z-index: 9999;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-}
-
-/* ── Grid Background ── */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  z-index: -1;
-  background-image:
-    linear-gradient(rgba(0, 229, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
-}
-
 /* ═══════════════════════════════════════════
-   SIDEBAR
-   ═══════════════════════════════════════════ */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: var(--sidebar-width);
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid var(--border);
-  text-decoration: none;
-}
-
-.sidebar-logo .claw-symbol {
-  font-size: 1.5rem;
-  color: var(--cyan);
-  filter: drop-shadow(0 0 8px var(--cyan));
-  line-height: 1;
-}
-
-.sidebar-logo .logo-text {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 1rem 0;
-  list-style: none;
-}
-
-.sidebar-nav li a {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.7rem 1.5rem;
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
-}
-
-.sidebar-nav li a:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.sidebar-nav li a.active {
-  color: var(--cyan);
-  border-left-color: var(--cyan);
-  background: rgba(0, 229, 255, 0.05);
-}
-
-.sidebar-nav li a .nav-icon {
-  font-size: 1rem;
-  width: 1.25rem;
-  text-align: center;
-}
-
-.sidebar-bottom {
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.sidebar-bottom .btn-new-agent {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  background: var(--cyan);
-  color: var(--bg-primary);
-  border: none;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.sidebar-bottom .btn-new-agent:hover {
-  background: var(--cyan-dim);
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
-}
-
-.sidebar-bottom .btn-home {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  text-decoration: none;
-  transition: all 0.2s;
-}
-
-.sidebar-bottom .btn-home:hover {
-  color: var(--text-primary);
-  border-color: var(--border-cyan);
-}
-
-/* Sidebar collapse */
-.sidebar-toggle {
-  position: absolute;
-  top: 12px;
-  right: -14px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  z-index: 201;
-  transition: all 0.2s;
-}
-.sidebar-toggle:hover {
-  color: var(--cyan);
-  border-color: var(--border-cyan);
-  background: var(--bg-card);
-}
-
-.sidebar { transition: width 0.25s ease; }
-.main-area { transition: margin-left 0.25s ease; }
-
-body.sidebar-collapsed .sidebar { width: var(--sidebar-w-collapsed); }
-body.sidebar-collapsed .sidebar .logo-text { display: none; }
-body.sidebar-collapsed .sidebar-logo { justify-content: center; }
-body.sidebar-collapsed .sidebar-nav li a { justify-content: center; padding: 0.7rem 0; font-size: 0; gap: 0; }
-body.sidebar-collapsed .sidebar-nav li a .nav-icon { font-size: 1.1rem; width: auto; }
-body.sidebar-collapsed .sidebar-bottom { padding: 0.75rem 0.5rem; }
-body.sidebar-collapsed .sidebar-bottom .btn-new-agent { font-size: 0; padding: 0.6rem; letter-spacing: 0; }
-body.sidebar-collapsed .sidebar-bottom .btn-new-agent::after { content: '+'; font-size: 1.2rem; font-weight: 700; letter-spacing: 0; }
-body.sidebar-collapsed .sidebar-bottom .btn-home { display: none; }
-body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
-body.sidebar-collapsed .sidebar-toggle { transform: rotate(180deg); }
-body.sidebar-collapsed #poc-connection-slot { display: none; }
-
-/* ═══════════════════════════════════════════
-   MAIN AREA
+   MAIN AREA (page-specific layout)
    ═══════════════════════════════════════════ */
 .main-area {
-  margin-left: var(--sidebar-width);
+  margin-left: var(--sidebar-w);
   height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: margin-left 0.25s ease;
 }
 
-/* ── Top Bar ── */
+body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
+
+/* ── Top Bar (page-specific: static positioning) ── */
 .topbar {
   display: flex;
   align-items: center;
@@ -263,59 +35,15 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   background: var(--bg-secondary);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-}
-
-.topbar-title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.15rem;
-  color: var(--text-primary);
-}
-
-.agent-selector {
-  padding: 0.4rem 0.75rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  padding-right: 2rem;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238892a4' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-}
-
-.agent-selector:focus {
-  outline: none;
-  border-color: var(--cyan);
+  position: static;
+  height: auto;
+  backdrop-filter: none;
 }
 
 .topbar-badges {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.3rem 0.75rem;
-  border-radius: 100px;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-weight: 600;
 }
 
 .badge-encrypted {
@@ -417,19 +145,6 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   display: flex;
   align-items: center;
   gap: 0.5rem;
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-dim);
-  flex-shrink: 0;
-}
-
-.status-dot.online {
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
 }
 
 .contact-time {
@@ -718,27 +433,62 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .contacts-panel { width: 220px; min-width: 220px; }
+}
+
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); z-index: 300; }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .main-area { margin-left: 0 !important; }
+  .topbar { padding: 0.5rem 1rem; }
+  .chat-layout { flex-direction: column; }
+  .contacts-panel {
+    width: 100%; min-width: 100%; max-height: 30vh;
+    border-right: none; border-bottom: 1px solid var(--border);
+  }
+  .chat-panel { min-height: 65vh; }
+  .message { max-width: 85%; }
+}
+
+@media (max-width: 480px) {
+  .topbar { padding: 0.5rem 0.75rem; height: 52px; }
+  .topbar-title { font-size: 0.9rem; }
+  .agent-selector { font-size: 0.7rem; max-width: 130px; }
+  .compose-area { padding: 0.5rem; }
+  .compose-area input { font-size: 13px; }
+  .message { max-width: 92%; }
+  .contacts-panel { max-height: 25vh; }
+  .contact-item { padding: 0.5rem 0.75rem; }
+}
 </style>
 </head>
-<body>
+<body class="has-grid">
+
+<a href="#chat-panel" class="skip-link">Skip to messages</a>
 
 <!-- ═══════════════════════════════════════════
      SIDEBAR
      ═══════════════════════════════════════════ -->
-<aside class="sidebar">
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
   <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
   <a href="index.html" class="sidebar-logo">
-    <span class="claw-symbol">&#x27C1;</span>
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
     <span class="logo-text">Proof of Claw</span>
   </a>
 
-  <ul class="sidebar-nav">
-    <li><a href="agents.html"><span class="nav-icon">&#x2B21;</span> Agents</a></li>
-    <li><a href="dashboard.html"><span class="nav-icon">&#x25A3;</span> Dashboard</a></li>
-    <li><a href="dashboard.html?view=auth"><span class="nav-icon">&#x1F512;</span> Auth</a></li>
-    <li><a href="messages.html" class="active"><span class="nav-icon">&#x2709;</span> Messages</a></li>
-    <li><a href="proofs.html"><span class="nav-icon">&#x2B22;</span> Proofs</a></li>
-  </ul>
+  <nav class="sidebar-nav" aria-label="App navigation">
+    <a href="agents.html"><span class="nav-icon">&#x2726;</span> Agents</a>
+    <a href="dashboard.html"><span class="nav-icon">&#x25A3;</span> Dashboard</a>
+    <a href="messages.html" class="active" aria-current="page"><span class="nav-icon">&#x2709;</span> Messages</a>
+    <a href="proofs.html"><span class="nav-icon">&#x2731;</span> Proofs</a>
+    <a href="soul-vault.html"><span class="nav-icon">&#x2B23;</span> Soul Vault</a>
+    <a href="approve.html"><span class="nav-icon">&#x2714;</span> Approve</a>
+  </nav>
 
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
@@ -750,13 +500,16 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 <!-- ═══════════════════════════════════════════
      MAIN AREA
      ═══════════════════════════════════════════ -->
-<div class="main-area">
+<div class="main-area" role="main">
+
+  <div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
   <!-- Top Bar -->
   <div class="topbar">
     <div class="topbar-left">
+      <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
       <div class="topbar-title">DM3 Messages</div>
-      <select class="agent-selector" id="agent-selector">
+      <select class="agent-selector" id="agent-selector" aria-label="Select active agent">
         <option value="">Select agent...</option>
       </select>
     </div>
@@ -775,7 +528,7 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
         <span class="contacts-title">Contacts</span>
         <span class="contacts-count" id="contacts-count">0</span>
       </div>
-      <ul class="contact-list" id="contact-list"></ul>
+      <ul class="contact-list" id="contact-list" aria-label="Contact list"></ul>
     </div>
 
     <!-- Chat Panel -->
@@ -790,17 +543,18 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
         </div>
       </div>
 
-      <div class="messages-list" id="messages-list"></div>
+      <div class="messages-list" id="messages-list" aria-label="Message thread" aria-live="polite"></div>
 
       <div class="compose-area" id="compose-area" style="display:none;">
-        <textarea class="compose-input" id="message-input" placeholder="Type a message... (Enter to send, Shift+Enter for newline)" rows="1"></textarea>
-        <button class="send-btn" onclick="sendMessage()">Send</button>
+        <textarea class="compose-input" id="message-input" placeholder="Type a message... (Enter to send, Shift+Enter for newline)" rows="1" aria-label="Type a message"></textarea>
+        <button class="send-btn" onclick="sendMessage()" aria-label="Send message">Send</button>
       </div>
     </div>
 
   </div>
 </div>
 
+<script src="shared.js"></script>
 <script src="poc-api.js"></script>
 <script>
 (function() {
@@ -843,7 +597,7 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
         if (Array.isArray(parsed) && parsed.length > 0) {
           agents = parsed.map(a => ({
             name: a.name || a.agentName || 'unnamed',
-            ensName: a.ensName || a.ens || ((a.name || a.agentName || 'unnamed') + '.proofclaw.eth'),
+            ensName: a.ensName || a.ens || ((a.name || a.agentName || 'unnamed') + '.proofofclaw.eth'),
             status: a.status || 'active',
             live: !!a.live
           }));
@@ -875,7 +629,7 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
     // If connected via PocAPI, prefer the connected agent
     const conn = isLive() ? PocAPI.getConnection() : null;
     if (conn) {
-      const connEns = conn.ens || (conn.agentId + '.proofclaw.eth');
+      const connEns = conn.ens || (conn.agentId + '.proofofclaw.eth');
       const found = agents.find(a => a.ensName === connEns || a.name === conn.agentId);
       currentAgent = found ? found.ensName : connEns;
     } else {
@@ -941,7 +695,7 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
     const banner = document.createElement('div');
     banner.className = 'live-mode-banner';
     banner.innerHTML = '<span class="live-dot"></span> Connected to live agent: ' +
-      escapeHtml(conn.agentId || conn.url) + ' — messages sent via /api/chat';
+      esc(conn.agentId || conn.url) + ' — messages sent via /api/chat';
     const chatPanel = document.getElementById('chat-panel');
     chatPanel.insertBefore(banner, chatPanel.firstChild);
   }
@@ -978,11 +732,11 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
         <div class="contact-top-row">
           <span class="contact-name">
             <span class="status-dot ${c.online ? 'online' : ''}"></span>
-            ${escapeHtml(c.ensName)}${c.isBackendAgent ? ' <span style="color:var(--green);font-size:0.6rem;">[LIVE]</span>' : ''}
+            ${esc(c.ensName)}${c.isBackendAgent ? ' <span style="color:var(--green);font-size:0.6rem;">[LIVE]</span>' : ''}
           </span>
-          <span class="contact-time">${escapeHtml(c.lastTime)}</span>
+          <span class="contact-time">${esc(c.lastTime)}</span>
         </div>
-        <div class="contact-preview">${escapeHtml(c.lastMessage)}</div>
+        <div class="contact-preview">${esc(c.lastMessage)}</div>
       `;
       contactList.appendChild(li);
     });
@@ -1022,21 +776,26 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   function createMessageEl(m) {
     const div = document.createElement('div');
     div.className = 'message ' + (m.sent ? 'sent' : 'received');
-    const senderLabel = m.sent ? escapeHtml(currentAgent) + ' (You)' : escapeHtml(m.sender);
+    const senderLabel = m.sent ? esc(currentAgent) + ' (You)' : esc(m.sender);
     const metaText = m.sent ? 'Encrypted via DM3 &bull; Delivered' : 'Encrypted via DM3 &bull; Delivered via delivery service';
     let proofHtml = '';
     if (m.proof) {
       const proofId = m.proof.proof_id ? m.proof.proof_id.substring(0, 12) + '...' : 'n/a';
       const status = m.proof.status || 'verified';
       const approvalType = m.proof.approval_type || m.proof.policy_result?.approval_type || 'autonomous';
-      proofHtml = `<div class="message-proof">&#x2713; Proof ${escapeHtml(status)} | ${escapeHtml(approvalType)} | proof_id: ${escapeHtml(proofId)}</div>`;
+      const isLedger = approvalType === 'ledger' || approvalType === 'eip712' || approvalType === 'hardware';
+      const proofIcon = isLedger ? '&#x1F511;' : '&#x2713;';
+      const proofStyle = isLedger
+        ? 'color:var(--green);background:rgba(0,230,118,0.06);border-color:rgba(0,230,118,0.25);'
+        : '';
+      proofHtml = `<div class="message-proof" style="${proofStyle}">${proofIcon} Proof ${esc(status)} | ${esc(approvalType)} | proof_id: ${esc(proofId)}</div>`;
     }
     div.innerHTML = `
       <div class="message-header">
         <span class="message-sender">${senderLabel}</span>
-        <span class="message-time">${escapeHtml(m.time)}</span>
+        <span class="message-time">${esc(m.time)}</span>
       </div>
-      <div class="message-content">${escapeHtml(m.content)}</div>
+      <div class="message-content">${esc(m.content)}</div>
       ${proofHtml}
       <div class="message-meta">
         <span class="meta-icon">&#x2713;</span> ${metaText}
@@ -1051,7 +810,7 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
     div.id = 'thinking-bubble';
     div.innerHTML = `
       <div class="message-header">
-        <span class="message-sender">${escapeHtml(activeContactId)}</span>
+        <span class="message-sender">${esc(activeContactId)}</span>
         <span class="message-time">...</span>
       </div>
       <div class="message-content">Thinking...</div>`;
@@ -1126,10 +885,13 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 
       try {
         const baseUrl = getBaseUrl();
-        const response = await fetch(baseUrl + '/api/chat', {
+        const response = await fetch(baseUrl + '/api/chat/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('poc_gateway_token') || '')
+          },
+          body: JSON.stringify({ content: text, thread_id: null })
         });
 
         if (!response.ok) {
@@ -1276,25 +1038,9 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
     });
   }
 
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
   // ── Boot ──
   init();
 })();
-</script>
-<script>
-// Sidebar collapse
-function toggleSidebar() {
-  document.body.classList.toggle('sidebar-collapsed');
-  localStorage.setItem('poc-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed'));
-}
-if (localStorage.getItem('poc-sidebar-collapsed') === 'true') {
-  document.body.classList.add('sidebar-collapsed');
-}
 </script>
 </body>
 </html>

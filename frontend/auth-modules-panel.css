@@ -1,177 +1,536 @@
-/* Auth modules panel — always scoped under .poc-auth-panel */
+/**
+ * Proof of Claw — Auth Modules Panel Styles
+ */
 
-.poc-auth-panel {
-  position: relative;
-  z-index: 1;
+/* ===== Base Container ===== */
+.poc-auth-modules {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  color: var(--text-primary, #e8ecf4);
 }
 
-.poc-auth-panel .page-intro {
+/* ===== Header ===== */
+.auth-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.auth-title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  color: var(--cyan, #00e5ff);
+}
+
+.auth-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #8892a4);
+  margin: 0;
+}
+
+/* ===== Sections ===== */
+.auth-section {
   margin-bottom: 2rem;
 }
 
-.poc-auth-panel .page-intro h1 {
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-title {
   font-family: var(--font-display, 'Syne', sans-serif);
-  font-weight: 800;
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  letter-spacing: -0.03em;
-  margin-bottom: 0.65rem;
-  line-height: 1.15;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--text-primary, #e8ecf4);
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.poc-auth-panel .page-intro p {
-  color: var(--text-secondary, #8892a4);
-  max-width: 62ch;
-  font-size: 0.9rem;
-  line-height: 1.65;
-}
-
-.poc-auth-panel .page-intro a {
-  color: var(--cyan, #00e5ff);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(0, 229, 255, 0.35);
-}
-
-.poc-auth-panel .page-intro a:hover {
-  border-bottom-color: var(--cyan, #00e5ff);
-}
-
-.poc-auth-panel .module-grid {
+/* ===== Auth Grid ===== */
+.auth-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1.15rem;
-}
-
-.poc-auth-panel .auth-card {
-  background: var(--bg-card, #0f1520);
-  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
-  border-radius: 14px;
-  padding: 1.35rem 1.35rem 1.2rem;
-  transition: border-color 0.25s, box-shadow 0.25s, background 0.25s;
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-  --accent: var(--cyan, #00e5ff);
-}
-
-.poc-auth-panel .auth-card:hover {
-  background: var(--bg-card-hover, #141c2a);
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border, rgba(255,255,255,0.06)));
-  box-shadow: 0 8px 40px color-mix(in srgb, var(--accent) 8%, transparent);
-}
-
-.poc-auth-panel .auth-card-header {
-  display: flex;
-  align-items: flex-start;
   gap: 1rem;
 }
 
-.poc-auth-panel .auth-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
+/* ===== Auth Cards ===== */
+.auth-card {
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 10px;
+  padding: 1.25rem;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.auth-card:hover {
+  border-color: var(--border-cyan, rgba(0, 229, 255, 0.2));
+  background: var(--bg-card-hover, rgba(255, 255, 255, 0.05));
+}
+
+.auth-card.connected {
+  border-color: var(--green, #00e676);
+  background: rgba(0, 230, 118, 0.04);
+}
+
+.auth-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.auth-icon {
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+  border-radius: 10px;
   flex-shrink: 0;
-  background: color-mix(in srgb, var(--accent) 12%, var(--bg-secondary, #0c1018));
-  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-  color: var(--accent);
 }
 
-.poc-auth-panel .auth-icon svg {
-  width: 25px;
-  height: 25px;
+.auth-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
-.poc-auth-panel .auth-card h2 {
+.auth-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.auth-name {
   font-family: var(--font-display, 'Syne', sans-serif);
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: -0.02em;
-  margin-bottom: 0.15rem;
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
   color: var(--text-primary, #e8ecf4);
 }
 
-.poc-auth-panel .auth-card .tagline {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text-dim, #4a5568);
-}
-
-.poc-auth-panel .auth-card p.desc {
+.auth-desc {
+  font-size: 0.8rem;
   color: var(--text-secondary, #8892a4);
-  font-size: 0.82rem;
-  line-height: 1.55;
+  margin: 0;
+  line-height: 1.4;
 }
 
-.poc-auth-panel .flow-list {
-  list-style: none;
-  font-size: 0.74rem;
-  color: var(--text-dim, #4a5568);
-  border-top: 1px solid var(--border, rgba(255,255,255,0.06));
-  padding-top: 0.75rem;
-  margin-top: auto;
-}
-
-.poc-auth-panel .flow-list li {
-  padding: 0.22rem 0;
-  padding-left: 1rem;
-  position: relative;
-}
-
-.poc-auth-panel .flow-list li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.62em;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.7;
-}
-
-.poc-auth-panel .chips {
+.auth-card-footer {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.poc-auth-panel .chip {
-  font-size: 0.62rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0.22rem 0.5rem;
+.auth-scopes {
+  font-size: 0.75rem;
+  color: var(--text-dim, #5a6270);
+}
+
+/* ===== Buttons ===== */
+.btn-connect,
+.btn-connected,
+.btn-add-cred {
+  padding: 0.5rem 1rem;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border, rgba(255,255,255,0.06));
-  color: var(--text-secondary, #8892a4);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
 }
 
-.poc-auth-panel .spec-callout {
-  margin-top: 2rem;
-  padding: 1.1rem 1.35rem;
-  border-radius: 12px;
+.btn-connect {
+  background: linear-gradient(135deg, var(--cyan, #00e5ff), #00b8d4);
+  color: #000;
+}
+
+.btn-connect:hover {
+  box-shadow: 0 4px 16px rgba(0, 229, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-connected {
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--green, #00e676);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.btn-connected:hover {
+  background: rgba(0, 230, 118, 0.2);
+}
+
+.btn-add-cred {
+  background: transparent;
   border: 1px solid var(--border-cyan, rgba(0, 229, 255, 0.2));
-  background: var(--cyan-glow, rgba(0, 229, 255, 0.15));
-  font-size: 0.78rem;
-  color: var(--text-secondary, #8892a4);
-  line-height: 1.55;
-}
-
-.poc-auth-panel .spec-callout strong {
-  color: var(--text-primary, #e8ecf4);
-}
-
-.poc-auth-panel .spec-callout a {
   color: var(--cyan, #00e5ff);
 }
 
-/* Standalone page wrapper */
-.auth-standalone-shell .poc-auth-panel {
-  max-width: 1100px;
+.btn-add-cred:hover {
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.connection-badge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-size: 0.65rem;
+  color: var(--green, #00e676);
+  font-weight: 600;
+}
+
+/* ===== Custom Credentials ===== */
+.custom-creds-list {
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.empty-creds {
+  padding: 2rem;
+  text-align: center;
+  color: var(--text-dim, #5a6270);
+  font-size: 0.9rem;
+}
+
+.custom-cred-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.custom-cred-item:last-child {
+  border-bottom: none;
+}
+
+.cred-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.cred-type {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--cyan-glow, rgba(0, 229, 255, 0.15));
+  color: var(--cyan, #00e5ff);
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.cred-name {
+  font-size: 0.85rem;
+  color: var(--text-primary, #e8ecf4);
+  font-weight: 500;
+}
+
+.cred-preview {
+  font-size: 0.75rem;
+  color: var(--text-dim, #5a6270);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+}
+
+.cred-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-cred-test,
+.btn-cred-delete {
+  padding: 0.4rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  background: transparent;
+  color: var(--text-secondary, #8892a4);
+}
+
+.btn-cred-test:hover {
+  border-color: var(--cyan, #00e5ff);
+  color: var(--cyan, #00e5ff);
+}
+
+.btn-cred-delete {
+  border-color: rgba(255, 61, 90, 0.2);
+  color: var(--red, #ff3d5a);
+}
+
+.btn-cred-delete:hover {
+  background: rgba(255, 61, 90, 0.08);
+  border-color: var(--red, #ff3d5a);
+}
+
+/* ===== Tips Section ===== */
+.auth-tips {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.04), rgba(0, 229, 255, 0.02));
+  border: 1px solid var(--border-cyan, rgba(0, 229, 255, 0.2));
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.tips-title {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--cyan, #00e5ff);
+  margin: 0 0 0.75rem 0;
+}
+
+.tips-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--text-secondary, #8892a4);
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+
+.tips-list li {
+  margin-bottom: 0.25rem;
+}
+
+/* ===== Modal ===== */
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 8, 13, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  position: relative;
+  background: var(--bg-secondary, #0a0d14);
+  border: 1px solid var(--border-cyan, rgba(0, 229, 255, 0.2));
+  border-radius: 12px;
+  width: 100%;
+  max-width: 420px;
+  z-index: 1001;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+}
+
+.modal-header h3 {
+  font-family: var(--font-display, 'Syne', sans-serif);
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--text-primary, #e8ecf4);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary, #8892a4);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(255, 61, 90, 0.1);
+  color: var(--red, #ff3d5a);
+}
+
+.modal-body {
+  padding: 1.25rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+}
+
+/* ===== Form Elements ===== */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-secondary, #8892a4);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  border-radius: 8px;
+  color: var(--text-primary, #e8ecf4);
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 0.85rem;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--cyan, #00e5ff);
+  box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.1);
+}
+
+.form-input::placeholder {
+  color: var(--text-dim, #5a6270);
+}
+
+.form-select option {
+  background: var(--bg-secondary, #0a0d14);
+  color: var(--text-primary, #e8ecf4);
+}
+
+/* ===== Modal Buttons ===== */
+.btn-modal-secondary,
+.btn-modal-primary {
+  padding: 0.6rem 1.25rem;
+  border-radius: 6px;
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-modal-secondary {
+  background: var(--bg-card, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.06));
+  color: var(--text-secondary, #8892a4);
+}
+
+.btn-modal-secondary:hover {
+  border-color: var(--border-cyan, rgba(0, 229, 255, 0.2));
+  color: var(--text-primary, #e8ecf4);
+}
+
+.btn-modal-primary {
+  background: linear-gradient(135deg, var(--cyan, #00e5ff), #00b8d4);
+  color: #000;
+}
+
+.btn-modal-primary:hover {
+  box-shadow: 0 4px 16px rgba(0, 229, 255, 0.3);
+}
+
+/* ===== Animations ===== */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+  .auth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .section-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .cred-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .custom-cred-item {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .cred-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .modal-content {
+    max-width: calc(100% - 2rem);
+    margin: 0 1rem;
+  }
+}
+
+/* ===== Standalone Shell (for auth-modules.html) ===== */
+.auth-standalone-shell {
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 6.5rem 1.5rem 4rem;
+  padding: 2rem;
+  padding-top: calc(64px + 2rem);
+}
+
+@media (max-width: 640px) {
+  .auth-standalone-shell {
+    padding: 1rem;
+    padding-top: calc(64px + 1rem);
+  }
 }

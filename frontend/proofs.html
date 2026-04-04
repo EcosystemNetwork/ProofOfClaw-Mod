@@ -3,238 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Verify and inspect cryptographic proofs of agent behavior.">
 <title>Proof Verification — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg-primary: #06080d;
-  --bg-secondary: #0c1018;
-  --bg-card: #0f1520;
-  --bg-card-hover: #141c2a;
-  --cyan: #00e5ff;
-  --cyan-dim: #00a3b5;
-  --cyan-glow: rgba(0, 229, 255, 0.15);
-  --amber: #ffb300;
-  --green: #00e676;
-  --red: #ff3d5a;
-  --purple: #b388ff;
-  --text-primary: #e8ecf4;
-  --text-secondary: #8892a4;
-  --text-dim: #4a5568;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-cyan: rgba(0, 229, 255, 0.2);
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
-body {
-  font-family: var(--font-mono);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.6;
-  font-size: 14px;
-  min-height: 100vh;
-}
-
-/* Scanline overlay */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 229, 255, 0.008) 2px,
-    rgba(0, 229, 255, 0.008) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* Grid background */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background-image:
-    linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* ===================== SIDEBAR ===================== */
-.sidebar {
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  width: 240px;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  padding: 1.5rem 0;
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0 1.25rem;
-  margin-bottom: 2rem;
-  text-decoration: none;
-}
-
-.sidebar-logo .claw-symbol {
-  font-size: 1.6rem;
-  color: var(--cyan);
-  filter: drop-shadow(0 0 8px var(--cyan));
-  line-height: 1;
-}
-
-.sidebar-logo .logo-text {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1rem;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-}
-
-.sidebar-nav {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sidebar-nav a {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.7rem 1.25rem;
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
-}
-
-.sidebar-nav a:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.sidebar-nav a.active {
-  color: var(--cyan);
-  border-left-color: var(--cyan);
-  background: rgba(0, 229, 255, 0.05);
-}
-
-.sidebar-nav a .nav-icon {
-  font-size: 1rem;
-  width: 20px;
-  text-align: center;
-}
-
-.sidebar-bottom {
-  padding: 1rem 1.25rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  border-top: 1px solid var(--border);
-  margin-top: auto;
-}
-
-.btn-new-agent {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.65rem 1rem;
-  background: linear-gradient(135deg, rgba(0, 229, 255, 0.12), rgba(0, 229, 255, 0.04));
-  border: 1px solid var(--border-cyan);
-  border-radius: 8px;
-  color: var(--cyan);
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
-  font-weight: 600;
-  text-decoration: none;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  transition: all 0.25s;
-  cursor: pointer;
-}
-
-.btn-new-agent:hover {
-  background: rgba(0, 229, 255, 0.18);
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.1);
-}
-
-.btn-back-home {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.btn-back-home:hover {
-  color: var(--text-secondary);
-}
-
-/* Sidebar collapse */
-.sidebar-toggle {
-  position: absolute;
-  top: 12px;
-  right: -14px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  z-index: 201;
-  transition: all 0.2s;
-}
-.sidebar-toggle:hover {
-  color: var(--cyan);
-  border-color: var(--border-cyan);
-  background: var(--bg-card);
-}
-
-.sidebar { transition: width 0.25s ease; }
-.main-content { transition: margin-left 0.25s ease; }
-
-body.sidebar-collapsed .sidebar { width: 60px; }
-body.sidebar-collapsed .sidebar .logo-text { display: none; }
-body.sidebar-collapsed .sidebar-logo { justify-content: center; }
-body.sidebar-collapsed .sidebar-nav a { justify-content: center; padding: 0.7rem 0; font-size: 0; gap: 0; letter-spacing: 0; }
-body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 1.1rem; width: auto; }
-body.sidebar-collapsed .sidebar-bottom { padding: 0.75rem 0.5rem; }
-body.sidebar-collapsed .btn-new-agent { font-size: 0; padding: 0.6rem; letter-spacing: 0; }
-body.sidebar-collapsed .btn-new-agent::after { content: '+'; font-size: 1.2rem; font-weight: 700; }
-body.sidebar-collapsed .btn-back-home { display: none; }
-body.sidebar-collapsed .main-content { margin-left: 60px; }
-body.sidebar-collapsed .sidebar-toggle { transform: rotate(180deg); }
-body.sidebar-collapsed #poc-connection-slot { display: none; }
-
 /* ===================== MAIN LAYOUT ===================== */
 .main-content {
   margin-left: 240px;
@@ -680,54 +457,75 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 }
 
 @media (max-width: 768px) {
-  .sidebar { display: none; }
-  .main-content { margin-left: 0; }
+  .main-content { margin-left: 0; padding: 1.25rem 1rem; }
   .stats-bar { grid-template-columns: 1fr 1fr; }
   .proof-details-grid { grid-template-columns: 1fr 1fr; }
   .chain-details { grid-template-columns: 1fr; }
-  .filter-bar { flex-direction: column; align-items: flex-start; }
+  .filter-bar { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  .top-bar { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+}
+
+@media (max-width: 480px) {
+  .main-content { padding: 1rem 0.75rem; }
+  .stats-bar { grid-template-columns: 1fr; }
+  .proof-details-grid { grid-template-columns: 1fr; }
+  .top-bar-title { font-size: 1rem; }
+  .proof-card { padding: 1rem; }
 }
 </style>
 </head>
-<body>
+<body class="has-grid">
+
+<a href="#proofsContainer" class="skip-link">Skip to proofs</a>
 
 <!-- ==================== SIDEBAR ==================== -->
-<aside class="sidebar">
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
   <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
   <a href="index.html" class="sidebar-logo">
-    <span class="claw-symbol">&#x27C1;</span>
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
     <span class="logo-text">Proof of Claw</span>
   </a>
 
-  <nav class="sidebar-nav">
-    <a href="agents.html"><span class="nav-icon">&#x2B21;</span> Agents</a>
+  <nav class="sidebar-nav" aria-label="App navigation">
+    <a href="agents.html"><span class="nav-icon">&#x2726;</span> Agents</a>
     <a href="dashboard.html"><span class="nav-icon">&#x25A3;</span> Dashboard</a>
-    <a href="dashboard.html?view=auth"><span class="nav-icon">&#x1F512;</span> Auth</a>
+    <a href="auth-modules.html"><span class="nav-icon">&#x1F512;</span> Auth Modules</a>
     <a href="messages.html"><span class="nav-icon">&#x2709;</span> Messages</a>
-    <a href="proofs.html" class="active"><span class="nav-icon">&#x2713;</span> Proofs</a>
+    <a href="proofs.html" class="active" aria-current="page"><span class="nav-icon">&#x2731;</span> Proofs</a>
+    <a href="kanban.html"><span class="nav-icon">&#x25A0;</span> Kanban</a>
+    <a href="soul-vault.html"><span class="nav-icon">&#x2B23;</span> Soul Vault</a>
+    <a href="approve.html"><span class="nav-icon">&#x2714;</span> Approve</a>
   </nav>
 
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
     <a href="agents.html" class="btn-new-agent">+ New Agent</a>
-    <a href="index.html" class="btn-back-home">&larr; Back to Home</a>
+    <a href="index.html" class="btn-home">&larr; Back to Home</a>
   </div>
 </aside>
 
 <!-- ==================== MAIN ==================== -->
-<div class="main-content">
+<main class="main-content" role="main">
+
+  <div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
 
   <!-- TOP BAR -->
-  <header class="top-bar">
+  <header class="top-bar" role="banner">
     <div class="top-bar-left">
+      <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
       <div class="top-bar-title">Proof Verification</div>
       <div class="top-bar-agent-filter">
-        <select id="topAgentFilter">
-          <option value="all">All Agents</option>
+        <select id="agentFilter" aria-label="Filter by agent">
+          <option value="">All agents</option>
         </select>
       </div>
     </div>
-    <div class="top-bar-right">
+    <div class="top-bar-right" style="display:flex;align-items:center;gap:12px;">
+      <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+      <div id="wallet-display" style="display:none;align-items:center;gap:6px;">
+        <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
+        <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
+      </div>
       <div class="top-bar-stats">
         <span>Total: <span class="stat-val" id="statTotalInline">3</span></span>
         <span>Verified: <span class="stat-val" style="color:var(--green)" id="statVerifiedInline">66%</span></span>
@@ -763,13 +561,13 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
     <div class="filter-bar">
       <div class="filter-group">
         <label>Agent</label>
-        <select id="filterAgent">
+        <select id="filterAgent" aria-label="Filter proofs by agent">
           <option value="all">All Agents</option>
         </select>
       </div>
       <div class="filter-group">
         <label>Status</label>
-        <select id="filterStatus">
+        <select id="filterStatus" aria-label="Filter proofs by status">
           <option value="all">All</option>
           <option value="verified">Verified</option>
           <option value="pending">Pending</option>
@@ -778,136 +576,115 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
       </div>
       <div class="filter-group">
         <label>Action</label>
-        <select id="filterAction">
+        <select id="filterAction" aria-label="Filter proofs by action">
           <option value="all">All</option>
           <option value="swap_tokens">swap_tokens</option>
           <option value="transfer">transfer</option>
           <option value="query">query</option>
         </select>
       </div>
-      <a href="#" id="backToDashboard" style="margin-left:auto;color:var(--cyan);font-size:0.75rem;text-decoration:none;display:none;">
+      <a href="dashboard.html" id="backToDashboard" style="margin-left:auto;color:var(--cyan);font-size:0.75rem;text-decoration:none;display:none;">
         &larr; Back to Dashboard
       </a>
     </div>
 
     <!-- PROOF CARDS -->
-    <div class="proofs-list" id="proofsContainer"></div>
+    <div class="proofs-list" id="proofsContainer" role="list"></div>
 
   </div>
-</div>
+</main>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
+<script src="shared.js"></script>
 <script>
-// ===================== LIVE DATA =====================
-let proofs = [];
-let expandedProofs = new Set();
-let livePollingTimer = null;
-
-function isConnected() {
-  return typeof PocAPI !== 'undefined' && PocAPI.isConnected && PocAPI.isConnected();
-}
-
-function getBaseUrl() {
-  const conn = isConnected() ? PocAPI.getConnection() : null;
-  return conn ? conn.url : null;
-}
-
-// Convert live API proof entry to internal format
-function convertLiveProof(entry) {
-  const shortId = entry.id.replace(/-/g, '').slice(0, 8);
-  const ts = new Date(entry.timestamp * 1000);
-  const tsStr = ts.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
-  const ethValue = entry.action_value_wei / 1e18;
-
-  return {
-    id: shortId,
-    _fullId: entry.id,
-    agent: entry.agent_id,
-    action: 'inference',
-    value: ethValue > 0 ? ethValue.toFixed(4) : 0,
-    currency: 'A0GI',
-    approval: entry.requires_ledger ? 'Ledger Approved' : 'Autonomous',
-    timestamp: tsStr,
-    proofTime: '~1s (Mock)',
-    proofTimeNum: 1,
-    status: entry.all_checks_passed ? 'verified' : 'failed',
-    commitment: entry.output_commitment,
+// ===================== DATA =====================
+const PROOFS = [
+  {
+    id: '1234',
+    agent: 'alice-agent',
+    action: 'swap_tokens',
+    value: 100,
+    currency: 'USDC',
+    approval: 'Autonomous',
+    timestamp: '2026-04-03 16:45:32 UTC',
+    proofTime: '42s (Boundless)',
+    proofTimeNum: 42,
+    status: 'verified',
+    commitment: '0xabcd1234ef567890abcd1234ef567890abcd1234ef567890abcd1234ef567890',
     policyChecks: [
-      { rule: 'Policy Hash', detail: entry.policy_hash.slice(0, 18) + '...', pass: entry.all_checks_passed },
-      { rule: 'Ledger Approval', detail: entry.requires_ledger ? 'Required' : 'Not required', pass: true },
-      { rule: 'All Checks Passed', detail: entry.all_checks_passed ? 'Yes' : 'One or more failed', pass: entry.all_checks_passed },
+      { rule: 'Tool Allowlist', detail: 'swap_tokens is in allowed tools list', pass: true },
+      { rule: 'Value Threshold', detail: '100 USDC \u2264 100 USDC autonomous limit', pass: true },
+      { rule: 'Endpoint Allowlist', detail: 'api.uniswap.org is approved', pass: true },
+      { rule: 'Prompt Injection', detail: 'No injection patterns detected', pass: true }
     ],
     verifiedOutput: {
-      agent_id: entry.agent_id,
-      policy_hash: entry.policy_hash,
-      output_commitment: entry.output_commitment,
-      all_checks_passed: entry.all_checks_passed,
-      requires_ledger_approval: entry.requires_ledger,
-      action_value: entry.action_value_wei,
-      session_id: entry.session_id,
-      trace_root: entry.trace_root || null,
+      agent_id: 'alice-agent',
+      policy_hash: '0x1234...5678',
+      output_commitment: '0xabcd...7890',
+      all_checks_passed: true,
+      requires_ledger_approval: false,
+      action_value: 100000000
     },
+    txHash: '0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba',
+    blockNumber: '12,345,678'
+  },
+  {
+    id: '1235',
+    agent: 'alice-agent',
+    action: 'transfer',
+    value: 500,
+    currency: 'USDC',
+    approval: 'Ledger Approved',
+    timestamp: '2026-04-03 16:30:15 UTC',
+    proofTime: '38s (Boundless)',
+    proofTimeNum: 38,
+    status: 'verified',
+    commitment: '0xef012345ab678901ef012345ab678901ef012345ab678901ef012345ab678901',
+    policyChecks: [
+      { rule: 'Tool Allowlist', detail: 'transfer is in allowed tools list', pass: true },
+      { rule: 'Value Threshold', detail: '500 USDC > 100 USDC \u2192 Ledger approval required', pass: true },
+      { rule: 'Endpoint Allowlist', detail: 'api.aave.com is approved', pass: true },
+      { rule: 'Prompt Injection', detail: 'No injection patterns detected', pass: true }
+    ],
+    verifiedOutput: {
+      agent_id: 'alice-agent',
+      policy_hash: '0x1234...5678',
+      output_commitment: '0xef01...8901',
+      all_checks_passed: true,
+      requires_ledger_approval: true,
+      action_value: 500000000
+    },
+    txHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+    blockNumber: '12,345,650'
+  },
+  {
+    id: '1236',
+    agent: 'alice-agent',
+    action: 'query',
+    value: 0,
+    currency: 'USDC',
+    approval: 'Autonomous',
+    timestamp: '2026-04-03 16:50:00 UTC',
+    proofTime: '~15s remaining',
+    proofTimeNum: null,
+    status: 'pending',
+    commitment: '0x5678abcd9012ef345678abcd9012ef345678abcd9012ef345678abcd9012ef34',
+    policyChecks: [
+      { rule: 'Tool Allowlist', detail: 'query is in allowed tools list', pass: true },
+      { rule: 'Value Threshold', detail: '0 USDC \u2264 100 USDC autonomous limit', pass: true },
+      { rule: 'Endpoint Allowlist', detail: 'api.coingecko.com is approved', pass: true },
+      { rule: 'Prompt Injection', detail: 'No injection patterns detected', pass: true }
+    ],
+    verifiedOutput: null,
     txHash: null,
-    blockNumber: null,
-    isLive: true,
-  };
-}
-
-async function fetchLiveProofs() {
-  const baseUrl = getBaseUrl();
-  if (!baseUrl) return;
-
-  try {
-    const data = await PocAPI.fetchProofs(baseUrl);
-    if (data && data.proofs) {
-      const liveProofs = data.proofs.map(convertLiveProof);
-      // Keep mock data but prepend live proofs
-      const mockProofs = window._mockProofs || [];
-      proofs = [...liveProofs, ...mockProofs];
-      renderProofs();
-      populateAgentFilters();
-      updateStats();
-    }
-  } catch (e) {
-    console.warn('Failed to fetch live proofs:', e.message);
+    blockNumber: null
   }
-}
+];
 
-function startLivePolling() {
-  if (livePollingTimer) return;
-  fetchLiveProofs();
-  livePollingTimer = setInterval(fetchLiveProofs, 8000);
-}
-
-function stopLivePolling() {
-  if (livePollingTimer) {
-    clearInterval(livePollingTimer);
-    livePollingTimer = null;
-  }
-}
-
-// Stats update from live data
-function updateStats() {
-  const total = proofs.length;
-  const verified = proofs.filter(p => p.status === 'verified').length;
-  const pending = proofs.filter(p => p.status === 'pending').length;
-  const totalEl = document.getElementById('statTotal');
-  const verifiedEl = document.getElementById('statVerified');
-  const pendingEl = document.getElementById('statPending');
-  if (totalEl) totalEl.textContent = total;
-  if (verifiedEl) verifiedEl.textContent = verified;
-  if (pendingEl) pendingEl.textContent = pending;
-}
-
-// Initialise: load live data if connected, else mock data
-function initProofs() {
-  if (isConnected()) {
-    startLivePolling();
-  } else {
-    proofs = JSON.parse(JSON.stringify(window._mockProofs || []));
-    renderProofs();
-    populateAgentFilters();
-  }
-}
+// ===================== STATE =====================
+let proofs = JSON.parse(JSON.stringify(PROOFS));
+let expandedProofs = new Set();
 
 // ===================== HELPERS =====================
 function getAgents() {
@@ -971,75 +748,75 @@ function renderProofs() {
         <li class="policy-check">
           <div class="check-icon pass">\u2713</div>
           <div>
-            <div class="check-rule">${c.rule}</div>
-            <div class="check-details">${c.detail}</div>
+            <div class="check-rule">${esc(c.rule)}</div>
+            <div class="check-details">${esc(c.detail)}</div>
           </div>
         </li>`).join('');
 
       expandableHTML = `
-        <div class="proof-expandable${isExpanded ? ' expanded' : ''}" id="expand-${proof.id}">
+        <div class="proof-expandable${isExpanded ? ' expanded' : ''}" id="expand-${esc(proof.id)}">
           <ul class="policy-checks">${checksHTML}</ul>
           <div class="code-block"><pre style="margin:0;white-space:pre-wrap;">${formatJson(proof.verifiedOutput)}</pre></div>
           <div class="chain-details">
             <div class="detail-item">
               <div class="detail-label">Transaction Hash</div>
-              <div class="hash-value">${proof.txHash}</div>
+              <div class="hash-value">${esc(proof.txHash)}</div>
             </div>
             <div class="detail-item">
               <div class="detail-label">Block Number</div>
-              <div class="detail-value">${proof.blockNumber}</div>
+              <div class="detail-value">${esc(proof.blockNumber)}</div>
             </div>
           </div>
         </div>`;
     }
 
     const pendingHTML = proof.status === 'pending' ? `
-      <div class="pending-message" id="pending-msg-${proof.id}">
+      <div class="pending-message" id="pending-msg-${esc(proof.id)}">
         <div class="spinner"></div>
         Proof generation in progress via Boundless proving marketplace...
       </div>` : '';
 
     const expandBtnHTML = proof.status === 'verified' ? `
-      <button class="expand-btn${isExpanded ? ' open' : ''}" onclick="toggleExpand('${proof.id}')">
+      <button class="expand-btn${isExpanded ? ' open' : ''}" onclick="toggleExpand('${esc(proof.id)}')" aria-expanded="${isExpanded ? 'true' : 'false'}">
         <span class="arrow">\u25BC</span> ${isExpanded ? 'Hide Details' : 'Show Details'}
       </button>` : '';
 
     return `
-      <div class="proof-card" data-proof-id="${proof.id}" data-agent="${proof.agent}" data-status="${proof.status}" data-action="${proof.action}">
+      <div class="proof-card" role="listitem" data-proof-id="${esc(proof.id)}" data-agent="${esc(proof.agent)}" data-status="${esc(proof.status)}" data-action="${esc(proof.action)}">
         <div class="proof-header">
-          <div class="proof-id">Proof #${proof.id}</div>
-          <div class="proof-status ${statusClass}">${statusLabel}</div>
+          <div class="proof-id">Proof #${esc(proof.id)}</div>
+          <div class="proof-status ${esc(statusClass)}">${statusLabel}</div>
         </div>
         <div class="proof-details-grid">
           <div class="detail-item">
             <div class="detail-label">Agent ID</div>
-            <div class="detail-value">${proof.agent}</div>
+            <div class="detail-value">${esc(proof.agent)}</div>
           </div>
           <div class="detail-item">
             <div class="detail-label">Action</div>
-            <div class="detail-value">${proof.action}</div>
+            <div class="detail-value">${esc(proof.action)}</div>
           </div>
           <div class="detail-item">
             <div class="detail-label">Value</div>
-            <div class="detail-value">${proof.value} ${proof.currency}</div>
+            <div class="detail-value">${esc(proof.value)} ${esc(proof.currency)}</div>
           </div>
           <div class="detail-item">
             <div class="detail-label">Approval Type</div>
-            <div${approvalStyle}>${proof.approval}</div>
+            <div${approvalStyle}>${esc(proof.approval)}</div>
           </div>
           <div class="detail-item">
             <div class="detail-label">Timestamp</div>
-            <div class="detail-value">${proof.timestamp}</div>
+            <div class="detail-value">${esc(proof.timestamp)}</div>
           </div>
           <div class="detail-item">
             <div class="detail-label">Proof Time</div>
-            <div class="detail-value" id="proofTime-${proof.id}">${proof.proofTime}</div>
+            <div class="detail-value" id="proofTime-${esc(proof.id)}">${esc(proof.proofTime)}</div>
           </div>
         </div>
         <div class="commitment-row">
           <div class="detail-item">
             <div class="detail-label">Output Commitment</div>
-            <div class="hash-value">${proof.commitment}</div>
+            <div class="hash-value">${esc(proof.commitment)}</div>
           </div>
         </div>
         ${expandBtnHTML}
@@ -1076,11 +853,13 @@ function toggleExpand(proofId) {
     expandedProofs.delete(proofId);
     el.classList.remove('expanded');
     btn.classList.remove('open');
+    btn.setAttribute('aria-expanded', 'false');
     btn.innerHTML = '<span class="arrow">\u25BC</span> Show Details';
   } else {
     expandedProofs.add(proofId);
     el.classList.add('expanded');
     btn.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
     btn.innerHTML = '<span class="arrow">\u25BC</span> Hide Details';
   }
 }
@@ -1163,105 +942,9 @@ setTimeout(() => {
 }, 5000);
 
 // ===================== INIT =====================
-// Store mock data for fallback when not connected
-window._mockProofs = JSON.parse(JSON.stringify([
-  {
-    id: '1234',
-    agent: 'alice-agent',
-    action: 'swap_tokens',
-    value: 100,
-    currency: 'USDC',
-    approval: 'Autonomous',
-    timestamp: '2026-04-03 16:45:32 UTC',
-    proofTime: '42s (Boundless)',
-    proofTimeNum: 42,
-    status: 'verified',
-    commitment: '0xabcd1234ef567890abcd1234ef567890abcd1234ef567890abcd1234ef567890',
-    policyChecks: [
-      { rule: 'Tool Allowlist', detail: 'swap_tokens is in allowed tools list', pass: true },
-      { rule: 'Value Threshold', detail: '100 USDC \u2264 100 USDC autonomous limit', pass: true },
-      { rule: 'Endpoint Allowlist', detail: 'api.uniswap.org is approved', pass: true },
-      { rule: 'Prompt Injection', detail: 'No injection patterns detected', pass: true }
-    ],
-    verifiedOutput: {
-      agent_id: 'alice-agent',
-      policy_hash: '0x1234...5678',
-      output_commitment: '0xabcd...7890',
-      all_checks_passed: true,
-      requires_ledger_approval: false,
-      action_value: 100000000
-    },
-    txHash: '0x9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba',
-    blockNumber: '12,345,678',
-    isLive: false,
-  },
-  {
-    id: '1235',
-    agent: 'alice-agent',
-    action: 'transfer',
-    value: 500,
-    currency: 'USDC',
-    approval: 'Ledger Approved',
-    timestamp: '2026-04-03 16:30:15 UTC',
-    proofTime: '38s (Boundless)',
-    proofTimeNum: 38,
-    status: 'verified',
-    commitment: '0xef012345ab678901ef012345ab678901ef012345ab678901ef012345ab678901',
-    policyChecks: [
-      { rule: 'Tool Allowlist', detail: 'transfer is in allowed tools list', pass: true },
-      { rule: 'Value Threshold', detail: '500 USDC > 100 USDC \u2192 Ledger approval required', pass: true },
-      { rule: 'Endpoint Allowlist', detail: 'api.aave.com is approved', pass: true },
-      { rule: 'Prompt Injection', detail: 'No injection patterns detected', pass: true }
-    ],
-    verifiedOutput: {
-      agent_id: 'alice-agent',
-      policy_hash: '0x1234...5678',
-      output_commitment: '0xef01...8901',
-      all_checks_passed: true,
-      requires_ledger_approval: true,
-      action_value: 500000000
-    },
-    txHash: '0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
-    blockNumber: '12,345,650',
-    isLive: false,
-  },
-  {
-    id: '1236',
-    agent: 'alice-agent',
-    action: 'query',
-    value: 0,
-    currency: 'USDC',
-    approval: 'Autonomous',
-    timestamp: '2026-04-03 16:50:00 UTC',
-    proofTime: '~15s remaining',
-    proofTimeNum: null,
-    status: 'pending',
-    commitment: '0x5678abcd9012ef345678abcd9012ef345678abcd9012ef345678abcd9012ef34',
-    policyChecks: [
-      { rule: 'Tool Allowlist', detail: 'query is in allowed tools list', pass: true },
-      { rule: 'Value Threshold', detail: '0 USDC \u2264 100 USDC autonomous limit', pass: true },
-      { rule: 'Endpoint Allowlist', detail: 'api.coingecko.com is approved', pass: true },
-      { rule: 'Prompt Injection', detail: 'No injection patterns detected', pass: true }
-    ],
-    verifiedOutput: null,
-    txHash: null,
-    blockNumber: null,
-    isLive: false,
-  }
-]));
-
-initProofs();
+populateAgentFilters();
 applyUrlParams();
-</script>
-<script>
-// Sidebar collapse
-function toggleSidebar() {
-  document.body.classList.toggle('sidebar-collapsed');
-  localStorage.setItem('poc-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed'));
-}
-if (localStorage.getItem('poc-sidebar-collapsed') === 'true') {
-  document.body.classList.add('sidebar-collapsed');
-}
+renderProofs();
 </script>
 <script src="poc-api.js"></script>
 </body>

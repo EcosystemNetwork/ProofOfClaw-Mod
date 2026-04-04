@@ -1,0 +1,1640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Approve pending high-value agent actions with Ledger hardware wallet signing on Proof of Claw.">
+<title>Ledger Approve — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* Ledger waiting modal animations */
+@keyframes ledgerPulse {
+  0%,100% { box-shadow:0 0 30px rgba(0,229,255,0.12); transform:scale(1); }
+  50%      { box-shadow:0 0 50px rgba(0,229,255,0.35); transform:scale(1.06); }
+}
+@keyframes dotBounce {
+  0%,80%,100% { transform:translateY(0);   opacity:0.35; }
+  40%          { transform:translateY(-8px); opacity:1; }
+}
+.wait-dot {
+  display:inline-block;
+  width:8px; height:8px; border-radius:50%;
+  background:var(--cyan);
+  animation:dotBounce 1.2s ease-in-out infinite;
+}
+/* Live demo badge on action cards */
+.live-demo-badge {
+  padding:0.2rem 0.5rem;
+  background:rgba(0,229,255,0.1);
+  border:1px solid var(--border-cyan);
+  border-radius:4px;
+  font-size:0.6rem;
+  color:var(--cyan);
+  font-weight:700;
+  letter-spacing:0.08em;
+  white-space:nowrap;
+}
+/* ======================================== */
+/* TOPBAR                                   */
+/* ======================================== */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  height: var(--topbar-h);
+  background: rgba(6, 8, 13, 0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  z-index: 150;
+  transition: left 0.25s ease;
+}
+
+body.sidebar-collapsed .topbar { left: var(--sidebar-w-collapsed); }
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.topbar-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ======================================== */
+/* MAIN CONTENT                             */
+/* ======================================== */
+.main-content {
+  position: relative;
+  z-index: 1;
+  margin-left: var(--sidebar-w);
+  margin-top: var(--topbar-h);
+  padding: 1.75rem;
+  min-height: calc(100vh - var(--topbar-h));
+  transition: margin-left 0.25s ease;
+}
+
+body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); }
+
+/* ======================================== */
+/* SECTION HEADERS                          */
+/* ======================================== */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.section-title .icon { color: var(--cyan); }
+
+/* ======================================== */
+/* LEDGER CONNECTION CARD                   */
+/* ======================================== */
+.ledger-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.ledger-card.connected {
+  border-color: rgba(0, 230, 118, 0.3);
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.04), var(--bg-card));
+}
+
+.ledger-info {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.ledger-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.ledger-card.connected .ledger-icon {
+  border-color: rgba(0, 230, 118, 0.3);
+  background: var(--green-glow);
+}
+
+.ledger-details h3 {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.ledger-details p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ledger-meta {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.ledger-meta-item {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.ledger-meta-item span {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.btn-ledger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-ledger.connect {
+  background: var(--cyan);
+  color: var(--bg-primary);
+}
+
+.btn-ledger.connect:hover {
+  background: var(--cyan-dim);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.25);
+}
+
+.btn-ledger.disconnect {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid rgba(255, 61, 90, 0.3);
+}
+
+.btn-ledger.disconnect:hover {
+  background: rgba(255, 61, 90, 0.1);
+}
+
+.sim-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  background: var(--amber-glow);
+  border: 1px solid rgba(255, 179, 0, 0.3);
+  border-radius: 100px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--amber);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* ======================================== */
+/* PENDING ACTIONS                          */
+/* ======================================== */
+.pending-section {
+  margin-bottom: 1.75rem;
+}
+
+.pending-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.pending-count {
+  background: var(--amber);
+  color: var(--bg-primary);
+  padding: 0.15rem 0.6rem;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.action-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  transition: all 0.25s ease;
+}
+
+.action-card:hover {
+  border-color: var(--border-cyan);
+  box-shadow: 0 0 16px var(--cyan-glow);
+}
+
+.action-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.action-agent {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.action-agent-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--cyan-glow);
+  border: 1px solid var(--border-cyan);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.action-agent-info h4 {
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.action-agent-info .ens {
+  font-size: 0.75rem;
+  color: var(--cyan);
+}
+
+.action-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.action-type-badge.swap {
+  background: var(--purple-glow);
+  color: var(--purple);
+  border: 1px solid rgba(179, 136, 255, 0.25);
+}
+
+.action-type-badge.transfer {
+  background: var(--cyan-glow);
+  color: var(--cyan);
+  border: 1px solid var(--border-cyan);
+}
+
+.action-type-badge.stake {
+  background: var(--green-glow);
+  color: var(--green);
+  border: 1px solid rgba(0, 230, 118, 0.25);
+}
+
+.action-type-badge.bridge {
+  background: var(--amber-glow);
+  color: var(--amber);
+  border: 1px solid rgba(255, 179, 0, 0.25);
+}
+
+.action-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.detail-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.detail-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.detail-value.eth { color: var(--cyan); }
+.detail-value.usd { color: var(--text-secondary); font-weight: 400; font-size: 0.75rem; }
+
+.status-checks {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.status-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.7rem;
+  font-weight: 500;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.status-check.passed {
+  color: var(--green);
+  border-color: rgba(0, 230, 118, 0.25);
+}
+
+.status-check.failed {
+  color: var(--red);
+  border-color: rgba(255, 61, 90, 0.25);
+}
+
+.status-check.pending {
+  color: var(--amber);
+  border-color: rgba(255, 179, 0, 0.25);
+}
+
+.status-check.verified {
+  color: var(--green);
+  border-color: rgba(0, 230, 118, 0.25);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn-approve, .btn-reject {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-approve {
+  background: var(--green);
+  color: var(--bg-primary);
+}
+
+.btn-approve:hover {
+  box-shadow: 0 0 16px var(--green-glow);
+  filter: brightness(1.1);
+}
+
+.btn-approve:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-reject {
+  background: transparent;
+  color: var(--red);
+  border: 1px solid rgba(255, 61, 90, 0.3);
+}
+
+.btn-reject:hover {
+  background: rgba(255, 61, 90, 0.1);
+}
+
+.btn-reject:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ======================================== */
+/* CLEAR SIGNING MODAL                      */
+/* ======================================== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-cyan);
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 0 60px rgba(0, 229, 255, 0.1);
+}
+
+.modal h3 {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.modal p.modal-sub {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 1.25rem;
+}
+
+.ledger-display {
+  background: var(--bg-primary);
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-bottom: 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+.ledger-display .line {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ledger-display .line:last-child { border-bottom: none; }
+
+.ledger-display .line .key { color: var(--text-dim); }
+.ledger-display .line .val { color: var(--text-primary); font-weight: 500; }
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.btn-modal-confirm {
+  padding: 0.6rem 1.5rem;
+  background: var(--green);
+  color: var(--bg-primary);
+  border: none;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-confirm:hover { filter: brightness(1.1); }
+
+.btn-modal-cancel {
+  padding: 0.6rem 1.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-modal-cancel:hover { border-color: var(--border-cyan); color: var(--text-primary); }
+
+.signing-spinner {
+  display: none;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  background: var(--cyan-glow);
+  border: 1px solid var(--border-cyan);
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: var(--cyan);
+  margin-bottom: 1rem;
+}
+
+.signing-spinner.active { display: flex; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-icon {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-cyan);
+  border-top-color: var(--cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ======================================== */
+/* APPROVAL HISTORY                         */
+/* ======================================== */
+.history-section {
+  margin-top: 1.75rem;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.history-table thead {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.history-table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border-bottom: 1px solid var(--border);
+}
+
+.history-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.history-table tr:last-child td { border-bottom: none; }
+
+.history-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.result-approved {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.result-rejected {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.tx-hash {
+  color: var(--cyan);
+  font-size: 0.75rem;
+}
+
+/* ======================================== */
+/* EMPTY / LOADING STATES                   */
+/* ======================================== */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text-dim);
+}
+
+.empty-state .icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.75rem;
+  opacity: 0.5;
+}
+
+.empty-state p {
+  font-size: 0.85rem;
+  max-width: 360px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+.ethglobal-badge {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--border-cyan);
+  border-radius: 100px;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  background: var(--cyan-glow);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ======================================== */
+/* RESPONSIVE                               */
+/* ======================================== */
+@media (max-width: 768px) {
+  :root { --sidebar-w: 0px; }
+  .topbar { left: 0 !important; padding: 0 1rem; }
+  .main-content { margin-left: 0 !important; padding: 1.25rem 1rem; }
+  .ledger-card { flex-direction: column; align-items: flex-start; }
+  .action-card-top { flex-direction: column; }
+  .action-buttons { justify-content: stretch; }
+  .action-buttons button { flex: 1; }
+  .history-table { font-size: 0.75rem; }
+  .history-table th, .history-table td { padding: 0.5rem 0.6rem; }
+  .action-details { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .topbar { height: 52px; }
+  .main-content { margin-top: 52px; padding: 1rem 0.75rem; }
+  .topbar-title { font-size: 0.95rem; }
+  .action-details { grid-template-columns: 1fr; }
+  .ledger-card { padding: 1rem; }
+  .action-card { padding: 1rem; }
+  .history-table { font-size: 0.7rem; }
+  .history-table th, .history-table td { padding: 0.4rem 0.5rem; }
+}
+</style>
+</head>
+
+<body class="has-grid">
+<a href="#main-content" class="skip-link">Skip to main content</a>
+
+<!-- ======================================== -->
+<!-- SIDEBAR                                  -->
+<!-- ======================================== -->
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
+  <a href="index.html" class="sidebar-logo">
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
+    <span class="logo-text">Proof of Claw</span>
+  </a>
+
+  <nav class="sidebar-nav" aria-label="App navigation">
+    <a href="agents.html">
+      <span class="nav-icon">&#x2726;</span> Agents
+    </a>
+    <a href="dashboard.html">
+      <span class="nav-icon">&#x25A3;</span> Dashboard
+    </a>
+    <a href="messages.html">
+      <span class="nav-icon">&#x2709;</span> Messages
+    </a>
+    <a href="proofs.html">
+      <span class="nav-icon">&#x2731;</span> Proofs
+    </a>
+    <a href="soul-vault.html">
+      <span class="nav-icon">&#x2B23;</span> Soul Vault
+    </a>
+    <a href="approve.html" class="active" aria-current="page">
+      <span class="nav-icon">&#x2714;</span> Approve
+    </a>
+  </nav>
+
+  <div class="sidebar-bottom">
+    <div id="poc-connection-slot"></div>
+    <a href="agents.html" class="btn-new-agent">+ New Agent</a>
+    <a href="index.html" class="back-link btn-home">Back to Home</a>
+  </div>
+</aside>
+
+<!-- ======================================== -->
+<!-- TOPBAR                                   -->
+<!-- ======================================== -->
+<div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<header class="topbar" role="banner">
+  <div class="topbar-left">
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
+    <span class="topbar-title">Ledger Approve</span>
+  </div>
+  <div class="topbar-right">
+    <span class="ethglobal-badge">EthGlobal Prague</span>
+    <div id="ledger-status-badge" style="display:none;" class="sim-badge">
+      Simulated
+    </div>
+  </div>
+</header>
+
+<!-- ======================================== -->
+<!-- MAIN CONTENT                             -->
+<!-- ======================================== -->
+<main class="main-content" id="main-content" role="main">
+
+  <!-- Ledger Connection Card -->
+  <div class="ledger-card" id="ledger-card">
+    <div class="ledger-info">
+      <div class="ledger-icon" id="ledger-icon">&#x1F512;</div>
+      <div class="ledger-details">
+        <h3 id="ledger-title">Connect Ledger</h3>
+        <p id="ledger-desc">Connect your Ledger hardware wallet to approve pending high-value agent actions with Clear Signing.</p>
+        <div class="ledger-meta" id="ledger-meta" style="display:none;">
+          <div class="ledger-meta-item">Device: <span id="ledger-device-name">---</span></div>
+          <div class="ledger-meta-item">Address: <span id="ledger-address" style="color: var(--cyan);">---</span></div>
+          <div class="ledger-meta-item">App: <span id="ledger-app">Ethereum</span></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-ledger connect" id="btn-connect-ledger" onclick="connectLedger()">
+      &#x1F517; Connect Ledger
+    </button>
+  </div>
+
+  <!-- Pending Actions -->
+  <div class="pending-section" id="pending-section">
+    <div class="pending-header">
+      <div class="section-title">
+        <span class="icon">&#x26A0;</span>
+        Pending Actions
+        <span class="pending-count" id="pending-count">0</span>
+      </div>
+    </div>
+    <div class="actions-list" id="actions-list">
+      <div class="empty-state" id="empty-pending">
+        <div class="icon">&#x2714;</div>
+        <p>No pending actions. Connect your Ledger and agent actions requiring approval will appear here.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Approval History -->
+  <div class="history-section">
+    <div class="section-title">
+      <span class="icon">&#x23F1;</span>
+      Approval History
+    </div>
+    <table class="history-table" id="history-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Agent</th>
+          <th>Action</th>
+          <th>Value</th>
+          <th>Result</th>
+          <th>Tx Hash</th>
+        </tr>
+      </thead>
+      <tbody id="history-body">
+        <tr>
+          <td colspan="6" style="text-align:center; color: var(--text-dim); padding: 2rem;">No approval history yet.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<!-- ======================================== -->
+<!-- CLEAR SIGNING MODAL                      -->
+<!-- ======================================== -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="signing-modal">
+    <h3>&#x1F512; Ledger Clear Signing</h3>
+    <p class="modal-sub">Review and confirm this transaction on your Ledger device.</p>
+
+    <div class="signing-spinner" id="signing-spinner">
+      <div class="spinner-icon"></div>
+      <span>Waiting for Ledger confirmation...</span>
+    </div>
+
+    <div class="ledger-display" id="ledger-display">
+      <div class="line"><span class="key">Action</span><span class="val" id="modal-action">---</span></div>
+      <div class="line"><span class="key">From Agent</span><span class="val" id="modal-agent">---</span></div>
+      <div class="line"><span class="key">To</span><span class="val" id="modal-to">---</span></div>
+      <div class="line"><span class="key">Value</span><span class="val" id="modal-value">---</span></div>
+      <div class="line"><span class="key">Gas Limit</span><span class="val" id="modal-gas">---</span></div>
+      <div class="line"><span class="key">Chain</span><span class="val" id="modal-chain">---</span></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-modal-confirm" id="btn-modal-confirm" onclick="confirmSign()">&#x2714; Sign &amp; Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================================== -->
+<!-- LEDGER WAITING MODAL                     -->
+<!-- ======================================== -->
+<div id="ledger-waiting-overlay" style="
+  display:none; position:fixed; inset:0; z-index:10000;
+  background:rgba(2,4,10,0.85); backdrop-filter:blur(10px);
+  align-items:center; justify-content:center;
+">
+  <div id="ledger-waiting-card" style="
+    background:linear-gradient(160deg,#0d1117,#0a0f1a);
+    border:1px solid rgba(0,229,255,0.18);
+    border-radius:20px; padding:3rem 3.5rem;
+    max-width:420px; width:90%; text-align:center;
+    box-shadow:0 0 60px rgba(0,229,255,0.08),0 20px 60px rgba(0,0,0,0.6);
+    position:relative;
+  ">
+    <!-- Animated Ledger device -->
+    <div id="ledger-wait-icon" style="
+      width:80px;height:80px;border-radius:16px;
+      background:linear-gradient(135deg,#1a2035,#111827);
+      border:2px solid rgba(0,229,255,0.3);
+      margin:0 auto 1.75rem;
+      display:flex;align-items:center;justify-content:center;
+      font-size:2.2rem;
+      animation:ledgerPulse 2s ease-in-out infinite;
+      box-shadow:0 0 30px rgba(0,229,255,0.15);
+    ">&#x1F511;</div>
+
+    <h3 style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--text-primary);margin:0 0 0.5rem;">Waiting for Ledger</h3>
+    <p id="ledger-wait-status" style="color:var(--text-dim);font-size:0.88rem;margin:0 0 2rem;line-height:1.6;">Unlock your device with PIN...</p>
+
+    <!-- Bouncing dots -->
+    <div style="display:flex;justify-content:center;gap:0.5rem;margin-bottom:2.25rem;">
+      <span class="wait-dot" style="animation-delay:0s"></span>
+      <span class="wait-dot" style="animation-delay:0.18s"></span>
+      <span class="wait-dot" style="animation-delay:0.36s"></span>
+    </div>
+
+    <button onclick="closeLedgerWaiting(true)" style="
+      background:rgba(255,255,255,0.04);border:1px solid var(--border);
+      color:var(--text-dim);padding:0.6rem 2rem;border-radius:8px;
+      font-family:var(--font-mono);font-size:0.82rem;cursor:pointer;
+      transition:all 0.2s;
+    " onmouseover="this.style.borderColor='rgba(255,61,90,0.5)';this.style.color='var(--red)';"
+       onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)';"
+    >Cancel (ESC)</button>
+  </div>
+</div>
+
+<!-- ======================================== -->
+<!-- SCRIPTS                                  -->
+<!-- ======================================== -->
+<script src="shared.js"></script>
+<script src="poc-api.js"></script>
+
+<!-- Toast notification -->
+<div id="toast" style="
+  display:none; position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999;
+  padding:0.75rem 1.25rem; border-radius:8px; font-family:var(--font-mono);
+  font-size:0.8rem; font-weight:600; max-width:340px; line-height:1.4;
+  box-shadow:0 4px 24px rgba(0,0,0,0.4);
+"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+<script src="ledger-sdk.js?v=20260404f"></script>
+<script>
+// =====================================================
+// STATE
+// =====================================================
+let ledgerConnected = false;
+let simulatedMode = false;
+let pendingActions = [];
+let approvalHistory = [];
+let currentSigningAction = null;
+
+// =====================================================
+// MOCK DATA (used when API is unavailable)
+// =====================================================
+const MOCK_PENDING = [
+  {
+    id: 'act-live-eip712',
+    agentId: 'proof-of-claw',
+    agentName: 'Proof of Claw Agent',
+    ens: 'poc-agent.proofofclaw.eth',
+    type: 'transfer',
+    description: 'EIP-712 Live Demo — Real signature required on Ledger',
+    valueEth: '0.001',
+    valueUsd: '1.93',
+    to: '0x000...0000 (Demo/No-op)',
+    gasLimit: '21,000',
+    chain: 'Sepolia Testnet',
+    policyCheck: 'passed',
+    zkProof: 'verified',
+    timestamp: Date.now(),
+    isLiveDemo: true,
+  },
+  {
+    id: 'act-001',
+    agentId: 'agent-7f3a',
+    agentName: 'DeFi Sentinel',
+    ens: 'defi-sentinel.poc.eth',
+    type: 'swap',
+    description: 'Swap 2.5 ETH for USDC on Uniswap V3',
+    valueEth: '2.500',
+    valueUsd: '4,825.00',
+    to: '0x68b3...E5F2 (Uniswap Router)',
+    gasLimit: '250,000',
+    chain: 'Ethereum Mainnet',
+    policyCheck: 'passed',
+    zkProof: 'verified',
+    timestamp: Date.now() - 120000,
+  },
+  {
+    id: 'act-002',
+    agentId: 'agent-b91c',
+    agentName: 'Yield Optimizer',
+    ens: 'yield-opt.poc.eth',
+    type: 'transfer',
+    description: 'Transfer 5.0 ETH to treasury multisig',
+    valueEth: '5.000',
+    valueUsd: '9,650.00',
+    to: '0x1a2b...9C4D (Treasury)',
+    gasLimit: '21,000',
+    chain: 'Ethereum Mainnet',
+    policyCheck: 'passed',
+    zkProof: 'pending',
+    timestamp: Date.now() - 300000,
+  },
+  {
+    id: 'act-003',
+    agentId: 'agent-d42e',
+    agentName: 'Bridge Bot',
+    ens: 'bridge-bot.poc.eth',
+    type: 'bridge',
+    description: 'Bridge 1.2 ETH to Arbitrum via Stargate',
+    valueEth: '1.200',
+    valueUsd: '2,316.00',
+    to: '0x5f3c...A1B8 (Stargate Router)',
+    gasLimit: '350,000',
+    chain: 'Ethereum -> Arbitrum',
+    policyCheck: 'passed',
+    zkProof: 'verified',
+    timestamp: Date.now() - 600000,
+  },
+  {
+    id: 'act-004',
+    agentId: 'agent-7f3a',
+    agentName: 'DeFi Sentinel',
+    ens: 'defi-sentinel.poc.eth',
+    type: 'stake',
+    description: 'Stake 10.0 ETH on Lido',
+    valueEth: '10.000',
+    valueUsd: '19,300.00',
+    to: '0x3e40...7D9F (Lido Staking)',
+    gasLimit: '180,000',
+    chain: 'Ethereum Mainnet',
+    policyCheck: 'failed',
+    zkProof: 'verified',
+    timestamp: Date.now() - 900000,
+  },
+];
+
+const MOCK_HISTORY = [
+  { time: '2 hours ago', agent: 'DeFi Sentinel', action: 'Swap', value: '1.2 ETH', result: 'approved', txHash: '0x8a3f...c21b' },
+  { time: '5 hours ago', agent: 'Yield Optimizer', action: 'Transfer', value: '3.0 ETH', result: 'approved', txHash: '0x12ab...f4e8' },
+  { time: '8 hours ago', agent: 'Bridge Bot', action: 'Bridge', value: '0.5 ETH', result: 'rejected', txHash: '---' },
+  { time: '1 day ago', agent: 'DeFi Sentinel', action: 'Swap', value: '0.8 ETH', result: 'approved', txHash: '0x6d1e...a9c3' },
+];
+
+// =====================================================
+// LEDGER CONNECTION
+// =====================================================
+
+// Module-level Ledger state
+let _ethApp = null;        // hw-app-eth instance
+let _ledgerAddress = null; // full checksummed address from device
+let _openTransport = null; // keep transport alive across retries
+const DERIVE_PATH = "44'/60'/0'/0/0";
+
+// EIP-712 domain — must mirror backend ApprovalAction exactly
+const EIP712_DOMAIN = {
+  name: 'ProofOfClaw',
+  version: '1',
+  chainId: 11155111, // Sepolia
+};
+const EIP712_TYPES = {
+  ApprovalAction: [
+    { name: 'description', type: 'string' },
+    { name: 'value_wei',   type: 'uint64' },
+    { name: 'nonce',       type: 'uint64' },
+    { name: 'timestamp',   type: 'uint64' },
+  ],
+};
+
+async function connectLedger() {
+  const btn = document.getElementById('btn-connect-ledger');
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+
+  const TransportWebHID = window.LedgerSDK?.TransportWebHID;
+  const Eth             = window.LedgerSDK?.Eth;
+
+  if (!navigator.hid || !TransportWebHID) {
+    // Browser doesn't support WebHID — simulate
+    _ethApp = null; _ledgerAddress = null; _openTransport = null;
+    await new Promise(r => setTimeout(r, 1200));
+    onLedgerConnected('Ledger Nano S Plus (Simulated)', '0x7f3a...E8c1 (sim)', true);
+    return;
+  }
+
+  try {
+    // Reuse existing open transport on retries (e.g. after locked error)
+    let transport = _openTransport;
+
+    if (!transport) {
+      // list() returns already-permitted HIDDevice[] (no picker needed)
+      const permitted = await TransportWebHID.list();
+      if (permitted.length > 0) {
+        // open() wraps the raw HIDDevice into a TransportWebHID instance
+        transport = await TransportWebHID.open(permitted[0]);
+      } else {
+        // No previously permitted device — show HID picker
+        transport = await TransportWebHID.request();
+      }
+      _openTransport = transport;
+    }
+
+    const eth = new Eth(transport);
+    const { address } = await eth.getAddress(DERIVE_PATH, false, false);
+
+    _ethApp = eth;
+    _ledgerAddress = address;
+    const productName = transport.device?.productName || 'Ledger Device';
+    onLedgerConnected(productName, address, false);
+
+  } catch (err) {
+    const msg = err?.message || String(err);
+    btn.disabled = false;
+    btn.innerHTML = '&#x1F517; Connect Ledger';
+
+    if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('no device selected')) {
+      _openTransport = null; // picker was cancelled, clear transport
+      return;
+    }
+    if (msg.toLowerCase().includes('locked') || err?.name === 'LockedDeviceError' || msg.includes('0x5515')) {
+      // Show waiting modal — polls until device is unlocked
+      showLedgerWaiting(_openTransport, Eth, 'locked');
+      return;
+    }
+    if (msg.includes('0x6d00') || msg.includes('0x6700') || msg.includes('0x6511') || msg.includes('0x6e00') || msg.toLowerCase().includes('blindsigning')) {
+      // Show waiting modal — polls until Ethereum app is open
+      showLedgerWaiting(_openTransport, Eth, 'app');
+      return;
+    }
+    // Any other error
+    _openTransport = null; // reset so next attempt does a fresh request()
+    showToast('&#x26A0;&#xFE0F; Ledger error: ' + msg.substring(0, 120), 'error', 0);
+    console.error('Ledger connect error:', err);
+  }
+}
+
+function onLedgerConnected(deviceName, address, isSimulated) {
+  ledgerConnected = true;
+  simulatedMode = isSimulated;
+
+  const card = document.getElementById('ledger-card');
+  const icon = document.getElementById('ledger-icon');
+  const title = document.getElementById('ledger-title');
+  const desc = document.getElementById('ledger-desc');
+  const meta = document.getElementById('ledger-meta');
+  const btn = document.getElementById('btn-connect-ledger');
+  const badge = document.getElementById('ledger-status-badge');
+
+  card.classList.add('connected');
+  icon.innerHTML = '&#x1F513;';
+  title.textContent = 'Ledger Connected';
+  desc.textContent = 'Your hardware wallet is ready to sign transactions.';
+  meta.style.display = 'flex';
+  document.getElementById('ledger-device-name').textContent = deviceName;
+  document.getElementById('ledger-address').textContent = address;
+
+  btn.innerHTML = '&#x26D4; Disconnect';
+  btn.className = 'btn-ledger disconnect';
+  btn.disabled = false;
+  btn.onclick = disconnectLedger;
+
+  if (isSimulated) {
+    badge.style.display = 'inline-flex';
+  }
+
+  // Load pending actions
+  loadPendingActions();
+}
+
+function disconnectLedger() {
+  ledgerConnected = false;
+  simulatedMode = false;
+
+  // Close and clear Ledger transport state
+  if (_openTransport) {
+    _openTransport.close().catch(() => {});
+    _openTransport = null;
+  }
+  _ethApp = null;
+  _ledgerAddress = null;
+
+  const card  = document.getElementById('ledger-card');
+  const icon  = document.getElementById('ledger-icon');
+  const title = document.getElementById('ledger-title');
+  const desc  = document.getElementById('ledger-desc');
+  const meta  = document.getElementById('ledger-meta');
+  const btn   = document.getElementById('btn-connect-ledger');
+  const badge = document.getElementById('ledger-status-badge');
+
+  card.classList.remove('connected');
+  icon.innerHTML    = '&#x1F512;';
+  title.textContent = 'Connect Ledger';
+  desc.textContent  = 'Connect your Ledger hardware wallet to approve pending high-value agent actions with Clear Signing.';
+  meta.style.display = 'none';
+
+  btn.innerHTML  = '&#x1F517; Connect Ledger';
+  btn.className  = 'btn-ledger connect';
+  btn.onclick    = connectLedger;
+
+  badge.style.display = 'none';
+
+  // Clear pending actions display
+  pendingActions = [];
+  renderPendingActions();
+}
+
+// =====================================================
+// PENDING ACTIONS
+// =====================================================
+async function loadPendingActions() {
+  try {
+    // Try live API first
+    const resp = await fetch('/api/pending-actions');
+    if (resp.ok) {
+      pendingActions = await resp.json();
+      renderPendingActions();
+      return;
+    }
+  } catch (e) {
+    // API not available, use mock data
+  }
+
+  // Fallback to mock data
+  pendingActions = [...MOCK_PENDING];
+  renderPendingActions();
+}
+
+function renderPendingActions() {
+  const list = document.getElementById('actions-list');
+  const count = document.getElementById('pending-count');
+
+  count.textContent = pendingActions.length;
+
+  if (pendingActions.length === 0) {
+    list.innerHTML =
+      '<div class="empty-state">' +
+        '<div class="icon">&#x2714;</div>' +
+        '<p>All clear. No pending actions require approval.</p>' +
+      '</div>';
+    return;
+  }
+
+  list.innerHTML = pendingActions.map(action => {
+    const policyIcon = action.policyCheck === 'passed' ? '&#x2713;' : '&#x2717;';
+    const policyClass = action.policyCheck === 'passed' ? 'passed' : 'failed';
+    const zkIcon = action.zkProof === 'verified' ? '&#x2713;' : '&#x25F7;';
+    const zkClass = action.zkProof === 'verified' ? 'verified' : 'pending';
+    const canApprove = ledgerConnected && action.policyCheck === 'passed';
+
+    return (
+      '<div class="action-card" id="card-' + action.id + '">' +
+        '<div class="action-card-top">' +
+          '<div class="action-agent">' +
+            '<div class="action-agent-avatar">&#x27C1;</div>' +
+            '<div class="action-agent-info">' +
+              '<h4>' + escapeHtml(action.agentName) + '</h4>' +
+              '<span class="ens">' + escapeHtml(action.ens) + '</span>' +
+            '</div>' +
+          '</div>' +
+          '<span class="action-type-badge ' + action.type + '">' + action.type.toUpperCase() + '</span>' +
+          (action.isLiveDemo
+            ? '<span class="live-demo-badge">&#x26A1; LIVE EIP-712</span>'
+            : '') +
+        '</div>' +
+        '<div class="action-details">' +
+          '<div class="detail-item">' +
+            '<span class="detail-label">Description</span>' +
+            '<span class="detail-value">' + escapeHtml(action.description) + '</span>' +
+          '</div>' +
+          '<div class="detail-item">' +
+            '<span class="detail-label">Value</span>' +
+            '<span class="detail-value eth">' + action.valueEth + ' ETH</span>' +
+            '<span class="detail-value usd">$' + action.valueUsd + '</span>' +
+          '</div>' +
+          '<div class="detail-item">' +
+            '<span class="detail-label">Destination</span>' +
+            '<span class="detail-value">' + escapeHtml(action.to) + '</span>' +
+          '</div>' +
+          '<div class="detail-item">' +
+            '<span class="detail-label">Agent ID</span>' +
+            '<span class="detail-value" style="color: var(--text-dim);">' + escapeHtml(action.agentId) + '</span>' +
+          '</div>' +
+        '</div>' +
+        '<div class="status-checks">' +
+          '<span class="status-check ' + policyClass + '">' + policyIcon + ' Policy: ' + action.policyCheck + '</span>' +
+          '<span class="status-check ' + zkClass + '">' + zkIcon + ' ZK Proof: ' + action.zkProof + '</span>' +
+        '</div>' +
+        '<div class="action-buttons">' +
+          '<button class="btn-reject" onclick="rejectAction(\'' + action.id + '\')" ' + (!ledgerConnected ? 'disabled' : '') + '>&#x2717; Reject</button>' +
+          '<button class="btn-approve" onclick="approveAction(\'' + action.id + '\')" ' + (!canApprove ? 'disabled' : '') + '>&#x2714; Approve</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// =====================================================
+// APPROVE / REJECT
+// =====================================================
+function approveAction(actionId) {
+  const action = pendingActions.find(a => a.id === actionId);
+  if (!action || !ledgerConnected) return;
+
+  currentSigningAction = action;
+
+  // Populate modal
+  document.getElementById('modal-action').textContent = action.type.toUpperCase() + ': ' + action.description;
+  document.getElementById('modal-agent').textContent = action.agentName + ' (' + action.agentId + ')';
+  document.getElementById('modal-to').textContent = action.to;
+  document.getElementById('modal-value').textContent = action.valueEth + ' ETH (~$' + action.valueUsd + ')';
+  document.getElementById('modal-gas').textContent = action.gasLimit;
+  document.getElementById('modal-chain').textContent = action.chain;
+
+  // Show modal
+  document.getElementById('modal-overlay').classList.add('active');
+  document.getElementById('signing-spinner').classList.remove('active');
+  document.getElementById('btn-modal-confirm').disabled = false;
+}
+
+async function confirmSign() {
+  if (!currentSigningAction) return;
+
+  const btn = document.getElementById('btn-modal-confirm');
+  const spinner = document.getElementById('signing-spinner');
+
+  btn.disabled = true;
+  spinner.classList.add('active');
+
+  const action = currentSigningAction;
+
+  // Build EIP-712 message matching backend ApprovalAction struct
+  const nonce = Math.floor(Math.random() * 2 ** 32);
+  const timestamp = Math.floor(Date.now() / 1000);
+  const valueWei = Math.round(parseFloat(action.valueEth || '0') * 1e18);
+
+  const typedData = {
+    domain: EIP712_DOMAIN,
+    types: EIP712_TYPES,
+    primaryType: 'ApprovalAction',
+    message: {
+      description: action.description,
+      value_wei:   valueWei,
+      nonce:       nonce,
+      timestamp:   timestamp,
+    },
+  };
+
+  let signature = null;
+  let txHash = null;
+
+  try {
+    if (_ethApp && !simulatedMode) {
+      // ── Real Ledger path ────────────────────────────────────────────────
+      // We use signEIP712HashedMessage to completely bypass hw-app-eth's API fetching mechanism,
+      // avoiding CORS / 403 Forbidden errors which block the popup.
+      const domainHash = ethers.TypedDataEncoder.hashDomain(typedData.domain);
+      const messageHash = ethers.TypedDataEncoder.hashStruct(typedData.primaryType, typedData.types, typedData.message);
+
+      // Passed hashes must not contain the '0x' prefix for Ledger.
+      const result = await _ethApp.signEIP712HashedMessage(
+        DERIVE_PATH,
+        domainHash.substring(2),
+        messageHash.substring(2)
+      );
+
+      // result: { v, r, s } — assemble hex signature
+      const vHex = (result.v).toString(16).padStart(2, '0');
+      signature = '0x' + result.r + result.s + vHex;
+
+      // POST to backend
+      txHash = await postApproval(action.id, signature, _ledgerAddress, typedData);
+
+    } else {
+      // ── Simulated path ──────────────────────────────────────────────────
+      await new Promise(r => setTimeout(r, 2000));
+      signature = '0xSIMULATED';
+      txHash = await postApproval(action.id, signature, '0xsimulated', typedData);
+    }
+
+    // Record in history — show truncated real signature for live signings
+    const sigDisplay = signature && signature !== '0xSIMULATED'
+      ? signature.slice(0, 14) + '...'
+      : '(simulated)';
+    approvalHistory.unshift({
+      time: 'Just now',
+      agent: action.agentName,
+      action: action.type.charAt(0).toUpperCase() + action.type.slice(1),
+      value: action.valueEth + ' ETH',
+      result: 'approved',
+      txHash: txHash || sigDisplay,
+    });
+
+    pendingActions = pendingActions.filter(a => a.id !== action.id);
+    renderPendingActions();
+    renderHistory();
+    closeModal();
+    const label = signature && signature !== '0xSIMULATED'
+      ? '&#x2705; Signed on Ledger &mdash; <code>' + sigDisplay + '</code>'
+      : '&#x2705; Action approved (simulated)';
+    showToast(label, 'success', 7000);
+
+  } catch (err) {
+    spinner.classList.remove('active');
+    btn.disabled = false;
+
+    const msg = err?.message || String(err);
+    if (msg.toLowerCase().includes('denied') || msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('user refused') || msg.includes('0x6985')) {
+      showToast('&#x274C; Rejected on Ledger device. Action stays pending.', 'error', 5000);
+      closeModal();
+    } else {
+      showToast('&#x26A0;&#xFE0F; Signing error: ' + msg, 'error', 0);
+    }
+  }
+
+  currentSigningAction = null;
+}
+
+function rejectAction(actionId) {
+  const action = pendingActions.find(a => a.id === actionId);
+  if (!action || !ledgerConnected) return;
+
+  // Fire-and-forget to backend
+  postRejection(actionId).catch(() => {/* backend optional */});
+
+
+  approvalHistory.unshift({
+    time: 'Just now',
+    agent: action.agentName,
+    action: action.type.charAt(0).toUpperCase() + action.type.slice(1),
+    value: action.valueEth + ' ETH',
+    result: 'rejected',
+    txHash: '---',
+  });
+
+  pendingActions = pendingActions.filter(a => a.id !== actionId);
+  renderPendingActions();
+  renderHistory();
+  showToast('&#x2717; Action rejected.', 'warn', 4000);
+}
+
+// =====================================================
+// MODAL
+// =====================================================
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('active');
+  document.getElementById('signing-spinner').classList.remove('active');
+  currentSigningAction = null;
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal-overlay')) {
+    closeModal();
+  }
+}
+
+
+
+
+// =====================================================
+// HISTORY
+// =====================================================
+function renderHistory() {
+  const tbody = document.getElementById('history-body');
+  const data = approvalHistory.length > 0 ? [...approvalHistory, ...MOCK_HISTORY] : MOCK_HISTORY;
+
+  tbody.innerHTML = data.map(h => {
+    const resultClass = h.result === 'approved' ? 'result-approved' : 'result-rejected';
+    return (
+      '<tr>' +
+        '<td>' + escapeHtml(h.time)   + '</td>' +
+        '<td>' + escapeHtml(h.agent)  + '</td>' +
+        '<td>' + escapeHtml(h.action) + '</td>' +
+        '<td>' + escapeHtml(h.value)  + '</td>' +
+        '<td class="' + resultClass + '">' + h.result.charAt(0).toUpperCase() + h.result.slice(1) + '</td>' +
+        '<td class="tx-hash">' + escapeHtml(h.txHash) + '</td>' +
+      '</tr>'
+    );
+  }).join('');
+}
+
+// =====================================================
+// BACKEND API HELPERS
+// =====================================================
+async function postApproval(actionId, signature, signer, typedData) {
+  if (typeof PocAPI === 'undefined' || !PocAPI.isConnected()) return null;
+  try {
+    const conn = PocAPI.getConnection();
+    const resp = await fetch(conn.url + '/api/approve-action', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (localStorage.getItem('poc_gateway_token') || ''),
+      },
+      body: JSON.stringify({ action_id: actionId, signature, signer, typed_data: typedData }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.tx_hash || null;
+  } catch {
+    return null;
+  }
+}
+
+async function postRejection(actionId) {
+  if (typeof PocAPI === 'undefined' || !PocAPI.isConnected()) return;
+  const conn = PocAPI.getConnection();
+  await fetch(conn.url + '/api/reject-action', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (localStorage.getItem('poc_gateway_token') || ''),
+    },
+    body: JSON.stringify({ action_id: actionId }),
+  });
+}
+
+// =====================================================
+// LEDGER WAITING MODAL
+// =====================================================
+let _pollTimer = null;
+
+function showLedgerWaiting(transport, Eth, reason) {
+  const overlay = document.getElementById('ledger-waiting-overlay');
+  const statusEl = document.getElementById('ledger-wait-status');
+  overlay.style.display = 'flex';
+
+  statusEl.textContent = reason === 'locked'
+    ? 'Unlock your device with PIN…'
+    : 'Open the Ethereum app on your Ledger…';
+
+  clearInterval(_pollTimer);
+  _pollTimer = setInterval(async () => {
+    try {
+      const eth = new Eth(transport);
+      const { address } = await eth.getAddress(DERIVE_PATH, false, false);
+      clearInterval(_pollTimer);
+      overlay.style.display = 'none';
+      _ethApp = eth;
+      _ledgerAddress = address;
+      const productName = transport.device?.productName || 'Ledger Device';
+      onLedgerConnected(productName, address, false);
+    } catch (e) {
+      const m = e?.message || '';
+      if (m.includes('0x5515') || m.toLowerCase().includes('locked')) {
+        statusEl.textContent = 'Unlock your device with PIN…';
+      } else if (m.includes('0x6511') || m.includes('0x6d00') || m.includes('0x6e00')) {
+        statusEl.textContent = 'Open the Ethereum app on your Ledger…';
+      }
+      // keep polling
+    }
+  }, 2000);
+}
+
+function closeLedgerWaiting(resetBtn) {
+  clearInterval(_pollTimer);
+  _pollTimer = null;
+  _openTransport = null; // force fresh picker next time
+  document.getElementById('ledger-waiting-overlay').style.display = 'none';
+  if (resetBtn) {
+    const btn = document.getElementById('btn-connect-ledger');
+    btn.disabled = false;
+    btn.innerHTML = '&#x1F517; Connect Ledger';
+  }
+}
+
+// =====================================================
+// ESC KEY — unified handler for all modals
+// =====================================================
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('ledger-waiting-overlay').style.display === 'flex') {
+    closeLedgerWaiting(true);
+  } else {
+    closeModal();
+  }
+});
+function showToast(msg, type = 'info', duration = 5000) {
+  const el = document.getElementById('toast');
+  const colors = {
+    success: { bg: 'rgba(0,230,118,0.12)', border: 'rgba(0,230,118,0.35)', color: 'var(--green)' },
+    error:   { bg: 'rgba(255,61,90,0.12)', border: 'rgba(255,61,90,0.35)',  color: 'var(--red)' },
+    warn:    { bg: 'rgba(255,179,0,0.12)', border: 'rgba(255,179,0,0.35)',  color: 'var(--amber)' },
+    info:    { bg: 'rgba(0,229,255,0.08)', border: 'rgba(0,229,255,0.25)',  color: 'var(--cyan)' },
+  };
+  const c = colors[type] || colors.info;
+  el.style.background   = c.bg;
+  el.style.border       = '1px solid ' + c.border;
+  el.style.color        = c.color;
+  el.style.cursor       = 'pointer';
+  el.title              = 'Click to dismiss';
+  el.innerHTML = msg + '<span style="float:right;margin-left:1rem;opacity:0.6;">&#x2715;</span>';
+  el.style.display = 'block';
+  el.onclick = () => { el.style.display = 'none'; clearTimeout(el._timer); };
+  clearTimeout(el._timer);
+  if (duration > 0) {
+    el._timer = setTimeout(() => { el.style.display = 'none'; }, duration);
+  }
+  // duration=0 means sticky until clicked
+}
+
+// =====================================================
+// SIDEBAR TOGGLE
+// =====================================================
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-collapsed');
+}
+
+// =====================================================
+// INIT
+// =====================================================
+function init() {
+  renderHistory();
+  renderPendingActions();
+}
+
+init();
+
+</script>
+</body>
+</html>

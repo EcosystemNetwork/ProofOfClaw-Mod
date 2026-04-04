@@ -57,8 +57,40 @@ const PocAPI = (() => {
     return r.ok;
   }
 
+  // ── Spec validation ──
+  async function validateSpec(baseUrl) {
+    const results = {};
+    const check = async (name, method, path, body) => {
+      try {
+        const opts = { method, signal: AbortSignal.timeout(5000) };
+        if (body) {
+          opts.headers = { 'Content-Type': 'application/json' };
+          opts.body = JSON.stringify(body);
+        }
+        const r = await fetch(`${baseUrl}${path}`, opts);
+        if (!r.ok) return { ok: false, error: `HTTP ${r.status}` };
+        const contentType = r.headers.get('content-type') || '';
+        const data = contentType.includes('json') ? await r.json() : null;
+        return { ok: true, data };
+      } catch (e) {
+        return { ok: false, error: e.message };
+      }
+    };
+
+    results.health = await check('health', 'GET', '/health');
+    results.status = await check('status', 'GET', '/api/status');
+    results.activity = await check('activity', 'GET', '/api/activity');
+    results.proofs = await check('proofs', 'GET', '/api/proofs');
+    results.messages = await check('messages', 'GET', '/api/messages');
+    // Skip /api/chat — don't auto-send a message during validation
+
+    results.valid = results.health.ok && results.status.ok;
+    results.agentPreview = results.status.ok ? results.status.data : null;
+    return results;
+  }
+
   // ── Connect flow ──
-  async function connect(url) {
+  async function connect(url, origin) {
     // Normalize URL
     let baseUrl = url.replace(/\/+$/, '');
     if (!baseUrl.startsWith('http')) baseUrl = 'http://' + baseUrl;
@@ -82,7 +114,7 @@ const PocAPI = (() => {
     setConnection(conn);
 
     // Sync agent into poc_agents list
-    syncLiveAgent(status);
+    syncLiveAgent(status, origin || 'connected');
 
     return conn;
   }
@@ -103,7 +135,7 @@ const PocAPI = (() => {
   }
 
   // ── Sync live agent data into localStorage agents ──
-  function syncLiveAgent(status) {
+  function syncLiveAgent(status, origin) {
     let agents = getAgents();
     const idx = agents.findIndex(a => a.id === status.agent_id);
     const agentObj = {
@@ -111,7 +143,6 @@ const PocAPI = (() => {
       name: status.agent_id,
       ens: status.ens_name,
       type: 'openclaw-agent',
-      typeIcon: '\u27C1',
       network: status.network,
       skills: status.allowed_tools || [],
       allowedTools: status.allowed_tools || [],
@@ -119,8 +150,9 @@ const PocAPI = (() => {
       endpoints: (status.endpoint_allowlist || []).join(', '),
       status: 'online',
       live: true,
+      origin: origin || 'connected',
       deployedAt: new Date().toISOString(),
-      description: 'Live OpenClaw agent connected via API',
+      description: 'Live agent connected via API',
       stats: {
         actions: status.stats?.total_actions || 0,
         proofs: status.stats?.proofs_generated || 0,
@@ -145,18 +177,25 @@ const PocAPI = (() => {
     return `${h}h ${m}m`;
   }
 
+  // ── HTML escaping (XSS prevention) ──
+  function escHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  }
+
   // ── Connection status indicator (injects into sidebar) ──
   function renderConnectionBadge(container) {
     if (!container) return;
     const conn = getConnection();
     container.innerHTML = conn
-      ? `<div class="conn-badge connected" onclick="PocAPI.showDisconnectPrompt()">
-           <span class="conn-dot"></span>
-           <span class="conn-text">${conn.agentId}</span>
+      ? `<div class="conn-badge connected" role="status" aria-label="Connected to ${escHtml(conn.agentId)}" onclick="PocAPI.showDisconnectPrompt()">
+           <span class="conn-dot" aria-hidden="true"></span>
+           <span class="conn-text">${escHtml(conn.agentId)}</span>
            <span class="conn-label">LIVE</span>
          </div>`
-      : `<button class="conn-badge disconnected" onclick="PocAPI.showConnectModal()">
-           <span class="conn-dot"></span>
+      : `<button class="conn-badge disconnected" aria-label="Connect to OpenClaw agent" onclick="PocAPI.showConnectModal()">
+           <span class="conn-dot" aria-hidden="true"></span>
            <span class="conn-text">Connect OpenClaw</span>
          </button>`;
   }
@@ -168,16 +207,16 @@ const PocAPI = (() => {
     modal.id = 'poc-connect-modal';
     modal.className = 'poc-modal-overlay';
     modal.innerHTML = `
-      <div class="poc-modal">
+      <div class="poc-modal" role="dialog" aria-modal="true" aria-labelledby="poc-modal-title">
         <div class="poc-modal-header">
-          <h2>Connect OpenClaw Agent</h2>
-          <button class="poc-modal-close" onclick="PocAPI.hideConnectModal()">&times;</button>
+          <h2 id="poc-modal-title">Connect OpenClaw Agent</h2>
+          <button class="poc-modal-close" onclick="PocAPI.hideConnectModal()" aria-label="Close">&times;</button>
         </div>
         <div class="poc-modal-body">
           <p class="poc-modal-desc">Enter the API endpoint of your running Proof of Claw agent runtime.</p>
           <div class="poc-form-group">
-            <label>Agent API URL</label>
-            <input type="text" id="poc-connect-url" placeholder="http://localhost:8420" value="">
+            <label for="poc-connect-url">Agent API URL</label>
+            <input type="text" id="poc-connect-url" placeholder="http://localhost:8420" value="" autocomplete="url">
             <div class="poc-form-hint">Default port is 8420. Set API_PORT env var to change.</div>
           </div>
           <div id="poc-connect-error" class="poc-error" style="display:none;"></div>
@@ -190,7 +229,7 @@ const PocAPI = (() => {
         <div class="poc-modal-footer">
           <div class="poc-help-text">
             <strong>How to start your agent:</strong><br>
-            <code>cd agent && AGENT_ID=my-agent ENS_NAME=my.proofclaw.eth PRIVATE_KEY=0x... cargo run</code>
+            <code>cd agent && AGENT_ID=my-agent ENS_NAME=my.proofofclaw.eth PRIVATE_KEY=0x... cargo run</code>
           </div>
         </div>
       </div>`;
@@ -199,7 +238,8 @@ const PocAPI = (() => {
 
   function showConnectModal() {
     injectModal();
-    document.getElementById('poc-connect-modal').classList.add('active');
+    const modal = document.getElementById('poc-connect-modal');
+    modal.classList.add('active');
     document.getElementById('poc-connect-error').style.display = 'none';
     document.getElementById('poc-connect-success').style.display = 'none';
     document.getElementById('poc-btn-connect').disabled = false;
@@ -213,6 +253,10 @@ const PocAPI = (() => {
         urlInput.value = 'http://localhost:8420';
       }
     }
+
+    // Focus trap for accessibility
+    if (typeof trapFocus === 'function') trapFocus(modal.querySelector('.poc-modal'));
+    urlInput.focus();
   }
   function hideConnectModal() {
     const m = document.getElementById('poc-connect-modal');
@@ -239,7 +283,7 @@ const PocAPI = (() => {
 
     try {
       const conn = await connect(url);
-      succEl.textContent = `Connected to ${conn.agentId} (${conn.ens})`;
+      succEl.textContent = `Connected to ${conn.agentId || 'agent'} (${conn.ens || 'unknown'})`;
       succEl.style.display = 'block';
       btn.textContent = 'Connected!';
 
@@ -407,6 +451,7 @@ const PocAPI = (() => {
     fetchMessages,
     sendMessage,
     healthCheck,
+    validateSpec,
     showConnectModal,
     hideConnectModal,
     doConnect,

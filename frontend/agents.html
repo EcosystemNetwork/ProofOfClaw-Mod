@@ -4,230 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agents — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<meta name="description" content="Manage and deploy autonomous AI agents with cryptographic proof of behavior.">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg-primary: #06080d;
-  --bg-secondary: #0c1018;
-  --bg-card: #0f1520;
-  --bg-card-hover: #141c2a;
-  --cyan: #00e5ff;
-  --cyan-dim: #00a3b5;
-  --cyan-glow: rgba(0, 229, 255, 0.15);
-  --amber: #ffb300;
-  --amber-dim: #c68a00;
-  --amber-glow: rgba(255, 179, 0, 0.12);
-  --red: #ff3d5a;
-  --green: #00e676;
-  --purple: #b388ff;
-  --purple-glow: rgba(179, 136, 255, 0.15);
-  --text-primary: #e8ecf4;
-  --text-secondary: #8892a4;
-  --text-dim: #4a5568;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-cyan: rgba(0, 229, 255, 0.2);
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
-body {
-  font-family: var(--font-mono);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.6;
-  font-size: 14px;
-  overflow-x: hidden;
-}
-
-/* Scanline overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* Grid background */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ─── SIDEBAR ─── */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 240px;
-  height: 100vh;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  padding: 0;
-}
-
-.sidebar-logo {
-  padding: 24px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-}
-
-.sidebar-logo .claw-icon {
-  font-size: 28px;
-  color: var(--cyan);
-  text-shadow: 0 0 20px var(--cyan-glow);
-}
-
-.sidebar-logo .logo-text {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 16px;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 16px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sidebar-nav a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
-}
-
-.sidebar-nav a:hover {
-  color: var(--text-primary);
-  background: rgba(0,229,255,0.04);
-}
-
-.sidebar-nav a.active {
-  color: var(--cyan);
-  background: rgba(0,229,255,0.06);
-  border-left-color: var(--cyan);
-}
-
-.sidebar-nav a .nav-icon {
-  font-size: 18px;
-  width: 22px;
-  text-align: center;
-}
-
-.sidebar-bottom {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.btn-new-agent-sidebar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  background: linear-gradient(135deg, var(--cyan), #00b8d4);
-  color: #000;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-decoration: none;
-}
-
-.btn-new-agent-sidebar:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(0,229,255,0.3);
-}
-
-.sidebar-bottom .back-link {
-  text-align: center;
-  color: var(--text-dim);
-  font-size: 12px;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.sidebar-bottom .back-link:hover {
-  color: var(--text-secondary);
-}
-
-/* Sidebar collapse */
-.sidebar-toggle {
-  position: absolute;
-  top: 12px;
-  right: -14px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  z-index: 201;
-  transition: all 0.2s;
-}
-.sidebar-toggle:hover {
-  color: var(--cyan);
-  border-color: var(--border-cyan);
-  background: var(--bg-card);
-}
-
-.sidebar { transition: width 0.25s ease; }
-.topbar { transition: left 0.25s ease; }
-.main-content { transition: margin-left 0.25s ease; }
-
-body.sidebar-collapsed .sidebar { width: 60px; }
-body.sidebar-collapsed .sidebar .logo-text { display: none; }
-body.sidebar-collapsed .sidebar-logo { justify-content: center; padding: 24px 0; }
-body.sidebar-collapsed .sidebar-nav a { justify-content: center; padding: 12px 0; }
-body.sidebar-collapsed .sidebar-nav a .nav-icon { width: auto; font-size: 1.1rem; }
-body.sidebar-collapsed .sidebar-bottom { padding: 16px 8px; }
-body.sidebar-collapsed .btn-new-agent-sidebar { font-size: 0; padding: 12px; }
-body.sidebar-collapsed .btn-new-agent-sidebar::after { content: '+'; font-size: 1.2rem; font-weight: 700; }
-body.sidebar-collapsed .sidebar-bottom .back-link { display: none; }
-body.sidebar-collapsed .topbar { left: 60px; }
-body.sidebar-collapsed .main-content { margin-left: 60px; }
-body.sidebar-collapsed .sidebar-toggle { transform: rotate(180deg); }
-body.sidebar-collapsed #poc-connection-slot { display: none; }
-body.sidebar-collapsed .sidebar-nav a { font-size: 0; gap: 0; }
-body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
-
 /* ─── TOPBAR ─── */
 .topbar {
   position: fixed;
@@ -256,26 +40,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.badge {
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.badge-count {
-  background: rgba(0,229,255,0.1);
-  color: var(--cyan);
-  border: 1px solid var(--border-cyan);
-}
-
-.badge-event {
-  background: rgba(179,136,255,0.1);
-  color: var(--purple);
-  border: 1px solid rgba(179,136,255,0.2);
 }
 
 /* ─── MAIN CONTENT ─── */
@@ -372,6 +136,37 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   box-shadow: 0 4px 20px rgba(0,229,255,0.3);
 }
 
+/* ─── REGISTER DROPDOWN ─── */
+.register-dropdown { display: inline-block; }
+.register-menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 280px;
+  background: #0f1520;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 200;
+  padding: 6px;
+}
+.register-menu.open { display: block; }
+.register-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s;
+  color: inherit;
+}
+.register-menu-item:hover { background: rgba(255,255,255,0.04); }
+.register-menu-icon { font-size: 20px; flex-shrink: 0; width: 28px; text-align: center; }
+.register-menu-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.register-menu-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
 /* ─── AGENT GRID ─── */
 .agent-grid {
   display: grid;
@@ -413,8 +208,12 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   flex-shrink: 0;
+  color: var(--cyan);
+}
+.agent-avatar svg {
+  width: 26px;
+  height: 26px;
 }
 
 .agent-info {
@@ -453,32 +252,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-dot.online {
-  background: var(--green);
-  box-shadow: 0 0 8px rgba(0,230,118,0.5);
-}
-
-.status-dot.busy {
-  background: var(--amber);
-  box-shadow: 0 0 8px rgba(255,179,0,0.5);
-}
-
-.status-dot.offline {
-  background: var(--text-dim);
-}
-
-.status-dot.discovered {
-  background: var(--purple);
-  box-shadow: 0 0 8px var(--purple-glow);
 }
 
 .status-label {
@@ -541,6 +314,77 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   background: rgba(0,229,255,0.08);
 }
 
+/* ─── AGENT URL ROW ─── */
+.agent-url-row {
+  padding: 10px 16px;
+  margin: 8px 0;
+  background: rgba(0,229,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.agent-url-row .url-label {
+  font-size: 9px;
+  color: var(--cyan-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+}
+
+.agent-url-row .url-box {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.agent-url-row input {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+}
+
+.agent-url-row button,
+.agent-url-row a {
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-url-row button:hover,
+.agent-url-row a:hover {
+  border-color: var(--border-cyan);
+  color: var(--cyan);
+  background: rgba(0,229,255,0.08);
+}
+
+.agent-url-row a {
+  background: linear-gradient(135deg, var(--cyan), #00b8d4);
+  color: #000;
+  border: none;
+  font-weight: 700;
+}
+
+.agent-url-row a:hover {
+  background: linear-gradient(135deg, #00b8d4, var(--cyan));
+  color: #000;
+  box-shadow: 0 4px 12px rgba(0,229,255,0.3);
+}
+
 /* ─── EMPTY STATE ─── */
 .empty-state {
   text-align: center;
@@ -583,77 +427,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
 .btn-deploy-first:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 30px rgba(0,229,255,0.35);
-}
-
-/* ─── MODAL OVERLAY ─── */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(8px);
-  z-index: 200;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 40px 20px;
-  overflow-y: auto;
-}
-
-.modal-overlay.active {
-  display: flex;
-}
-
-.modal {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  width: 100%;
-  max-width: 760px;
-  position: relative;
-  animation: modalIn 0.3s ease;
-}
-
-@keyframes modalIn {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
-}
-
-.modal-header h2 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.modal-close {
-  width: 32px;
-  height: 32px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  border-color: var(--red);
-  color: var(--red);
-}
-
-.modal-body {
-  padding: 24px;
 }
 
 /* ─── WIZARD ─── */
@@ -734,10 +507,20 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
 }
 
 .type-option .type-emoji {
-  font-size: 24px;
   width: 36px;
-  text-align: center;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  color: var(--cyan);
+}
+.type-option .type-emoji svg {
+  width: 24px;
+  height: 24px;
+}
+.type-option.selected .type-emoji {
+  color: #fff;
 }
 
 .type-option .type-label {
@@ -752,56 +535,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   margin-top: 2px;
 }
 
-/* Form Controls */
-.form-group {
-  margin-bottom: 18px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-  border-color: var(--border-cyan);
-}
-
-.form-group input::placeholder,
-.form-group textarea::placeholder {
-  color: var(--text-dim);
-}
-
-.form-group textarea {
-  min-height: 80px;
-  resize: vertical;
-}
-
-.form-group select {
-  cursor: pointer;
-}
-
 .form-hint {
   font-size: 11px;
   color: var(--text-dim);
@@ -812,37 +545,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
-}
-
-/* Skill Tags */
-.skill-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.skill-tag {
-  padding: 6px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  user-select: none;
-}
-
-.skill-tag:hover {
-  border-color: var(--border-cyan);
-  color: var(--text-primary);
-}
-
-.skill-tag.selected {
-  background: rgba(0,229,255,0.1);
-  border-color: var(--cyan);
-  color: var(--cyan);
 }
 
 /* Checkboxes */
@@ -1204,7 +906,11 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  color: var(--cyan);
+}
+.profile-modal .profile-avatar svg {
+  width: 34px;
+  height: 34px;
 }
 
 .profile-modal .profile-info h3 {
@@ -1391,8 +1097,12 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
   flex-shrink: 0;
+  color: var(--cyan);
+}
+.chat-drawer-header .chat-agent-avatar svg {
+  width: 22px;
+  height: 22px;
 }
 .chat-drawer-header .chat-agent-info {
   flex: 1;
@@ -1563,8 +1273,12 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
   flex-shrink: 0;
+  color: var(--cyan);
+}
+.chat-typing-avatar svg {
+  width: 16px;
+  height: 16px;
 }
 .chat-typing-dots {
   display: flex;
@@ -1662,9 +1376,13 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   justify-content: center;
 }
 .chat-welcome .welcome-icon {
-  font-size: 48px;
   margin-bottom: 12px;
   opacity: 0.4;
+  color: var(--cyan);
+}
+.chat-welcome .welcome-icon svg {
+  width: 48px;
+  height: 48px;
 }
 .chat-welcome h3 {
   font-family: var(--font-display);
@@ -1703,34 +1421,51 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 900px) {
-  .sidebar { display: none; }
-  .topbar { left: 0; }
-  .main-content { margin-left: 0; }
+  .sidebar { transform: translateX(-100%); z-index: 300; }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .mobile-menu-btn { display: flex; }
+  .topbar { left: 0; padding: 0 16px; }
+  .main-content { margin-left: 0; padding: 20px 16px; }
+  .agent-grid { grid-template-columns: 1fr; }
   .type-grid { grid-template-columns: 1fr; }
   .form-row { grid-template-columns: 1fr; }
   .profile-stats-grid { grid-template-columns: repeat(2, 1fr); }
   .chat-drawer { width: 100vw; right: -100vw; }
+  .toolbar { gap: 8px; }
+  .btn-new-agent-top { font-size: 11px; padding: 6px 10px; }
+}
+
+@media (max-width: 480px) {
+  .main-content { padding: 16px 12px; }
+  .topbar { height: 52px; }
+  .main-content { margin-top: 52px; min-height: calc(100vh - 52px); }
+  .topbar-title { font-size: 16px; }
+  .agent-card { padding: 16px; }
+  .profile-stats-grid { grid-template-columns: 1fr 1fr; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .search-box { min-width: 100%; }
 }
 </style>
 </head>
 <body>
+<a href="#agent-grid" class="skip-link">Skip to agents</a>
 
 <!-- ═══════ SIDEBAR ═══════ -->
-<aside class="sidebar">
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
   <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
   <a href="index.html" class="sidebar-logo">
-    <span class="claw-icon">&#x27C1;</span>
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
     <span class="logo-text">Proof of Claw</span>
   </a>
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" aria-label="App navigation">
     <a href="agents.html" class="active">
       <span class="nav-icon">&#x2726;</span> Agents
     </a>
     <a href="dashboard.html">
       <span class="nav-icon">&#x25A3;</span> Dashboard
     </a>
-    <a href="dashboard.html?view=auth">
-      <span class="nav-icon">&#x1F512;</span> Auth
+    <a href="auth-modules.html">
+      <span class="nav-icon">&#x1F512;</span> Auth Modules
     </a>
     <a href="messages.html">
       <span class="nav-icon">&#x2709;</span> Messages
@@ -1738,37 +1473,89 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
     <a href="proofs.html">
       <span class="nav-icon">&#x2731;</span> Proofs
     </a>
+    <a href="kanban.html">
+      <span class="nav-icon">&#x25A0;</span> Kanban
+    </a>
+    <a href="soul-vault.html">
+      <span class="nav-icon">&#x2B23;</span> Soul Vault
+    </a>
+    <a href="approve.html">
+      <span class="nav-icon">&#x2714;</span> Approve
+    </a>
   </nav>
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
-    <button class="btn-new-agent-sidebar" onclick="openWizard()">+ New Agent</button>
-    <a href="index.html" class="back-link">Back to Home</a>
+    <a href="#" class="btn-new-agent" onclick="event.preventDefault();openWizard();">+ New Agent</a>
+    <a href="index.html" class="back-link btn-home">Back to Home</a>
   </div>
 </aside>
 
+<!-- Mobile sidebar overlay -->
+<div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
 <!-- ═══════ TOPBAR ═══════ -->
-<header class="topbar">
+<header class="topbar" role="banner">
+  <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
   <h1 class="topbar-title">Agent Command Center</h1>
   <div class="topbar-right">
     <span class="badge badge-count" id="agent-count-badge">0 agents</span>
+    <button id="wallet-connect-btn" class="btn-new-agent-top" style="background:transparent;border:1px solid var(--border-cyan);color:var(--cyan);margin-left:12px;" onclick="connectWalletUI()">
+      Connect Wallet
+    </button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:8px;margin-left:12px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);"></span>
+      <span class="status-dot online" style="display:inline-block;"></span>
+    </div>
 
   </div>
 </header>
 
 <!-- ═══════ MAIN CONTENT ═══════ -->
-<main class="main-content">
+<main class="main-content" role="main">
 
   <!-- Toolbar -->
   <div class="toolbar" id="toolbar" style="display:none;">
     <div class="search-box">
-      <input type="text" id="search-input" placeholder="Search agents by name, type, or ENS...">
+      <input type="text" id="search-input" placeholder="Search agents by name, type, or ENS..." aria-label="Search agents">
     </div>
     <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
     <button class="filter-btn" data-filter="online" onclick="setFilter('online', this)">Online</button>
     <button class="filter-btn" data-filter="busy" onclick="setFilter('busy', this)">Busy</button>
     <button class="filter-btn" data-filter="offline" onclick="setFilter('offline', this)">Offline</button>
-    <button class="btn-new-agent-top" onclick="lookupENS()" style="background:transparent;border:1px solid var(--border-cyan);color:var(--cyan);">Lookup ENS</button>
-    <button class="btn-new-agent-top" onclick="openWizard()">New Agent +</button>
+    <div class="register-dropdown" style="position:relative;">
+      <a href="#" class="btn-new-agent-top" style="background:linear-gradient(135deg,var(--cyan),#00b8d4);color:#000;font-weight:700;" onmouseenter="showRegisterMenu()" onclick="event.preventDefault();showRegisterMenu();">Register Agent &#x25BE;</a>
+      <div id="register-menu" class="register-menu" onmouseleave="hideRegisterMenu()">
+        <div class="register-menu-item" onclick="hideRegisterMenu();openWizard();" style="cursor:pointer;">
+          <span class="register-menu-icon" style="color:#bb86fc;">&#x2B23;</span>
+          <div>
+            <div class="register-menu-title">Register Identity</div>
+            <div class="register-menu-desc">Claim on-chain identity (ENS, policy, iNFT)</div>
+          </div>
+        </div>
+        <div class="register-menu-item" onclick="hideRegisterMenu();openConnectModal();" style="cursor:pointer;">
+          <span class="register-menu-icon" style="color:var(--green);">&#x1F50C;</span>
+          <div>
+            <div class="register-menu-title">Connect Existing Agent</div>
+            <div class="register-menu-desc">Link a running agent (any framework)</div>
+          </div>
+        </div>
+        <div class="register-menu-item" onclick="hideRegisterMenu();openWizard();" style="cursor:pointer;">
+          <span class="register-menu-icon" style="color:var(--cyan);">&#x2699;</span>
+          <div>
+            <div class="register-menu-title">Deploy IronClaw</div>
+            <div class="register-menu-desc">Full Rust/IronClaw agent deployment</div>
+          </div>
+        </div>
+        <div style="border-top:1px solid var(--border);margin:4px 0;"></div>
+        <div class="register-menu-item" onclick="hideRegisterMenu();showSwarmCreation();" style="cursor:pointer;">
+          <span class="register-menu-icon" style="color:var(--amber);">&#x2B21;</span>
+          <div>
+            <div class="register-menu-title">Create Swarm</div>
+            <div class="register-menu-desc">Add a new team to your organization</div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Agent Grid -->
@@ -1777,19 +1564,23 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   <!-- Empty State -->
   <div class="empty-state" id="empty-state" style="display:none;">
     <div class="empty-icon">&#x27C1;</div>
-    <h2>No agents deployed yet</h2>
-    <p>Deploy your first autonomous AI agent with cryptographic proof of behavior.</p>
-    <button class="btn-deploy-first" onclick="openWizard()">Deploy Your First Agent</button>
+    <h2>No agents yet</h2>
+    <p>Register an agent to get started, then connect or deploy it.</p>
+    <button class="btn-deploy-first" onclick="openWizard()" style="display:inline-block;margin-top:20px;cursor:pointer;">Register Agent</button>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:16px;">
+      <button class="btn-deploy-first" onclick="openConnectModal()" style="background:rgba(0,230,118,0.08);border:1px solid rgba(0,230,118,0.3);color:var(--green);font-size:12px;padding:8px 20px;">Connect Existing Agent</button>
+      <button class="btn-deploy-first" onclick="openWizard()" style="background:rgba(0,229,255,0.08);border:1px solid rgba(0,229,255,0.3);color:var(--cyan);font-size:12px;padding:8px 20px;">Deploy IronClaw</button>
+    </div>
   </div>
 
 </main>
 
 <!-- ═══════ NEW AGENT WIZARD MODAL ═══════ -->
-<div class="modal-overlay" id="wizard-modal">
+<div class="modal-overlay" id="wizard-modal" role="dialog" aria-modal="true" aria-labelledby="wizard-modal-title">
   <div class="modal">
     <div class="modal-header">
       <h2 id="wizard-modal-title">Deploy New Agent</h2>
-      <button class="modal-close" onclick="closeWizard()">&times;</button>
+      <button class="modal-close" onclick="closeWizard()" aria-label="Close wizard">&times;</button>
     </div>
     <div class="modal-body" id="wizard-body">
 
@@ -1800,7 +1591,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
         <div class="wizard-step-dot" data-step="3"></div>
         <div class="wizard-step-dot" data-step="4"></div>
         <div class="wizard-step-dot" data-step="5"></div>
-        <div class="wizard-step-dot" data-step="6"></div>
       </div>
 
       <!-- Step 1: Agent Type -->
@@ -1815,17 +1605,32 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
         <div class="wizard-step-title">Agent Identity</div>
         <div class="wizard-step-subtitle">Define your agent's on-chain identity</div>
         <div class="form-group">
+          <label>Swarm (Team)</label>
+          <div style="display:flex;gap:8px;">
+            <select id="agent-swarm" style="flex:1;">
+              <option value="">Select a swarm...</option>
+            </select>
+            <button class="btn-wizard btn-wizard-next" style="padding:10px 16px;font-size:11px;white-space:nowrap;" onclick="showSwarmCreation()">+ New</button>
+          </div>
+          <div class="form-hint">Agents are registered under a swarm (team) within your organization</div>
+        </div>
+        <div class="form-group">
           <label>Agent Name</label>
           <input type="text" id="agent-name" placeholder="e.g. defi-optimizer">
         </div>
         <div class="form-group">
           <label>ENS Subdomain</label>
-          <input type="text" id="agent-ens" placeholder="e.g. my-agent.proofclaw.eth">
-          <div class="form-hint">Enter a full ENS name or it will auto-generate as name.proofclaw.eth</div>
+          <input type="text" id="agent-ens" placeholder="auto-generated" readonly style="color:var(--cyan);background:var(--bg-primary);">
+          <div class="form-hint" id="ens-hint">Name.Swarm.Org.eth — auto-generated from your selections above</div>
         </div>
         <div class="form-group">
           <label>Description</label>
           <textarea id="agent-desc" placeholder="What does this agent do?"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Skills</label>
+          <input type="text" id="agent-skills" placeholder="e.g. solidity, defi-protocols, zk-proofs">
+          <div class="form-hint">Comma-separated list of capabilities. Shown on your agent's profile.</div>
         </div>
         <div class="form-group">
           <label>Network</label>
@@ -1838,33 +1643,8 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
         </div>
       </div>
 
-      <!-- Step 3: Skills -->
+      <!-- Step 3: Policy -->
       <div class="wizard-panel" id="step-3">
-        <div class="wizard-step-title">Skills &amp; Capabilities</div>
-        <div class="wizard-step-subtitle">Choose capabilities and define the agent's persona</div>
-        <div class="form-group">
-          <label>Skill Tags</label>
-          <div class="skill-tags" id="skill-tags"></div>
-        </div>
-        <div class="form-group">
-          <label>Custom Skill</label>
-          <div style="display:flex;gap:8px;">
-            <input type="text" id="custom-skill" placeholder="Add a custom skill...">
-            <button class="btn-wizard btn-wizard-next" style="padding:10px 16px;font-size:12px;" onclick="addCustomSkill()">Add</button>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Max Concurrent Tasks</label>
-          <input type="number" id="max-tasks" value="5" min="1" max="50">
-        </div>
-        <div class="form-group">
-          <label>SOUL Persona</label>
-          <textarea id="soul-persona" placeholder="Define the agent's personality, decision-making style, and behavioral guidelines..."></textarea>
-        </div>
-      </div>
-
-      <!-- Step 4: Policy -->
-      <div class="wizard-panel" id="step-4">
         <div class="wizard-step-title">Policy &amp; Security</div>
         <div class="wizard-step-subtitle">Define what your agent can and cannot do</div>
         <div class="form-group">
@@ -1891,14 +1671,15 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
         </div>
       </div>
 
-      <!-- Step 5: Secrets -->
-      <div class="wizard-panel" id="step-5">
+      <!-- Step 4: Secrets -->
+      <div class="wizard-panel" id="step-4">
         <div class="wizard-step-title">Secrets &amp; Keys</div>
         <div class="wizard-step-subtitle">Provide credentials for your agent (encrypted at rest)</div>
         <div class="form-group">
           <label>Private Key</label>
-          <input type="password" id="private-key" placeholder="0x...">
-          <div class="form-hint">Optional. Used for signing transactions. A demo keypair is generated if omitted.</div>
+          <input type="password" id="private-key" placeholder="0x..." oninput="validatePrivateKey()">
+          <div class="form-hint" id="pk-hint">Optional. Used for signing transactions. A demo keypair is generated if omitted.</div>
+          <div id="pk-error" style="display:none;font-size:11px;color:#ff3d5a;margin-top:4px;"></div>
         </div>
         <div class="form-group">
           <label>0G Compute API Key (Optional)</label>
@@ -1918,14 +1699,13 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
         </div>
       </div>
 
-      <!-- Step 6: Review -->
-      <div class="wizard-panel" id="step-6">
+      <!-- Step 5: Review -->
+      <div class="wizard-panel" id="step-5">
         <div class="wizard-step-title">Review &amp; Deploy</div>
         <div class="wizard-step-subtitle">Confirm your agent configuration</div>
 
         <div id="review-content">
           <div class="review-section" id="review-identity"></div>
-          <div class="review-section" id="review-capabilities"></div>
           <div class="review-section" id="review-policy"></div>
 
           <div class="review-section">
@@ -1949,14 +1729,14 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
           <div class="wizard-step-title" style="margin-bottom:4px;">Deploying Agent...</div>
           <div class="wizard-step-subtitle" style="margin-bottom:16px;">This may take a moment</div>
           <div class="deploy-steps" id="deploy-steps">
-            <div class="deploy-step-item" data-deploy="encrypt"><span class="step-icon">&#x25E6;</span> Encrypting secrets with AES-256-GCM</div>
-            <div class="deploy-step-item" data-deploy="ens"><span class="step-icon">&#x25E6;</span> Registering ENS subdomain</div>
-            <div class="deploy-step-item" data-deploy="contract"><span class="step-icon">&#x25E6;</span> Deploying policy contract</div>
-            <div class="deploy-step-item" data-deploy="inft"><span class="step-icon">&#x25E6;</span> Minting agent iNFT on 0G Chain (ERC-7857)</div>
-            <div class="deploy-step-item" data-deploy="storage"><span class="step-icon">&#x25E6;</span> Uploading encrypted metadata to 0G Storage</div>
-            <div class="deploy-step-item" data-deploy="runtime"><span class="step-icon">&#x25E6;</span> Initializing agent runtime</div>
-            <div class="deploy-step-item" data-deploy="og"><span class="step-icon">&#x25E6;</span> Configuring 0G decentralized compute</div>
-            <div class="deploy-step-item" data-deploy="start"><span class="step-icon">&#x25E6;</span> Starting agent</div>
+            <div class="deploy-step-item" data-deploy="encrypt"><span class="step-icon">&#x25E6;</span> Preparing agent configuration</div>
+            <div class="deploy-step-item" data-deploy="wallet"><span class="step-icon">&#x25E6;</span> Connecting wallet</div>
+            <div class="deploy-step-item" data-deploy="network"><span class="step-icon">&#x25E6;</span> Switching to target network</div>
+            <div class="deploy-step-item" data-deploy="inft"><span class="step-icon">&#x25E6;</span> Minting agent iNFT (ERC-7857)</div>
+            <div class="deploy-step-item" data-deploy="registry"><span class="step-icon">&#x25E6;</span> Registering in identity registry</div>
+            <div class="deploy-step-item" data-deploy="storage"><span class="step-icon">&#x25E6;</span> Storing encrypted metadata</div>
+            <div class="deploy-step-item" data-deploy="finalize"><span class="step-icon">&#x25E6;</span> Finalizing deployment</div>
+            <div class="deploy-step-item" data-deploy="complete"><span class="step-icon">&#x25E6;</span> Complete!</div>
           </div>
         </div>
 
@@ -1978,13 +1758,56 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
 </div>
 
 <!-- ═══════ AGENT PROFILE MODAL ═══════ -->
-<div class="modal-overlay" id="profile-modal">
+<div class="modal-overlay" id="profile-modal" role="dialog" aria-modal="true">
   <div class="modal profile-modal" style="max-width:580px;">
     <div class="modal-header">
       <h2>Agent Profile</h2>
-      <button class="modal-close" onclick="closeProfile()">&times;</button>
+      <button class="modal-close" onclick="closeProfile()" aria-label="Close wizard">&times;</button>
     </div>
     <div class="modal-body" id="profile-body"></div>
+  </div>
+</div>
+
+<!-- ═══════ CONNECT AGENT MODAL ═══════ -->
+<div class="modal-overlay" id="connect-agent-modal" role="dialog" aria-modal="true">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <h2>Connect External Agent</h2>
+      <button class="modal-close" onclick="closeConnectModal()" aria-label="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text-secondary);font-size:13px;margin-bottom:20px;line-height:1.6;">
+        Connect any agent that implements the <a href="docs.html#agent-api-spec" style="color:var(--cyan);">Proof of Claw Agent API</a>.
+        Works with Python, Node, Go, Rust, or any framework.
+      </p>
+      <div class="form-group">
+        <label>Agent API URL</label>
+        <input type="text" id="connect-url-input" placeholder="http://localhost:8420" autocomplete="url"
+               style="width:100%;padding:10px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text-primary);font-family:var(--font-mono);font-size:13px;">
+        <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">Default port is 8420. Your agent must have CORS enabled.</div>
+      </div>
+
+      <!-- Validation Results -->
+      <div id="connect-validation" style="display:none;margin-top:16px;">
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Endpoint Validation</div>
+        <div id="connect-checklist" style="display:flex;flex-direction:column;gap:4px;"></div>
+      </div>
+
+      <!-- Agent Preview -->
+      <div id="connect-preview" style="display:none;margin-top:16px;padding:16px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Agent Preview</div>
+        <div id="connect-preview-content"></div>
+      </div>
+
+      <!-- Error -->
+      <div id="connect-error" style="display:none;margin-top:12px;padding:10px 14px;background:rgba(255,61,90,0.08);border:1px solid rgba(255,61,90,0.3);border-radius:6px;color:#ff3d5a;font-size:12px;"></div>
+
+      <div style="display:flex;gap:8px;margin-top:20px;">
+        <button id="connect-validate-btn" class="btn-wizard btn-wizard-next" style="flex:1;padding:10px;font-size:13px;" onclick="doValidateAgent()">Validate</button>
+        <button id="connect-confirm-btn" class="btn-wizard btn-wizard-next" style="flex:1;padding:10px;font-size:13px;background:linear-gradient(135deg,var(--green),#00c853);display:none;" onclick="doConfirmConnect()" disabled>Connect</button>
+        <button class="btn-wizard btn-wizard-back" style="padding:10px 20px;font-size:13px;" onclick="closeConnectModal()">Cancel</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -2007,29 +1830,50 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   </div>
 </div>
 
-<script>
+<script src="crypto.js"></script>
+<script type="module" src="viem-client.js"></script>
+<script type="module" src="config-validator.js"></script>
+<script type="module" src="0g-registration.js"></script>
+<script src="wallet.js"></script>
+<script src="shared.js"></script>
+<script type="module">
+import { configValidator, generateENS } from './config-validator.js';
+import { agentRegistration, ZERO_G_CONFIG } from './0g-registration.js';
+
 // ═══════════════════════════════════════
 // DATA & STATE
 // ═══════════════════════════════════════
 
+const AGENT_SVGS = {
+  'full-stack-dev': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20" opacity="0.5"/></svg>`,
+  'blockchain-research': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><line x1="15" y1="15" x2="21" y2="21"/><path d="M10 7v6l3 3" opacity="0.5"/></svg>`,
+  'security-auditor': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5.25-3.5 9.74-8 11-4.5-1.26-8-5.75-8-11V6l8-4z"/><polyline points="9 12 11 14 15 10" opacity="0.7"/></svg>`,
+  'defi-strategist': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
+  'data-analyst': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="4" height="7" rx="1" opacity="0.5"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1" opacity="0.7"/><line x1="2" y1="3" x2="2" y2="21"/><line x1="2" y1="21" x2="22" y2="21"/></svg>`,
+  'devops-engineer': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`,
+  'coordinator': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2" opacity="0.5"/><circle cx="20" cy="6" r="2" opacity="0.5"/><circle cx="4" cy="18" r="2" opacity="0.5"/><circle cx="20" cy="18" r="2" opacity="0.5"/><line x1="10" y1="10" x2="5.5" y2="7.5"/><line x1="14" y1="10" x2="18.5" y2="7.5"/><line x1="10" y1="14" x2="5.5" y2="16.5"/><line x1="14" y1="14" x2="18.5" y2="16.5"/></svg>`,
+  'frontend-specialist': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/><rect x="12" y="12" width="6" height="3" rx="0.5" opacity="0.5"/></svg>`,
+  'ml-engineer': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(120 12 12)"/><circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.4"/></svg>`,
+  'governance-agent': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20v-8"/><path d="M8 20v-8"/><path d="M16 20v-8"/><path d="M20 20v-8"/><path d="M12 20v-8" opacity="0.5"/><path d="M3 12l9-8 9 8"/></svg>`,
+  'openclaw-agent': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2" opacity="0.7"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg>`,
+};
+
 const AGENT_TYPES = [
-  { id: 'full-stack-dev', icon: '&#x1F4BB;', emoji: '\uD83D\uDCBB', name: 'Full-Stack Dev', desc: 'Build end-to-end dApps and smart contracts' },
-  { id: 'blockchain-research', icon: '&#x1F52C;', emoji: '\uD83D\uDD2C', name: 'Blockchain Research', desc: 'Analyze protocols, MEV, and on-chain data' },
-  { id: 'security-auditor', icon: '&#x1F512;', emoji: '\uD83D\uDD12', name: 'Security Auditor', desc: 'Audit smart contracts for vulnerabilities' },
-  { id: 'defi-strategist', icon: '&#x1F4C8;', emoji: '\uD83D\uDCC8', name: 'DeFi Strategist', desc: 'Optimize yield farming and liquidity' },
-  { id: 'data-analyst', icon: '&#x1F4CA;', emoji: '\uD83D\uDCCA', name: 'Data Analyst', desc: 'Analyze blockchain data and metrics' },
-  { id: 'devops-engineer', icon: '&#x2699;', emoji: '\u2699\uFE0F', name: 'DevOps Engineer', desc: 'Manage infrastructure and deployments' },
-  { id: 'coordinator', icon: '&#x1F30F;', emoji: '\uD83C\uDF0F', name: 'Coordinator', desc: 'Orchestrate multi-agent workflows' },
-  { id: 'frontend-specialist', icon: '&#x1F3A8;', emoji: '\uD83C\uDFA8', name: 'Frontend Specialist', desc: 'Build responsive web3 interfaces' },
-  { id: 'ml-engineer', icon: '&#x1F9E0;', emoji: '\uD83E\uDDE0', name: 'ML Engineer', desc: 'Train models on on-chain data patterns' },
-  { id: 'governance-agent', icon: '&#x1F3DB;', emoji: '\uD83C\uDFDB\uFE0F', name: 'Governance Agent', desc: 'Participate in DAO governance and voting' },
+  { id: 'full-stack-dev', name: 'Full-Stack Dev', desc: 'Build end-to-end dApps and smart contracts' },
+  { id: 'blockchain-research', name: 'Blockchain Research', desc: 'Analyze protocols, MEV, and on-chain data' },
+  { id: 'security-auditor', name: 'Security Auditor', desc: 'Audit smart contracts for vulnerabilities' },
+  { id: 'defi-strategist', name: 'DeFi Strategist', desc: 'Optimize yield farming and liquidity' },
+  { id: 'data-analyst', name: 'Data Analyst', desc: 'Analyze blockchain data and metrics' },
+  { id: 'devops-engineer', name: 'DevOps Engineer', desc: 'Manage infrastructure and deployments' },
+  { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrate multi-agent workflows' },
+  { id: 'frontend-specialist', name: 'Frontend Specialist', desc: 'Build responsive web3 interfaces' },
+  { id: 'ml-engineer', name: 'ML Engineer', desc: 'Train models on on-chain data patterns' },
+  { id: 'governance-agent', name: 'Governance Agent', desc: 'Participate in DAO governance and voting' },
 ];
 
-const SKILLS = [
-  'solidity', 'rust', 'typescript', 'python', 'smart-contracts',
-  'defi-protocols', 'zk-proofs', 'data-analysis', 'web3', 'security-audit',
-  'governance', 'frontend', 'devops', 'ml-ops', 'mev'
-];
+function agentSvg(typeId) {
+  return AGENT_SVGS[typeId] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
 
 // Demo agent that connects to the running local API
 const DEFAULT_AGENTS = [
@@ -2099,7 +1943,6 @@ function init() {
   }
   
   renderTypeGrid();
-  renderSkillTags();
   renderAgents();
   bindSearch();
   bindNameField();
@@ -2160,14 +2003,15 @@ function renderAgents() {
   grid.innerHTML = filtered.map(a => `
     <div class="agent-card" onclick="openChat('${a.id}')">
       <div class="agent-card-header">
-        <div class="agent-avatar">${a.typeIcon}</div>
+        <div class="agent-avatar">${agentSvg(a.type)}</div>
         <div class="agent-info">
           <div class="agent-name">${esc(a.name)}</div>
           <div class="agent-ens">${esc(a.ens)}</div>
           <div class="agent-meta">
             <span class="type-badge">${esc(a.type)}</span>
-            <span class="status-dot ${a.status}"></span>
-            <span class="status-label">${a.status}</span>
+            ${a.origin ? `<span class="origin-badge origin-${esc(a.origin)}">${esc(a.origin)}</span>` : ''}
+            <span class="status-dot ${esc(a.status)}"></span>
+            <span class="status-label">${esc(a.status)}</span>
           </div>
         </div>
       </div>
@@ -2185,8 +2029,18 @@ function renderAgents() {
           <div class="stat-label">Uptime</div>
         </div>
       </div>
-      ${a.address ? `<div style="font-size:10px;color:var(--text-dim);padding:0 16px;margin-top:-4px;margin-bottom:4px;font-family:var(--font-mono);word-break:break-all;">${a.address}</div>` : ''}
-      ${a.inftTokenId ? `<div style="font-size:10px;padding:0 16px;margin-bottom:4px;"><span style="color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:0.5px;">iNFT #${a.inftTokenId}</span></div>` : ''}
+      ${a.endpoints ? `
+      <div class="agent-url-row" onclick="event.stopPropagation();">
+        <div class="url-label">Message URL</div>
+        <div class="url-box">
+          <input type="text" value="${esc(a.endpoints)}" readonly id="url-${a.id}">
+          <button onclick="copyAgentUrl('${a.id}')" title="Copy URL">&#x2398;</button>
+          <a href="messages.html?agent=${a.id}&url=${encodeURIComponent(a.endpoints)}" title="Message this agent">&#x2709;</a>
+        </div>
+      </div>
+      ` : ''}
+      ${a.address ? `<div style="font-size:10px;color:var(--text-dim);padding:0 16px;margin-top:-4px;margin-bottom:4px;font-family:var(--font-mono);word-break:break-all;">${esc(a.address)}</div>` : ''}
+      ${a.inftTokenId ? `<div style="font-size:10px;padding:0 16px;margin-bottom:4px;"><span style="color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:0.5px;">iNFT #${esc(String(a.inftTokenId))}</span></div>` : ''}
       <div class="agent-actions" onclick="event.stopPropagation();">
         <a href="dashboard.html?agent=${a.id}">Dashboard</a>
         <a href="#" onclick="event.preventDefault();openProfile('${a.id}');">Profile</a>
@@ -2200,6 +2054,32 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}
+
+function copyAgentUrl(agentId) {
+  const input = document.getElementById('url-' + agentId);
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    if (btn) {
+      btn.innerHTML = '&#x2713;';
+      setTimeout(() => btn.innerHTML = '&#x2398;', 1500);
+    }
+  });
+}
+
+function copyProfileUrl(agentId) {
+  const input = document.getElementById('profile-url-' + agentId);
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    if (btn) {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    }
+  });
 }
 
 // ═══════════════════════════════════════
@@ -2235,18 +2115,34 @@ function openProfile(agentId) {
 
   document.getElementById('profile-body').innerHTML = `
     <div class="agent-profile-header">
-      <div class="profile-avatar">${a.typeIcon}</div>
+      <div class="profile-avatar">${agentSvg(a.type)}</div>
       <div class="profile-info">
         <h3>${esc(a.name)}</h3>
         <div class="ens">${esc(a.ens)}</div>
-        <div style="margin-top:4px;"><span class="type-badge">${esc(a.type)}</span> <span class="status-dot ${a.status}" style="display:inline-block;vertical-align:middle;margin-left:6px;"></span> <span class="status-label" style="font-size:11px;">${a.status}</span></div>
+        <div style="margin-top:4px;"><span class="type-badge">${esc(a.type)}</span> <span class="status-dot ${esc(a.status)}" style="display:inline-block;vertical-align:middle;margin-left:6px;"></span> <span class="status-label" style="font-size:11px;">${esc(a.status)}</span></div>
       </div>
     </div>
     ${a.description ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">${esc(a.description)}</p>` : ''}
-    ${a.address ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Address:</span> ${a.address}</div>` : ''}
-    ${a.policyHash ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Policy:</span> ${a.policyHash.slice(0, 18)}...</div>` : ''}
-    ${a.inftTokenId ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;">iNFT Token #${a.inftTokenId} on 0G Chain (ERC-7857)</div>` : ''}
-    ${a.imageId ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">RISC Zero Image:</span> ${a.imageId.slice(0, 18)}...</div>` : ''}
+    ${a.endpoints ? `
+    <div style="margin-bottom:16px;padding:12px;background:rgba(0,229,255,0.04);border:1px solid var(--border-cyan);border-radius:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:10px;color:var(--cyan-dim);text-transform:uppercase;letter-spacing:0.6px;">Agent Messaging URL</span>
+        <span style="font-size:10px;color:var(--green);">&#x2713; Connect to message</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" value="${esc(a.endpoints)}" readonly id="profile-url-${a.id}" style="flex:1;padding:8px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;outline:none;">
+        <button onclick="copyProfileUrl('${a.id}')" style="padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;cursor:pointer;font-family:var(--font-mono);">Copy</button>
+        <a href="messages.html?agent=${a.id}&url=${encodeURIComponent(a.endpoints)}" style="padding:8px 12px;background:linear-gradient(135deg,var(--cyan),#00b8d4);border:none;border-radius:6px;color:#000;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer;font-family:var(--font-mono);">Message</a>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-dim);line-height:1.5;">
+        Share this URL to allow others to message your agent via DM3 encrypted messaging.
+      </div>
+    </div>
+    ` : ''}
+    ${a.address ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Address:</span> ${esc(a.address)}</div>` : ''}
+    ${a.policyHash ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Policy:</span> ${esc(a.policyHash.slice(0, 18))}...</div>` : ''}
+    ${a.inftTokenId ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;">iNFT Token #${esc(String(a.inftTokenId))} on 0G Chain (ERC-7857)</div>` : ''}
+    ${a.imageId ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">RISC Zero Image:</span> ${esc(a.imageId.slice(0, 18))}...</div>` : ''}
     <div class="profile-stats-grid">
       <div class="profile-stat"><div class="val">${a.stats.actions}</div><div class="lbl">Total Actions</div></div>
       <div class="profile-stat"><div class="val">${autonomous}</div><div class="lbl">Autonomous</div></div>
@@ -2268,8 +2164,8 @@ function openProfile(agentId) {
         <button id="profile-edit-toggle" onclick="toggleProfileEdit('${a.id}')" style="font-size:10px;padding:3px 10px;background:rgba(0,229,255,0.1);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;font-family:var(--font-mono);">Edit</button>
       </div>
       <div id="profile-permissions-view">
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Tools:</span> ${(a.allowedTools || []).join(', ') || 'None'}</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Value Limit:</span> $${a.valueLimit || 0} USD</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Tools:</span> ${esc((a.allowedTools || []).join(', ') || 'None')}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Value Limit:</span> $${esc(String(a.valueLimit || 0))} USD</div>
         <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Endpoints:</span> ${esc(a.endpoints || 'Any')}</div>
         <div style="font-size:12px;color:var(--text-secondary);"><span style="color:var(--text-dim);width:100px;display:inline-block;">Network:</span> ${esc(a.network || 'sepolia')}</div>
       </div>
@@ -2384,7 +2280,7 @@ function deleteAgent(agentId) {
 
 function openWizard() {
   wizardStep = 1;
-  wizardData = { type: null, skills: [], allowedTools: ['swap_tokens', 'transfer', 'query'] };
+  wizardData = { type: null, allowedTools: ['swap_tokens', 'transfer', 'query'] };
   resetWizardUI();
   document.getElementById('wizard-modal').classList.add('active');
   updateWizardUI();
@@ -2399,10 +2295,8 @@ function resetWizardUI() {
   document.getElementById('agent-name').value = '';
   document.getElementById('agent-ens').value = '';
   document.getElementById('agent-desc').value = '';
+  document.getElementById('agent-skills').value = '';
   document.getElementById('agent-network').value = 'sepolia';
-  document.getElementById('custom-skill').value = '';
-  document.getElementById('max-tasks').value = '5';
-  document.getElementById('soul-persona').value = '';
   document.getElementById('value-limit').value = '100';
   document.getElementById('endpoints').value = '';
   document.getElementById('private-key').value = '';
@@ -2412,11 +2306,8 @@ function resetWizardUI() {
   // Reset type selection
   document.querySelectorAll('.type-option').forEach(t => t.classList.remove('selected'));
 
-  // Reset skill tags
-  document.querySelectorAll('.skill-tag').forEach(t => t.classList.remove('selected'));
-
   // Reset checkboxes
-  document.querySelectorAll('#step-4 input[type="checkbox"]').forEach(cb => cb.checked = true);
+  document.querySelectorAll('#step-3 input[type="checkbox"]').forEach(cb => cb.checked = true);
 
   // Reset deploy states
   document.getElementById('deploy-progress').classList.remove('active');
@@ -2434,7 +2325,7 @@ function resetWizardUI() {
 
 function updateWizardUI() {
   // Update panels
-  for (let i = 1; i <= 6; i++) {
+  for (let i = 1; i <= 5; i++) {
     const panel = document.getElementById('step-' + i);
     panel.classList.toggle('active', i === wizardStep);
   }
@@ -2453,7 +2344,7 @@ function updateWizardUI() {
 
   btnBack.style.visibility = wizardStep > 1 ? 'visible' : 'hidden';
 
-  if (wizardStep === 6) {
+  if (wizardStep === 5) {
     btnNext.textContent = 'Deploy Agent';
     btnNext.className = 'btn-wizard btn-wizard-deploy';
   } else {
@@ -2464,8 +2355,8 @@ function updateWizardUI() {
   // Validate current step
   validateStep();
 
-  // Build review if on step 6
-  if (wizardStep === 6) buildReview();
+  // Build review if on step 5
+  if (wizardStep === 5) buildReview();
 }
 
 function validateStep() {
@@ -2477,9 +2368,10 @@ function validateStep() {
       valid = wizardData.type !== null;
       break;
     case 2:
-      valid = document.getElementById('agent-name').value.trim().length > 0;
+      valid = document.getElementById('agent-name').value.trim().length > 0
+           && document.getElementById('agent-swarm').value.length > 0;
       break;
-    case 5:
+    case 4:
       valid = true; // Private key is optional — a demo keypair will be generated if omitted
       break;
   }
@@ -2493,7 +2385,7 @@ function wizardNext() {
   // Gather data from current step
   gatherStepData();
 
-  if (wizardStep === 6) {
+  if (wizardStep === 5) {
     startDeploy();
     return;
   }
@@ -2513,23 +2405,17 @@ function gatherStepData() {
   switch(wizardStep) {
     case 2:
       wizardData.name = document.getElementById('agent-name').value.trim();
-      const ensField = document.getElementById('agent-ens').value.trim();
-      const parentDomain = localStorage.getItem('poc_ens_domain') || 'proofclaw.eth';
-      wizardData.ens = ensField || (wizardData.name.toLowerCase().replace(/[^a-z0-9-]/g, '') + '.' + parentDomain);
+      wizardData.swarmId = document.getElementById('agent-swarm').value;
+      const slug = toSlug(wizardData.name);
+      wizardData.ens = wizardData.swarmId ? buildAgentENS(slug, wizardData.swarmId) : document.getElementById('agent-ens').value.trim();
       wizardData.description = document.getElementById('agent-desc').value.trim();
+      wizardData.skills = document.getElementById('agent-skills').value.trim()
+        .split(',').map(s => s.trim()).filter(Boolean);
       wizardData.network = document.getElementById('agent-network').value;
       break;
     case 3:
-      wizardData.skills = [];
-      document.querySelectorAll('.skill-tag.selected').forEach(t => {
-        wizardData.skills.push(t.dataset.skill);
-      });
-      wizardData.maxTasks = parseInt(document.getElementById('max-tasks').value) || 5;
-      wizardData.soulPersona = document.getElementById('soul-persona').value.trim();
-      break;
-    case 4:
       wizardData.allowedTools = [];
-      document.querySelectorAll('#step-4 input[type="checkbox"]:checked').forEach(cb => {
+      document.querySelectorAll('#step-3 input[type="checkbox"]:checked').forEach(cb => {
         wizardData.allowedTools.push(cb.value);
       });
       wizardData.valueLimit = parseInt(document.getElementById('value-limit').value) || 0;
@@ -2544,7 +2430,7 @@ function renderTypeGrid() {
   const grid = document.getElementById('type-grid');
   grid.innerHTML = AGENT_TYPES.map(t => `
     <div class="type-option" data-type="${t.id}" onclick="selectType('${t.id}', this)">
-      <span class="type-emoji">${t.icon}</span>
+      <span class="type-emoji">${agentSvg(t.id)}</span>
       <div>
         <div class="type-label">${t.name}</div>
         <div class="type-desc">${t.desc}</div>
@@ -2558,64 +2444,61 @@ function selectType(typeId, el) {
   el.classList.add('selected');
   wizardData.type = typeId;
   const typeObj = AGENT_TYPES.find(t => t.id === typeId);
-  wizardData.typeIcon = typeObj ? typeObj.emoji : '';
   wizardData.typeName = typeObj ? typeObj.name : '';
   validateStep();
+}
+
+// ─── Swarm Selector ───
+
+function refreshSwarmSelector() {
+  const sel = document.getElementById('agent-swarm');
+  if (!sel) return;
+  const swarms = getSwarms();
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Select a swarm...</option>' +
+    swarms.map(s => `<option value="${esc(s.id)}">${esc(s.name)} — ${esc(s.ens)}</option>`).join('');
+  if (prev && swarms.some(s => s.id === prev)) sel.value = prev;
+  updateAgentENS();
+}
+
+function updateAgentENS() {
+  const nameEl = document.getElementById('agent-name');
+  const ensEl = document.getElementById('agent-ens');
+  const swarmSel = document.getElementById('agent-swarm');
+  if (!nameEl || !ensEl || !swarmSel) return;
+
+  const slug = toSlug(nameEl.value);
+  const swarmId = swarmSel.value;
+
+  if (slug && swarmId) {
+    ensEl.value = buildAgentENS(slug, swarmId);
+  } else if (slug) {
+    const org = getOrg();
+    ensEl.value = slug + (org ? '.<swarm>.' + org.slug + '.proofofclaw.eth' : '.proofofclaw.eth');
+  } else {
+    ensEl.value = '';
+  }
 }
 
 // ─── Name field → ENS auto-gen ───
 
 function bindNameField() {
   const nameEl = document.getElementById('agent-name');
-  const ensEl = document.getElementById('agent-ens');
-  let ensManuallyEdited = false;
+  const swarmSel = document.getElementById('agent-swarm');
 
   nameEl.addEventListener('input', function() {
-    if (!ensManuallyEdited) {
-      const slug = this.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
-      const parentDomain = localStorage.getItem('poc_ens_domain') || 'proofclaw.eth';
-      ensEl.value = slug ? slug + '.' + parentDomain : '';
-    }
+    updateAgentENS();
     validateStep();
   });
 
-  ensEl.addEventListener('input', function() {
-    ensManuallyEdited = this.value.trim().length > 0;
-    validateStep();
-  });
-}
-
-// ─── Skill Tags ───
-
-function renderSkillTags() {
-  const container = document.getElementById('skill-tags');
-  container.innerHTML = SKILLS.map(s => `
-    <span class="skill-tag" data-skill="${s}" onclick="toggleSkill(this)">${s}</span>
-  `).join('');
-}
-
-function toggleSkill(el) {
-  el.classList.toggle('selected');
-}
-
-function addCustomSkill() {
-  const input = document.getElementById('custom-skill');
-  const val = input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
-  if (!val) return;
-  const container = document.getElementById('skill-tags');
-  // Check if already exists
-  if (container.querySelector(`[data-skill="${val}"]`)) {
-    container.querySelector(`[data-skill="${val}"]`).classList.add('selected');
-    input.value = '';
-    return;
+  if (swarmSel) {
+    swarmSel.addEventListener('change', function() {
+      updateAgentENS();
+      validateStep();
+    });
   }
-  const tag = document.createElement('span');
-  tag.className = 'skill-tag selected';
-  tag.dataset.skill = val;
-  tag.textContent = val;
-  tag.onclick = function() { toggleSkill(this); };
-  container.appendChild(tag);
-  input.value = '';
+
+  refreshSwarmSelector();
 }
 
 // ─── Review ───
@@ -2629,26 +2512,21 @@ function buildReview() {
     <div class="review-row"><span class="label">Name</span><span class="value">${esc(wizardData.name || '-')}</span></div>
     <div class="review-row"><span class="label">ENS</span><span class="value">${esc(wizardData.ens || '-')}</span></div>
     <div class="review-row"><span class="label">Type</span><span class="value">${esc(wizardData.typeName || '-')}</span></div>
+    <div class="review-row"><span class="label">Skills</span><span class="value">${esc((wizardData.skills || []).join(', ') || 'None')}</span></div>
     <div class="review-row"><span class="label">Network</span><span class="value">${esc({sepolia:'Sepolia',og_testnet:'0G Testnet',mainnet:'Ethereum Mainnet',og_mainnet:'0G Mainnet'}[wizardData.network] || wizardData.network)}</span></div>
-  `;
-
-  document.getElementById('review-capabilities').innerHTML = `
-    <h4>Capabilities</h4>
-    <div class="review-row"><span class="label">Skills</span><span class="value">${wizardData.skills.length > 0 ? wizardData.skills.map(s => esc(s)).join(', ') : 'None'}</span></div>
-    <div class="review-row"><span class="label">Max Tasks</span><span class="value">${wizardData.maxTasks || 5}</span></div>
   `;
 
   document.getElementById('review-policy').innerHTML = `
     <h4>Policy</h4>
-    <div class="review-row"><span class="label">Allowed Tools</span><span class="value">${wizardData.allowedTools.join(', ') || 'None'}</span></div>
-    <div class="review-row"><span class="label">Value Limit</span><span class="value">$${wizardData.valueLimit || 0}</span></div>
+    <div class="review-row"><span class="label">Allowed Tools</span><span class="value">${esc(wizardData.allowedTools.join(', ') || 'None')}</span></div>
+    <div class="review-row"><span class="label">Value Limit</span><span class="value">$${esc(String(wizardData.valueLimit || 0))}</span></div>
     <div class="review-row"><span class="label">Endpoints</span><span class="value">${esc(wizardData.endpoints || 'Any')}</span></div>
   `;
 }
 
 // ─── Deploy ───
 
-function startDeploy() {
+async function startDeploy() {
   const footer = document.getElementById('wizard-footer');
   const progress = document.getElementById('deploy-progress');
   const reviewContent = document.getElementById('review-content');
@@ -2662,9 +2540,10 @@ function startDeploy() {
   document.getElementById('wizard-modal-title').textContent = 'Deploying Agent...';
 
   const steps = document.querySelectorAll('.deploy-step-item');
-  let idx = 0;
+  let currentStep = 0;
 
-  function nextDeployStep() {
+  // Update step UI
+  function setStepActive(idx) {
     if (idx > 0) {
       steps[idx - 1].classList.remove('active');
       steps[idx - 1].classList.add('done');
@@ -2673,18 +2552,78 @@ function startDeploy() {
     if (idx < steps.length) {
       steps[idx].classList.add('active');
       steps[idx].querySelector('.step-icon').innerHTML = '\u25E6';
-      idx++;
-      setTimeout(nextDeployStep, 600 + Math.random() * 400);
-    } else {
-      // Done
-      setTimeout(deployComplete, 400);
     }
   }
 
-  nextDeployStep();
+  try {
+    // Step 1: Encrypt secrets (simulate)
+    setStepActive(0);
+    await new Promise(r => setTimeout(r, 500));
+
+    // Step 2: Connect wallet if needed
+    setStepActive(1);
+    if (!window.PocViem) {
+      throw new Error('Blockchain module not loaded. Please refresh and try again.');
+    }
+    const state = window.PocViem.getWalletState();
+    if (!state.connected) {
+      await connectWalletUI();
+      if (!walletState.connected) {
+        throw new Error('Wallet connection required for deployment');
+      }
+    }
+
+    // Step 3: Switch network
+    setStepActive(2);
+    const network = wizardData.network || 'sepolia';
+    await window.PocViem.switchNetwork(network);
+    window.PocViem.init(network);
+
+    // Step 4: Execute onchain deployment
+    setStepActive(3);
+    const deployResult = await doOnchainDeploy();
+
+    // Step 5-8: Complete remaining steps
+    for (let i = 4; i < steps.length; i++) {
+      setStepActive(i);
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    // Complete deployment
+    setTimeout(() => deployComplete(deployResult), 400);
+
+  } catch (error) {
+    // Show error in deploy progress
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'warning-box';
+    errorDiv.style.marginTop = '20px';
+    errorDiv.innerHTML = `<strong>Deployment Failed:</strong> ${esc(error.message)}`;
+    progress.appendChild(errorDiv);
+
+    // Show retry button
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'btn-wizard btn-wizard-next';
+    retryBtn.textContent = 'Retry';
+    retryBtn.style.marginTop = '16px';
+    retryBtn.onclick = () => {
+      errorDiv.remove();
+      retryBtn.remove();
+      footer.style.display = 'flex';
+      reviewContent.style.display = 'block';
+      wizardProgress.style.display = 'flex';
+      progress.classList.remove('active');
+      document.querySelectorAll('.deploy-step-item').forEach(s => {
+        s.classList.remove('active', 'done');
+        s.querySelector('.step-icon').innerHTML = '\u25E6';
+      });
+    };
+    progress.appendChild(retryBtn);
+  }
 }
 
-function deployComplete() {
+function deployComplete(deployResult) {
+  deployResult = deployResult || {};
+
   document.getElementById('deploy-progress').classList.remove('active');
   document.getElementById('deploy-success').classList.add('active');
   document.getElementById('wizard-modal-title').textContent = 'Agent Deployed!';
@@ -2692,7 +2631,7 @@ function deployComplete() {
   // Create agent
   const agentId = wizardData.name.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'agent-' + Date.now();
 
-  // Generate a demo address if no private key was provided
+  // Use real onchain data if available, otherwise fall back to demo
   const pkProvided = document.getElementById('private-key').value.trim().length > 0;
   const demoAddr = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
   const demoPolicyHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
@@ -2702,28 +2641,36 @@ function deployComplete() {
     id: agentId,
     name: wizardData.name,
     ens: wizardData.ens,
+    swarmId: wizardData.swarmId || null,
     type: wizardData.type,
-    typeIcon: wizardData.typeIcon,
     network: wizardData.network,
-    skills: wizardData.skills,
     allowedTools: wizardData.allowedTools,
     valueLimit: wizardData.valueLimit,
     endpoints: wizardData.endpoints,
     status: 'online',
     deployedAt: new Date().toISOString(),
     description: wizardData.description || '',
-    inftTokenId: Math.floor(Math.random() * 9000) + 1000,
-    policyHash: demoPolicyHash,
-    imageId: demoImageId,
-    address: demoAddr,
+    // Use real onchain data
+    inftTokenId: deployResult.tokenId || Math.floor(Math.random() * 9000) + 1000,
+    policyHash: deployResult.policyHash || demoPolicyHash,
+    imageId: deployResult.imageId || demoImageId,
+    address: deployResult.contractAddress || demoAddr,
+    txHash: deployResult.txHash,
     stats: { actions: 0, proofs: 0, uptime: '0m' }
   };
 
   agents.push(newAgent);
   saveAgents();
 
+  // Increment swarm agent count
+  if (wizardData.swarmId) {
+    const swarms = getSwarms();
+    const sw = swarms.find(s => s.id === wizardData.swarmId);
+    if (sw) { sw.agentCount = (sw.agentCount || 0) + 1; saveSwarms(swarms); }
+  }
+
   document.getElementById('success-message').textContent =
-    `${newAgent.name} (${newAgent.ens}) registered. Start your agent to connect.`;
+    `${newAgent.name} (${newAgent.ens}) registered on-chain. Start your agent to connect.`;
 
   // Build the cargo run command with the agent's actual config
   const pk = document.getElementById('private-key').value.trim() || '0x_YOUR_PRIVATE_KEY';
@@ -2760,7 +2707,19 @@ cargo run`;
     lastUrl: 'http://localhost:8420',
   });
 
+  // Build explorer link if txHash exists
+  const explorerUrl = deployResult.txHash && window.PocViem
+    ? window.PocViem.getExplorerUrl(deployResult.txHash, wizardData.network)
+    : null;
+
   document.getElementById('success-links').innerHTML = `
+    ${deployResult.txHash ? `
+    <div style="text-align:left;width:100%;margin-bottom:16px;padding:12px;background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.2);border-radius:8px;">
+      <div style="color:var(--green);font-size:11px;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Onchain Registration Complete</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">iNFT Token #${deployResult.tokenId || '—'} minted successfully</div>
+      ${explorerUrl ? `<a href="${esc(explorerUrl)}" target="_blank" style="font-size:11px;color:var(--cyan);text-decoration:none;word-break:break-all;">View Transaction: ${esc(deployResult.txHash.slice(0, 20))}... &#x2197;</a>` : ''}
+    </div>
+    ` : ''}
     <div style="text-align:left;width:100%;margin-bottom:16px;">
       <div style="color:var(--text-dim);font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Step 1 — Run your agent</div>
       <div style="position:relative;">
@@ -2799,7 +2758,7 @@ function openChat(agentId) {
   chatAgentId = agentId;
 
   // Populate header
-  document.getElementById('chat-agent-avatar').textContent = a.typeIcon;
+  document.getElementById('chat-agent-avatar').innerHTML = agentSvg(a.type);
   document.getElementById('chat-agent-name').textContent = a.name;
   document.getElementById('chat-agent-meta').textContent = a.ens + ' \u00B7 ' + a.type;
 
@@ -2817,36 +2776,67 @@ function openChat(agentId) {
     if (sendBtn) sendBtn.disabled = false;
     renderChatHistory(agentId, a);
   } else {
-    // Not connected — show saved command + reconnect
+    // Not connected — show origin-appropriate offline state
     chatInput.disabled = true;
     chatInput.placeholder = 'Connect your agent to start chatting';
     if (sendBtn) sendBtn.disabled = true;
     const container = document.getElementById('chat-messages');
-    const savedConfig = loadAgentConfig(agentId);
-    const savedCmd = savedConfig?.runCmd || buildRunCmd(a.id, a.ens, savedConfig || {});
-    const savedUrl = savedConfig?.lastUrl || 'http://localhost:8420';
+    const origin = a.origin || 'deployed';
 
-    container.innerHTML = `
-      <div class="chat-welcome" style="text-align:left;">
-        <div style="text-align:center;margin-bottom:16px;">
+    if (origin === 'registered') {
+      // Registered only — prompt to connect
+      container.innerHTML = `
+        <div class="chat-welcome" style="text-align:center;">
+          <div style="font-size:40px;opacity:0.5;margin-bottom:8px;">&#x1F4CB;</div>
+          <h3>Agent Registered</h3>
+          <p style="color:var(--text-secondary);font-size:12px;margin-bottom:16px;">This agent has an on-chain identity but isn't connected to a running instance yet.</p>
+          <button class="btn-wizard btn-wizard-next" style="padding:10px 24px;font-size:12px;" onclick="closeChat();openConnectModal();">Connect a Running Agent</button>
+          <p style="color:var(--text-dim);font-size:11px;margin-top:12px;">Build a compatible agent using the <a href="docs.html#agent-api-spec" style="color:var(--cyan);">Agent API Spec</a></p>
+        </div>`;
+    } else if (origin === 'connected') {
+      // External agent — show reconnect to URL
+      const savedConfig = loadAgentConfig(agentId);
+      const savedUrl = savedConfig?.lastUrl || 'http://localhost:8420';
+      container.innerHTML = `
+        <div class="chat-welcome" style="text-align:center;">
           <div style="font-size:40px;opacity:0.5;margin-bottom:8px;">&#x1F50C;</div>
           <h3>Agent Offline</h3>
-          <p style="color:var(--text-secondary);font-size:12px;">Start your agent and reconnect to chat.</p>
-        </div>
-        <div style="color:var(--text-dim);font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Run Command</div>
-        <div style="position:relative;">
-          <pre id="chat-run-cmd" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:10px;color:var(--cyan);white-space:pre-wrap;word-break:break-all;line-height:1.7;max-height:160px;overflow-y:auto;">${esc(savedCmd)}</pre>
-          <button onclick="navigator.clipboard.writeText(document.getElementById('chat-run-cmd').textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500);" style="position:absolute;top:6px;right:6px;padding:3px 10px;font-size:10px;background:rgba(0,229,255,0.15);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;font-family:var(--font-mono);">Copy</button>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:14px;">
-          <button class="btn-wizard btn-wizard-next" style="flex:1;padding:10px;font-size:12px;" onclick="attemptReconnect('${agentId}')">Reconnect (${esc(savedUrl)})</button>
-        </div>
-        <div id="reconnect-status" style="margin-top:8px;font-size:11px;text-align:center;"></div>
-        <div style="display:flex;gap:8px;margin-top:10px;">
-          <button class="btn-wizard btn-wizard-back" style="flex:1;padding:8px;font-size:11px;" onclick="openUpdateConfig('${agentId}')">Update Config</button>
-          <button class="btn-wizard btn-wizard-back" style="flex:1;padding:8px;font-size:11px;" onclick="closeChat();if(typeof PocAPI!=='undefined')PocAPI.showConnectModal();">Connect Other URL</button>
-        </div>
-      </div>`;
+          <p style="color:var(--text-secondary);font-size:12px;margin-bottom:16px;">This external agent is not reachable. Make sure it's running.</p>
+          <div style="display:flex;gap:8px;justify-content:center;">
+            <button class="btn-wizard btn-wizard-next" style="padding:10px 20px;font-size:12px;" onclick="attemptReconnect('${agentId}')">Reconnect (${esc(savedUrl)})</button>
+          </div>
+          <div id="reconnect-status" style="margin-top:8px;font-size:11px;"></div>
+          <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;">
+            <button class="btn-wizard btn-wizard-back" style="padding:8px 16px;font-size:11px;" onclick="closeChat();openConnectModal();">Connect Different URL</button>
+          </div>
+        </div>`;
+    } else {
+      // Deployed (IronClaw) — show cargo command + reconnect
+      const savedConfig = loadAgentConfig(agentId);
+      const savedCmd = savedConfig?.runCmd || buildRunCmd(a.id, a.ens, savedConfig || {});
+      const savedUrl = savedConfig?.lastUrl || 'http://localhost:8420';
+      container.innerHTML = `
+        <div class="chat-welcome" style="text-align:left;">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div style="font-size:40px;opacity:0.5;margin-bottom:8px;">&#x1F50C;</div>
+            <h3>Agent Offline</h3>
+            <p style="color:var(--text-secondary);font-size:12px;">Start your agent and reconnect to chat.</p>
+          </div>
+          <div style="color:var(--text-dim);font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Run Command</div>
+          <div style="position:relative;">
+            <pre id="chat-run-cmd" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:10px;color:var(--cyan);white-space:pre-wrap;word-break:break-all;line-height:1.7;max-height:160px;overflow-y:auto;">${esc(savedCmd)}</pre>
+            <button onclick="navigator.clipboard.writeText(document.getElementById('chat-run-cmd').textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500);" style="position:absolute;top:6px;right:6px;padding:3px 10px;font-size:10px;background:rgba(0,229,255,0.15);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;font-family:var(--font-mono);">Copy</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:14px;">
+            <button class="btn-wizard btn-wizard-next" style="flex:1;padding:10px;font-size:12px;" onclick="attemptReconnect('${agentId}')">Reconnect (${esc(savedUrl)})</button>
+          </div>
+          <div id="reconnect-status" style="margin-top:8px;font-size:11px;text-align:center;"></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn-wizard btn-wizard-back" style="flex:1;padding:8px;font-size:11px;" onclick="openUpdateConfig('${agentId}')">Update Config</button>
+            <button class="btn-wizard btn-wizard-back" style="flex:1;padding:8px;font-size:11px;" onclick="closeChat();openConnectModal();">Connect Other URL</button>
+          </div>
+        </div>`;
+    }
   }
 
   // Open drawer
@@ -3049,7 +3039,7 @@ function renderChatHistory(agentId, agentData) {
     if (conn) {
       container.innerHTML = `
         <div class="chat-welcome">
-          <div class="welcome-icon">${agentData.typeIcon}</div>
+          <div class="welcome-icon">${agentSvg(agentData.type)}</div>
           <h3>Chat with ${esc(agentData.name)}</h3>
           <p><span style="color:var(--green);">&#x25CF;</span> Connected to live agent. Send a message to interact.<br>All actions generate cryptographic proofs via RISC Zero.</p>
           <div class="welcome-hint">
@@ -3079,7 +3069,7 @@ function renderChatMsg(msg, agentData) {
   const timeStr = formatRelativeTime(msg.timestamp);
   let proofHtml = '';
   if (!isUser && msg.proof) {
-    proofHtml = `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${msg.proof.mode} | ${msg.proof.hash}</div>`;
+    proofHtml = `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${esc(msg.proof.mode)} | ${esc(msg.proof.hash)}</div>`;
   }
   return `<div class="chat-msg ${isUser ? 'user' : 'agent'}">
     <div class="chat-msg-bubble">${escChatText(msg.text)}</div>
@@ -3166,7 +3156,7 @@ async function sendLiveChat(agentData, userMessage, baseUrl) {
   const typingId = 'typing-' + Date.now();
   container.insertAdjacentHTML('beforeend', `
     <div class="chat-typing" id="${typingId}">
-      <div class="chat-typing-avatar">${agentData.typeIcon}</div>
+      <div class="chat-typing-avatar">${agentSvg(agentData.type)}</div>
       <div class="chat-typing-dots"><span></span><span></span><span></span></div>
     </div>`);
   scrollChatToBottom();
@@ -3222,7 +3212,7 @@ async function sendLiveChat(agentData, userMessage, baseUrl) {
     const msgDiv = document.getElementById(msgId);
     if (msgDiv) {
       msgDiv.insertAdjacentHTML('beforeend',
-        `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${proof.mode} | ${proof.hash}</div>`);
+        `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${esc(proof.mode)} | ${esc(proof.hash)}</div>`);
       msgDiv.insertAdjacentHTML('beforeend', `<div class="chat-msg-time">just now</div>`);
     }
     scrollChatToBottom();
@@ -3301,7 +3291,7 @@ document.addEventListener('keydown', function(e) {
 // ═══════════════════════════════════════
 
 function lookupENS() {
-  const ensName = prompt('Enter an ENS name to look up (e.g., alice.proofclaw.eth):');
+  const ensName = prompt('Enter an ENS name to look up (e.g., alice.proofofclaw.eth):');
   if (!ensName || !ensName.includes('.')) return;
 
   resolveAndAddAgent(ensName);
@@ -3363,23 +3353,12 @@ async function resolveAndAddAgent(ensName) {
 }
 
 function ensProfileToAgent(profile) {
-  const typeIcons = {
-    'defi-strategist': '\uD83D\uDCC8',
-    'security-auditor': '\uD83D\uDD12',
-    'coordinator': '\uD83C\uDF0F',
-    'data-analyst': '\uD83D\uDCCA',
-    'governance-agent': '\uD83C\uDFDB\uFE0F',
-    'devops-engineer': '\u2699\uFE0F',
-    'unknown': '\u27C1',
-  };
-
   const agentId = profile.ensName.split('.')[0];
   return {
     id: agentId,
     name: agentId,
     ens: profile.ensName,
     type: profile.agentType || 'unknown',
-    typeIcon: typeIcons[profile.agentType] || '\u27C1',
     network: profile.network || 'sepolia',
     skills: profile.skills || [],
     allowedTools: [],
@@ -3399,10 +3378,274 @@ function ensProfileToAgent(profile) {
 }
 
 // ═══════════════════════════════════════
+// CONNECT EXTERNAL AGENT
+// ═══════════════════════════════════════
+
+let connectValidationResult = null;
+
+let registerMenuTimer = null;
+function showRegisterMenu() {
+  clearTimeout(registerMenuTimer);
+  document.getElementById('register-menu').classList.add('open');
+}
+function hideRegisterMenu() {
+  registerMenuTimer = setTimeout(() => {
+    document.getElementById('register-menu').classList.remove('open');
+  }, 200);
+}
+
+function openConnectModal() {
+  const modal = document.getElementById('connect-agent-modal');
+  modal.classList.add('active');
+  document.getElementById('connect-url-input').value = '';
+  document.getElementById('connect-validation').style.display = 'none';
+  document.getElementById('connect-preview').style.display = 'none';
+  document.getElementById('connect-error').style.display = 'none';
+  document.getElementById('connect-validate-btn').style.display = '';
+  document.getElementById('connect-confirm-btn').style.display = 'none';
+  connectValidationResult = null;
+  const urlInput = document.getElementById('connect-url-input');
+  const host = window.location.hostname;
+  if (host === 'localhost' || host === '127.0.0.1') urlInput.value = 'http://localhost:8420';
+  urlInput.focus();
+}
+
+function closeConnectModal() {
+  document.getElementById('connect-agent-modal').classList.remove('active');
+}
+
+async function doValidateAgent() {
+  const url = document.getElementById('connect-url-input').value.trim();
+  const errEl = document.getElementById('connect-error');
+  errEl.style.display = 'none';
+
+  if (!url) {
+    errEl.textContent = 'Please enter an agent URL.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  let baseUrl = url.replace(/\/+$/, '');
+  if (!baseUrl.startsWith('http')) baseUrl = 'http://' + baseUrl;
+
+  const btn = document.getElementById('connect-validate-btn');
+  btn.disabled = true;
+  btn.textContent = 'Validating...';
+
+  const checklist = document.getElementById('connect-checklist');
+  const endpoints = [
+    { key: 'health', label: 'GET /health', required: true },
+    { key: 'status', label: 'GET /api/status', required: true },
+    { key: 'activity', label: 'GET /api/activity', required: false },
+    { key: 'proofs', label: 'GET /api/proofs', required: false },
+    { key: 'messages', label: 'GET /api/messages', required: false },
+  ];
+
+  // Show checklist with pending state
+  checklist.innerHTML = endpoints.map(ep =>
+    `<div id="chk-${ep.key}" style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;font-size:12px;">
+      <span class="chk-icon" style="width:18px;text-align:center;color:var(--text-dim);">&#x23F3;</span>
+      <span style="flex:1;color:var(--text-secondary);">${ep.label}</span>
+      <span style="font-size:10px;color:var(--text-dim);">${ep.required ? 'required' : 'optional'}</span>
+    </div>`
+  ).join('');
+  document.getElementById('connect-validation').style.display = 'block';
+
+  try {
+    const result = await PocAPI.validateSpec(baseUrl);
+    connectValidationResult = { ...result, baseUrl };
+
+    // Update checklist
+    endpoints.forEach(ep => {
+      const row = document.getElementById('chk-' + ep.key);
+      const icon = row.querySelector('.chk-icon');
+      const r = result[ep.key];
+      if (r && r.ok) {
+        icon.innerHTML = '&#x2705;';
+        row.style.borderColor = 'rgba(0,230,118,0.3)';
+      } else {
+        icon.innerHTML = ep.required ? '&#x274C;' : '&#x26A0;';
+        row.style.borderColor = ep.required ? 'rgba(255,61,90,0.3)' : 'rgba(255,183,77,0.3)';
+      }
+    });
+
+    // Show preview if status succeeded
+    if (result.agentPreview) {
+      const p = result.agentPreview;
+      document.getElementById('connect-preview-content').innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+          <div><span style="color:var(--text-dim);">Agent ID:</span> <strong style="color:var(--text-primary);">${esc(p.agent_id || 'unknown')}</strong></div>
+          <div><span style="color:var(--text-dim);">ENS:</span> <strong style="color:var(--cyan);">${esc(p.ens_name || 'none')}</strong></div>
+          <div><span style="color:var(--text-dim);">Network:</span> ${esc(p.network || 'unknown')}</div>
+          <div><span style="color:var(--text-dim);">Status:</span> ${esc(p.status || 'unknown')}</div>
+          <div><span style="color:var(--text-dim);">Tools:</span> ${esc((p.allowed_tools || []).join(', ') || 'none')}</div>
+          <div><span style="color:var(--text-dim);">Actions:</span> ${p.stats?.total_actions || 0}</div>
+        </div>`;
+      document.getElementById('connect-preview').style.display = 'block';
+    }
+
+    if (result.valid) {
+      btn.style.display = 'none';
+      const confirmBtn = document.getElementById('connect-confirm-btn');
+      confirmBtn.style.display = '';
+      confirmBtn.disabled = false;
+    } else {
+      errEl.textContent = 'Required endpoints failed. Your agent must implement /health and /api/status.';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Retry';
+    }
+  } catch (e) {
+    errEl.textContent = 'Validation failed: ' + e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Retry';
+  }
+}
+
+async function doConfirmConnect() {
+  if (!connectValidationResult || !connectValidationResult.valid) return;
+  const btn = document.getElementById('connect-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+
+  try {
+    const conn = await PocAPI.connect(connectValidationResult.baseUrl, 'connected');
+    btn.textContent = 'Connected!';
+    setTimeout(() => {
+      closeConnectModal();
+      window.location.reload();
+    }, 800);
+  } catch (e) {
+    const errEl = document.getElementById('connect-error');
+    errEl.textContent = 'Connection failed: ' + e.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Retry';
+  }
+}
+
+// ═══════════════════════════════════════
+// ONCHAIN DEPLOYMENT
+// ═══════════════════════════════════════
+
+async function doOnchainDeploy() {
+  if (!window.PocViem) {
+    throw new Error('Blockchain module not loaded yet. Please wait a moment and try again.');
+  }
+
+  const state = window.PocViem.getWalletState();
+  if (!state.connected) {
+    // Try to connect first
+    await connectWalletUI();
+    if (!getWalletState().connected) {
+      throw new Error('Wallet connection required for onchain deployment');
+    }
+  }
+
+  // Switch to correct network
+  const network = wizardData.network || 'og_testnet';
+  await window.PocViem.switchNetwork(network);
+  window.PocViem.init(network);
+
+  // Prepare agent config for robust registration
+  const agentConfig = {
+    agentName: wizardData.name,
+    ensName: wizardData.ens,
+    network: network,
+    allowedTools: wizardData.allowedTools || ['swap_tokens', 'transfer', 'query'],
+    valueLimit: wizardData.valueLimit || 100,
+    endpoints: wizardData.endpoints || '',
+    description: wizardData.description || '',
+    skills: wizardData.skills || [],
+    maxTasks: wizardData.maxTasks || 5,
+    soulPersona: wizardData.soulPersona || ''
+  };
+
+  // Create registration session
+  const sessionId = agentRegistration.createSession(agentConfig);
+  
+  // Subscribe to progress updates
+  agentRegistration.onStatusChange(sessionId, (session) => {
+    updateDeployProgressUI(session);
+  });
+
+  // Prepare metadata
+  const metadata = {
+    ...agentConfig,
+    createdAt: new Date().toISOString(),
+    version: '1.0'
+  };
+
+  // Execute registration
+  const result = await agentRegistration.executeFullRegistration(
+    sessionId,
+    null, // wallet client - handled by viem
+    null, // public client - handled by viem
+    metadata
+  );
+
+  if (!result.success) {
+    throw new Error(result.error || 'Registration failed');
+  }
+
+  return {
+    tokenId: result.results.onchain?.tokenId,
+    txHash: result.results.onchain?.txHash,
+    agentId: result.results.onchain?.agentId,
+    policyHash: result.results.onchain?.policyHash,
+    contractAddress: result.results.onchain?.contractAddress,
+    storageRoot: result.results.storage?.rootHash,
+    dm3Profile: result.results.dm3
+  };
+}
+
+// Update deploy progress UI based on session status
+function updateDeployProgressUI(session) {
+  const steps = document.querySelectorAll('.deploy-step-item');
+  
+  switch (session.status) {
+    case 'validating':
+      updateStepStatus(steps, 0, 'active');
+      break;
+    case 'uploading':
+      updateStepStatus(steps, 0, 'done');
+      updateStepStatus(steps, 1, 'active');
+      break;
+    case 'registering':
+      updateStepStatus(steps, 1, 'done');
+      updateStepStatus(steps, 2, 'active');
+      break;
+    case 'confirming':
+      updateStepStatus(steps, 2, 'done');
+      updateStepStatus(steps, 3, 'active');
+      break;
+    case 'completed':
+      steps.forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('done');
+        s.querySelector('.step-icon').innerHTML = '\u2713';
+      });
+      break;
+  }
+}
+
+function updateStepStatus(steps, idx, status) {
+  if (status === 'active') {
+    steps[idx]?.classList.add('active');
+  } else if (status === 'done') {
+    steps[idx]?.classList.remove('active');
+    steps[idx]?.classList.add('done');
+    if (steps[idx]) steps[idx].querySelector('.step-icon').innerHTML = '\u2713';
+  }
+}
+
+// ═══════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════
 
 init();
+checkWalletConnection();
 </script>
 <script src="ens-resolver.js"></script>
 <script src="poc-api.js"></script>

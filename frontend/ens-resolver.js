@@ -96,7 +96,7 @@ const ENSResolver = (() => {
         network: _network,
       };
     } catch (e) {
-      console.warn(`ENS resolution failed for ${ensName}:`, e.message);
+      console.error(`[ENS] Resolution failed for "${ensName}":`, e);
       return null;
     }
   }
@@ -128,7 +128,7 @@ const ENSResolver = (() => {
           }
         }
       } catch (e) {
-        // Fall through to registry
+        console.warn(`[ENS] Universal resolver failed for "${ensName}", trying registry:`, e.message);
       }
     }
 
@@ -190,7 +190,7 @@ const ENSResolver = (() => {
           if (decoded) records[key] = decoded;
         }
       } catch (e) {
-        // Skip failed records
+        console.warn(`[ENS] Failed to fetch text record "${key}":`, e.message);
       }
     });
 
@@ -229,8 +229,12 @@ const ENSResolver = (() => {
     return json.result || null;
   }
 
-  // ENS namehash implementation
+  // ENS namehash implementation (memoized to avoid redundant keccak256 calls)
+  const _namehashCache = new Map();
+
   function namehash(name) {
+    if (_namehashCache.has(name)) return _namehashCache.get(name);
+
     let node = '0x' + '00'.repeat(32);
     if (!name) return node;
 
@@ -239,6 +243,8 @@ const ENSResolver = (() => {
       const labelHash = keccak256(utf8ToBytes(label));
       node = keccak256(hexToBytes(node.slice(2) + labelHash.slice(2)));
     }
+
+    _namehashCache.set(name, node);
     return node;
   }
 

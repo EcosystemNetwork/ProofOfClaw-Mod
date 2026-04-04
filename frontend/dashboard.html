@@ -3,246 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Real-time agent dashboard for monitoring Proof of Claw agents.">
 <title>Agent Dashboard — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg-primary: #06080d;
-  --bg-secondary: #0c1018;
-  --bg-card: #0f1520;
-  --bg-card-hover: #141c2a;
-  --cyan: #00e5ff;
-  --cyan-dim: #00a3b5;
-  --cyan-glow: rgba(0, 229, 255, 0.15);
-  --amber: #ffb300;
-  --amber-glow: rgba(255, 179, 0, 0.12);
-  --green: #00e676;
-  --green-glow: rgba(0, 230, 118, 0.12);
-  --red: #ff3d5a;
-  --purple: #b388ff;
-  --purple-glow: rgba(179, 136, 255, 0.15);
-  --text-primary: #e8ecf4;
-  --text-secondary: #8892a4;
-  --text-dim: #4a5568;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-cyan: rgba(0, 229, 255, 0.2);
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-  --sidebar-w: 240px;
-  --sidebar-w-collapsed: 60px;
-  --topbar-h: 60px;
-}
-
-html, body { height: 100%; }
-
-body {
-  font-family: var(--font-mono);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.6;
-  font-size: 14px;
-  overflow-x: hidden;
-}
-
-/* Scanline overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* Grid background */
-.grid-bg {
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  z-index: 0;
-  pointer-events: none;
-}
-
 /* ======================================== */
-/* SIDEBAR                                  */
-/* ======================================== */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--sidebar-w);
-  height: 100vh;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  z-index: 200;
-  padding: 1.5rem 0;
-}
-
-.sidebar-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0 1.25rem;
-  margin-bottom: 2rem;
-  text-decoration: none;
-}
-
-.sidebar-logo .claw-icon {
-  font-size: 24px;
-  color: var(--cyan);
-  filter: drop-shadow(0 0 8px var(--cyan));
-  line-height: 1;
-}
-
-.sidebar-logo .logo-text {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1rem;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-}
-
-.sidebar-nav {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 0 0.75rem;
-}
-
-.sidebar-nav a {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 1rem;
-  border-radius: 6px;
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.03em;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
-}
-
-.sidebar-nav a:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.sidebar-nav a.active {
-  color: var(--cyan);
-  background: var(--cyan-glow);
-  border-left-color: var(--cyan);
-}
-
-.sidebar-nav a .nav-icon {
-  font-size: 1rem;
-  width: 20px;
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.sidebar-bottom {
-  padding: 1rem 1rem 0;
-  border-top: 1px solid var(--border);
-  margin-top: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.sidebar-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.6rem 1rem;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.sidebar-btn.primary {
-  background: var(--cyan);
-  color: var(--bg-primary);
-}
-
-.sidebar-btn.primary:hover {
-  background: var(--cyan-dim);
-  box-shadow: 0 0 16px var(--cyan-glow);
-}
-
-.sidebar-btn.ghost {
-  background: transparent;
-  color: var(--text-dim);
-  border: 1px solid var(--border);
-}
-
-.sidebar-btn.ghost:hover {
-  color: var(--text-secondary);
-  border-color: var(--border-cyan);
-}
-
-/* Sidebar collapse */
-.sidebar-toggle {
-  position: absolute;
-  top: 12px;
-  right: -14px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  z-index: 201;
-  transition: all 0.2s;
-}
-.sidebar-toggle:hover {
-  color: var(--cyan);
-  border-color: var(--border-cyan);
-  background: var(--bg-card);
-}
-
-.sidebar { transition: width 0.25s ease; }
-.topbar { transition: left 0.25s ease; }
-.main { transition: margin-left 0.25s ease; }
-
-body.sidebar-collapsed .sidebar { width: var(--sidebar-w-collapsed); }
-body.sidebar-collapsed .sidebar .logo-text { display: none; }
-body.sidebar-collapsed .sidebar-nav a { justify-content: center; padding: 0.65rem 0; }
-body.sidebar-collapsed .sidebar-nav a span:not(.nav-icon) { display: none; }
-body.sidebar-collapsed .sidebar-nav a .nav-icon { width: auto; font-size: 1.1rem; }
-body.sidebar-collapsed .sidebar-bottom { padding: 0.75rem 0.5rem 0; }
-body.sidebar-collapsed .sidebar-btn { font-size: 0; padding: 0.6rem; }
-body.sidebar-collapsed .sidebar-btn::before { font-size: 1rem; }
-body.sidebar-collapsed .sidebar-btn.primary { font-size: 0; }
-body.sidebar-collapsed .sidebar-btn.primary::after { content: '+'; font-size: 1.2rem; }
-body.sidebar-collapsed .sidebar-btn.ghost { display: none; }
-body.sidebar-collapsed .topbar { left: var(--sidebar-w-collapsed); }
-body.sidebar-collapsed .main { margin-left: var(--sidebar-w-collapsed); }
-body.sidebar-collapsed .sidebar-toggle { transform: rotate(180deg); }
-body.sidebar-collapsed #poc-connection-slot { display: none; }
-
-/* ======================================== */
-/* TOPBAR                                   */
+/* TOPBAR (page-specific: fixed with left)  */
 /* ======================================== */
 .topbar {
   position: fixed;
@@ -258,7 +29,10 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   justify-content: space-between;
   padding: 0 1.75rem;
   z-index: 150;
+  transition: left 0.25s ease;
 }
+
+body.sidebar-collapsed .topbar { left: var(--sidebar-w-collapsed); }
 
 .topbar-left {
   display: flex;
@@ -270,34 +44,6 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   font-family: var(--font-display);
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--text-primary);
-}
-
-.agent-selector {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.4rem 0.75rem;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s;
-  -webkit-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238892a4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.6rem center;
-  padding-right: 2rem;
-}
-
-.agent-selector:focus {
-  border-color: var(--cyan);
-}
-
-.agent-selector option {
-  background: var(--bg-card);
   color: var(--text-primary);
 }
 
@@ -319,23 +65,6 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   font-weight: 500;
 }
 
-.status-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-.status-dot.offline { background: var(--text-dim); box-shadow: none; animation: none; }
-.status-dot.busy { background: var(--amber); box-shadow: 0 0 6px var(--amber); }
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
 .ethglobal-badge {
   padding: 0.3rem 0.75rem;
   border: 1px solid var(--border-cyan);
@@ -352,14 +81,17 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 /* ======================================== */
 /* MAIN CONTENT                             */
 /* ======================================== */
-.main {
+.main-content {
   position: relative;
   z-index: 1;
   margin-left: var(--sidebar-w);
   margin-top: var(--topbar-h);
   padding: 1.75rem;
   min-height: calc(100vh - var(--topbar-h));
+  transition: margin-left 0.25s ease;
 }
+
+body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); }
 
 /* ======================================== */
 /* AGENT HEADER                             */
@@ -409,18 +141,6 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   flex-wrap: wrap;
 }
 
-.type-badge {
-  padding: 0.15rem 0.6rem;
-  border-radius: 4px;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  background: var(--purple-glow);
-  color: var(--purple);
-  border: 1px solid rgba(179, 136, 255, 0.2);
-}
-
 .agent-header-right {
   display: flex;
   flex-direction: column;
@@ -455,30 +175,6 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 
 @media (max-width: 1100px) {
   .metrics-grid { grid-template-columns: 1fr; }
-}
-
-.card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 1.25rem;
-  transition: all 0.25s ease;
-}
-
-.card:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-cyan);
-  box-shadow: 0 0 20px var(--cyan-glow);
-}
-
-.card-title {
-  font-family: var(--font-display);
-  font-size: 0.85rem;
-  font-weight: 700;
-  margin-bottom: 0.9rem;
-  color: var(--cyan);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
 }
 
 .metric {
@@ -643,45 +339,8 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 }
 
 /* ======================================== */
-/* BUTTONS                                  */
+/* BUTTONS (page-specific)                  */
 /* ======================================== */
-.btn {
-  padding: 0.55rem 1.2rem;
-  border: none;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-weight: 600;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.btn-primary {
-  background: var(--cyan);
-  color: var(--bg-primary);
-}
-
-.btn-primary:hover {
-  background: var(--cyan-dim);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px var(--cyan-glow);
-}
-
-.btn-secondary {
-  background: var(--bg-card);
-  color: var(--text-primary);
-  border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-  background: var(--bg-card-hover);
-  border-color: var(--border-cyan);
-}
-
 .btn-danger {
   background: rgba(255, 61, 90, 0.1);
   color: var(--red);
@@ -737,12 +396,18 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 /* ======================================== */
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
-  .sidebar { display: none; }
-  .topbar { left: 0; }
-  .main { margin-left: 0; }
+  .topbar { left: 0; padding: 0 1rem; }
+  .main-content { margin-left: 0; padding: 1.25rem 1rem; }
   .metrics-grid { grid-template-columns: 1fr; }
   .agent-header { flex-direction: column; }
   .agent-header-right { align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .topbar { height: 52px; }
+  .main-content { margin-top: 52px; padding: 1rem 0.75rem; }
+  .topbar-title { font-size: 0.9rem; }
+  .agent-selector { font-size: 0.7rem; padding: 0.3rem 0.5rem; min-width: 140px; max-width: 180px; }
 }
 
 /* ======================================== */
@@ -791,47 +456,53 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--red); flex-shrink: 0;
 }
-
-/* In-dashboard auth modules view */
-.dash-view-auth { min-height: 50vh; }
 </style>
-<link rel="stylesheet" href="auth-modules-panel.css" id="poc-auth-modules-stylesheet">
 </head>
 <body>
+<a href="#main-content" class="skip-link">Skip to dashboard</a>
 
 <div class="grid-bg"></div>
 
 <!-- ======================================== -->
 <!-- SIDEBAR                                  -->
 <!-- ======================================== -->
-<aside class="sidebar">
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
   <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
   <a href="index.html" class="sidebar-logo">
-    <span class="claw-icon">&#x27C1;</span>
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
     <span class="logo-text">Proof of Claw</span>
   </a>
 
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" aria-label="App navigation">
     <a href="agents.html">
       <span class="nav-icon">&#x2726;</span> Agents
     </a>
-    <a href="dashboard.html" class="active" data-internal-view="overview">
+    <a href="dashboard.html" class="active">
       <span class="nav-icon">&#x25A3;</span> Dashboard
     </a>
-    <a href="dashboard.html?view=auth" data-internal-view="auth">
-      <span class="nav-icon">&#x1F512;</span> Auth
+    <a href="auth-modules.html">
+      <span class="nav-icon">&#x1F512;</span> Auth Modules
     </a>
     <a href="messages.html">
       <span class="nav-icon">&#x2709;</span> Messages
     </a>
     <a href="proofs.html">
-      <span class="nav-icon">&#x27C1;</span> Proofs
+      <span class="nav-icon">&#x2731;</span> Proofs
+    </a>
+    <a href="kanban.html">
+      <span class="nav-icon">&#x25A0;</span> Kanban
+    </a>
+    <a href="soul-vault.html">
+      <span class="nav-icon">&#x2B23;</span> Soul Vault
+    </a>
+    <a href="approve.html">
+      <span class="nav-icon">&#x2714;</span> Approve
     </a>
   </nav>
 
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
-    <a href="agents.html#register" class="sidebar-btn primary">+ New Agent</a>
+    <a href="agents.html" class="sidebar-btn primary">+ New Agent</a>
     <a href="index.html" class="sidebar-btn ghost">Back to Home</a>
   </div>
 </aside>
@@ -839,14 +510,22 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 <!-- ======================================== -->
 <!-- TOPBAR                                   -->
 <!-- ======================================== -->
-<header class="topbar">
+<div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<header class="topbar" role="banner">
   <div class="topbar-left">
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
     <span class="topbar-title">Agent Dashboard</span>
-    <select id="agent-selector" class="agent-selector" onchange="switchAgent(this.value)">
-      <option value="">Loading...</option>
-    </select>
+    <div class="agent-search-wrap">
+      <input type="text" id="agent-selector" class="agent-selector" placeholder="Search ENS or agent name..." aria-label="Search agent by ENS name" autocomplete="off">
+    </div>
   </div>
   <div class="topbar-right">
+    <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:8px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);"></span>
+      <span class="status-dot" style="background:var(--green);display:inline-block;width:8px;height:8px;border-radius:50%;"></span>
+    </div>
     <div class="status-badge live-badge" id="live-badge" style="display:none;">
       <span class="live-dot"></span>
       <span class="live-text">LIVE</span>
@@ -862,9 +541,16 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 <!-- ======================================== -->
 <!-- MAIN CONTENT                             -->
 <!-- ======================================== -->
-<main class="main" id="main-content">
+<main class="main-content" id="main-content" role="main">
 
-  <div id="view-overview" class="dash-view-overview">
+  <!-- Setup Checklist (hidden once complete) -->
+  <div id="setup-checklist" class="card" style="display:none; margin-bottom:1.75rem; border:1px solid rgba(0,229,255,0.2); background:linear-gradient(135deg, rgba(0,229,255,0.04), rgba(179,136,255,0.04));">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <div class="card-title" style="color:var(--cyan); margin-bottom:0;">Setup Checklist</div>
+      <span id="setup-progress" style="font-size:0.7rem; color:var(--text-dim);">0 / 5</span>
+    </div>
+    <div id="setup-items" style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.82rem;"></div>
+  </div>
 
   <!-- Agent Header -->
   <div class="agent-header" id="agent-header">
@@ -908,6 +594,13 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
       <div class="metric">
         <span class="metric-label">Policy Hash</span>
         <span class="metric-value hash" id="metric-policy-hash">---</span>
+      </div>
+      <div id="agent-url-metric" style="display:none;margin-top:12px;padding:10px;background:rgba(0,229,255,0.04);border:1px solid var(--border-cyan);border-radius:6px;">
+        <div style="font-size:9px;color:var(--cyan-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Messaging URL</div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="dash-agent-url" readonly style="flex:1;padding:6px 8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-family:var(--font-mono);font-size:10px;outline:none;">
+          <button onclick="copyDashUrl()" style="padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:10px;cursor:pointer;font-family:var(--font-mono);">Copy</button>
+        </div>
       </div>
     </div>
 
@@ -966,7 +659,7 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
   <!-- Recent Activity -->
   <div class="activity-section">
     <div class="section-title">Recent Activity</div>
-    <ul class="activity-list" id="activity-list"></ul>
+    <ul class="activity-list" id="activity-list" aria-live="polite"></ul>
   </div>
 
   <!-- Quick Actions -->
@@ -976,14 +669,12 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
     <a class="btn btn-secondary" href="agents.html">Back to Agents</a>
   </div>
 
-  </div>
-
-  <div id="view-auth" class="dash-view-auth" style="display: none;" aria-hidden="true"></div>
-
 </main>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
+<script src="shared.js"></script>
 <script src="poc-api.js"></script>
-<script src="auth-modules-panel.js"></script>
 <script>
 // =====================================================
 // DEFAULT MOCK AGENTS (same as agents page)
@@ -996,6 +687,7 @@ const DEFAULT_AGENTS = [
     icon: '\u26A1',
     status: 'online',
     ens: 'alpha.proofclaw.eth',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x9f3a...c4e1',
     desc: 'Primary fleet coordinator for multi-agent orchestration',
     skills: ['multi-agent','delegation','task-routing','typescript'],
@@ -1011,6 +703,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCCA',
     status: 'online',
     ens: 'defi-scout.proofclaw.eth',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x7b2e...a8d3',
     desc: 'DeFi market scanner and yield optimizer',
     skills: ['defi-protocols','uniswap','aave','data-analysis'],
@@ -1026,6 +719,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDD12',
     status: 'busy',
     ens: 'sec-auditor.proofclaw.eth',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x3d71...f5b9',
     desc: 'Smart contract security auditor',
     skills: ['solidity','security-audit','smart-contracts','slither'],
@@ -1041,6 +735,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83C\uDF0F',
     status: 'online',
     ens: 'gov-delegate.proofclaw.eth',
+    endpoints: 'http://localhost:4443',
     policyHash: '0xa4f8...2c67',
     desc: 'DAO governance participation agent',
     skills: ['governance','dao-voting','proposals','snapshot'],
@@ -1056,6 +751,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCB0',
     status: 'offline',
     ens: 'yield-hunter.proofclaw.eth',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x61c3...9ae4',
     desc: 'Cross-chain yield farming specialist',
     skills: ['yield-farming','liquidity','cross-chain','bridges'],
@@ -1071,6 +767,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCC8',
     status: 'online',
     ens: 'data-oracle.proofclaw.eth',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x2e89...b7f0',
     desc: 'On-chain data aggregation and analytics',
     skills: ['data-analysis','chainlink','the-graph','sql'],
@@ -1096,41 +793,6 @@ let stats = {
   verified: 0
 };
 let activityTimers = [];
-
-// =====================================================
-// DASHBOARD VIEWS (overview vs auth modules)
-// =====================================================
-function applyDashboardViewFromUrl() {
-  var params = new URLSearchParams(window.location.search);
-  var view = params.get('view') === 'auth' ? 'auth' : 'overview';
-  setDashboardView(view);
-}
-
-function setDashboardView(view) {
-  var ov = document.getElementById('view-overview');
-  var au = document.getElementById('view-auth');
-  if (!ov || !au) return;
-
-  var isAuth = view === 'auth';
-  ov.style.display = isAuth ? 'none' : 'block';
-  ov.setAttribute('aria-hidden', isAuth ? 'true' : 'false');
-  au.style.display = isAuth ? 'block' : 'none';
-  au.setAttribute('aria-hidden', isAuth ? 'false' : 'true');
-
-  var titleEl = document.querySelector('.topbar-title');
-  if (titleEl) titleEl.textContent = isAuth ? 'Auth modules' : 'Agent Dashboard';
-  document.title = isAuth ? 'Auth modules — Proof of Claw' : 'Agent Dashboard — Proof of Claw';
-
-  document.querySelectorAll('.sidebar-nav a[data-internal-view]').forEach(function (a) {
-    var v = a.getAttribute('data-internal-view');
-    a.classList.toggle('active', (isAuth && v === 'auth') || (!isAuth && v === 'overview'));
-  });
-
-  if (isAuth && typeof PocAuthModules !== 'undefined' && !au.dataset.mounted) {
-    PocAuthModules.mount(au);
-    au.dataset.mounted = '1';
-  }
-}
 
 // =====================================================
 // INIT
@@ -1194,13 +856,13 @@ function showLiveError(msg) {
       var banner = document.createElement('div');
       banner.id = 'live-error-banner';
       banner.className = 'live-error-banner';
-      banner.innerHTML = '<span class="error-dot"></span><span>' + msg + '</span>';
+      banner.innerHTML = '<span class="error-dot"></span><span>' + esc(msg) + '</span>';
       var main = document.getElementById('main-content');
       if (main && main.firstChild) {
         main.insertBefore(banner, main.firstChild);
       }
     } else {
-      existing.innerHTML = '<span class="error-dot"></span><span>' + msg + '</span>';
+      existing.innerHTML = '<span class="error-dot"></span><span>' + esc(msg) + '</span>';
       existing.style.display = 'flex';
     }
   } else if (existing) {
@@ -1375,9 +1037,9 @@ function updateFromActivity(actData) {
       agoStr = item.time;
     }
 
-    li.innerHTML = '<div class="activity-icon ' + actType + '">' + icon + '</div>' +
-      '<div class="activity-content"><div class="activity-title">' + title + '</div>' +
-      '<div class="activity-meta">' + desc + (agoStr ? ' &middot; ' + agoStr : '') + '</div></div>';
+    li.innerHTML = '<div class="activity-icon ' + esc(actType) + '">' + esc(icon) + '</div>' +
+      '<div class="activity-content"><div class="activity-title">' + esc(title) + '</div>' +
+      '<div class="activity-meta">' + esc(desc) + (agoStr ? ' &middot; ' + esc(agoStr) : '') + '</div></div>';
     list.appendChild(li);
   }
 }
@@ -1423,22 +1085,70 @@ function loadAgents() {
 }
 
 function populateSelector() {
-  const sel = document.getElementById('agent-selector');
-  sel.innerHTML = '';
-  agents.forEach(a => {
-    const opt = document.createElement('option');
-    opt.value = a.id;
-    opt.textContent = a.icon ? a.icon + ' ' + a.name : a.name;
-    if (currentAgent && a.id === currentAgent.id) opt.selected = true;
-    sel.appendChild(opt);
+  const input = document.getElementById('agent-selector');
+  const wrap = input.closest('.agent-search-wrap');
+
+  // Create dropdown
+  let dropdown = wrap.querySelector('.agent-search-dropdown');
+  if (!dropdown) {
+    dropdown = document.createElement('div');
+    dropdown.className = 'agent-search-dropdown';
+    wrap.appendChild(dropdown);
+  }
+
+  // Show current agent name in input
+  if (currentAgent) {
+    input.value = currentAgent.ens || currentAgent.name + '.proofofclaw.eth';
+  }
+
+  function renderDropdown(filter) {
+    const q = (filter || '').toLowerCase();
+    const matches = agents.filter(a => {
+      const ens = (a.ens || a.name + '.proofofclaw.eth').toLowerCase();
+      return !q || a.name.toLowerCase().includes(q) || ens.includes(q) || a.id.toLowerCase().includes(q);
+    });
+    dropdown.innerHTML = '';
+    matches.forEach(a => {
+      const item = document.createElement('div');
+      item.className = 'agent-search-item';
+      const ens = a.ens || a.name + '.proofofclaw.eth';
+      item.innerHTML = '<span>' + (a.icon ? a.icon + ' ' : '') + a.name + '</span><span class="ens-hint">' + ens + '</span>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.location.href = 'dashboard.html?agent=' + encodeURIComponent(a.id);
+      });
+      dropdown.appendChild(item);
+    });
+    dropdown.classList.toggle('open', matches.length > 0);
+  }
+
+  input.addEventListener('focus', function() {
+    input.select();
+    renderDropdown(input.value);
+  });
+
+  input.addEventListener('input', function() {
+    renderDropdown(input.value);
+  });
+
+  input.addEventListener('blur', function() {
+    dropdown.classList.remove('open');
+  });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const first = dropdown.querySelector('.agent-search-item');
+      if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+    }
+    if (e.key === 'Escape') {
+      dropdown.classList.remove('open');
+      input.blur();
+    }
   });
 }
 
 function switchAgent(id) {
-  var params = new URLSearchParams(window.location.search);
-  params.set('agent', id);
-  if (params.get('view') !== 'auth') params.delete('view');
-  window.location.href = 'dashboard.html?' + params.toString();
+  window.location.href = 'dashboard.html?agent=' + encodeURIComponent(id);
 }
 
 // =====================================================
@@ -1452,7 +1162,7 @@ function renderAgent() {
   // Header
   document.getElementById('agent-avatar').textContent = a.icon || '\u27C1';
   document.getElementById('agent-name').textContent = a.name;
-  document.getElementById('agent-ens').textContent = a.ens || a.name + '.proofclaw.eth';
+  document.getElementById('agent-ens').textContent = a.ens || a.name + '.proofofclaw.eth';
   document.getElementById('agent-type-badge').textContent = a.type || 'agent';
   document.getElementById('header-dot').className = 'status-dot' + (statusClass ? ' ' + statusClass : '');
   document.getElementById('header-status-text').textContent = statusLabel;
@@ -1464,7 +1174,7 @@ function renderAgent() {
 
   // Metrics - Agent Status card
   document.getElementById('metric-agent-id').textContent = a.id;
-  document.getElementById('metric-ens').textContent = a.ens || a.name + '.proofclaw.eth';
+  document.getElementById('metric-ens').textContent = a.ens || a.name + '.proofofclaw.eth';
   document.getElementById('metric-policy-hash').textContent = a.policyHash || '0x' + a.id.slice(0, 4) + '...' + a.id.slice(-4);
 
   // Set initial stats from agent data
@@ -1480,21 +1190,26 @@ function renderAgent() {
   document.getElementById('btn-proofs').href = 'proofs.html?agent=' + encodeURIComponent(a.id);
   document.getElementById('btn-messages').href = 'messages.html?agent=' + encodeURIComponent(a.id);
 
-  // Update sidebar nav links with agent param (dashboard + auth share same origin)
+  // Show agent URL if available
+  const urlMetric = document.getElementById('agent-url-metric');
+  const urlInput = document.getElementById('dash-agent-url');
+  if (a.endpoints) {
+    urlMetric.style.display = 'block';
+    urlInput.value = a.endpoints;
+  } else {
+    urlMetric.style.display = 'none';
+  }
+
+  // Update sidebar nav links with agent param
   document.querySelectorAll('.sidebar-nav a').forEach(link => {
     const href = link.getAttribute('href');
-    const internal = link.getAttribute('data-internal-view');
     if (href && href !== '#' && !href.includes('index.html')) {
       const base = href.split('?')[0];
       if (base === 'dashboard.html') {
-        let u = base + '?agent=' + encodeURIComponent(a.id);
-        if (internal === 'auth') u += '&view=auth';
-        link.href = u;
+        link.href = base + '?agent=' + encodeURIComponent(a.id);
       }
     }
   });
-
-  applyDashboardViewFromUrl();
 }
 
 function updateStats() {
@@ -1504,6 +1219,19 @@ function updateStats() {
   document.getElementById('stat-violations').textContent = stats.violations;
   document.getElementById('stat-proofs').textContent = stats.proofs;
   document.getElementById('stat-verified').textContent = stats.verified;
+}
+
+function copyDashUrl() {
+  const input = document.getElementById('dash-agent-url');
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    if (btn) {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    }
+  });
 }
 
 // =====================================================
@@ -1532,10 +1260,10 @@ function addActivity(type, title, description) {
   const li = document.createElement('li');
   li.className = 'activity-item fade-in';
   li.innerHTML =
-    '<div class="activity-icon ' + type + '">' + (icons[type] || '\u27C1') + '</div>' +
+    '<div class="activity-icon ' + esc(type) + '">' + (icons[type] || '\u27C1') + '</div>' +
     '<div class="activity-content">' +
-      '<div class="activity-title">' + title + '</div>' +
-      '<div class="activity-meta">' + description + '</div>' +
+      '<div class="activity-title">' + esc(title) + '</div>' +
+      '<div class="activity-meta">' + esc(description) + '</div>' +
     '</div>';
   list.insertBefore(li, list.firstChild);
   // Keep max 12 items
@@ -1546,9 +1274,9 @@ function addActivity(type, title, description) {
 
 function seedActivity() {
   const a = currentAgent;
-  const ens = a.ens || a.name + '.proofclaw.eth';
+  const ens = a.ens || a.name + '.proofofclaw.eth';
   addActivity('proof', 'Proof Generated', 'Swap 100 USDC \u2192 ETH \u2022 Autonomous \u2022 2 min ago');
-  addActivity('message', 'DM3 Message Received', 'From bob.proofclaw.eth \u2022 5 min ago');
+  addActivity('message', 'DM3 Message Received', 'From bob.proofofclaw.eth \u2022 5 min ago');
   addActivity('approval', 'Ledger Approval Granted', 'Transfer 500 USDC \u2022 10 min ago');
   addActivity('proof', 'Proof Verified On-Chain', 'Query balance \u2022 Autonomous \u2022 18 min ago');
   addActivity('message', 'DM3 Message Sent', 'To ' + ens + ' \u2022 25 min ago');
@@ -1575,7 +1303,7 @@ function scheduleSimulations() {
 
   // Add message activity after 15 seconds
   activityTimers.push(setTimeout(function() {
-    addActivity('message', 'DM3 Message Received', 'From alpha.proofclaw.eth \u2022 Just now');
+    addActivity('message', 'DM3 Message Received', 'From alpha.proofofclaw.eth \u2022 Just now');
   }, 15000));
 
   // Add another proof after 22 seconds
@@ -1604,7 +1332,7 @@ function showPendingApproval() {
       '<div class="approval-meta">Transfer 500 USDC to 0xd8dA...6045 exceeds autonomous limit</div>' +
       '<div class="approval-details">' +
         'Action Value: 500 USDC ($500.00)<br>' +
-        'Autonomous Limit: ' + limit + ' USDC<br>' +
+        'Autonomous Limit: ' + esc(limit) + ' USDC<br>' +
         '<span class="hash">Output Commitment: 0xabcd1234ef5678900987654321fedcba...ef01</span>' +
       '</div>' +
       '<div class="approval-actions">' +
@@ -1644,18 +1372,131 @@ function showEmptyState() {
 }
 
 // =====================================================
+// SETUP CHECKLIST
+// =====================================================
+function runSetupChecklist() {
+  var BRIDGE_URL = window.POC_BRIDGE_URL || 'http://localhost:3002';
+  var RPC_URL = 'https://eth-sepolia.g.alchemy.com/v2/';
+  var WALLET_ADDR = '0x04E20e5AfC08759930846d72272b0d7d7D0d7C4b';
+
+  var checks = [
+    {
+      id: 'org',
+      label: 'Register organization',
+      test: function() { return !!getOrg(); },
+      action: 'showOrgRegistration()',
+      actionLabel: 'Register'
+    },
+    {
+      id: 'rpc',
+      label: 'Configure RPC endpoint',
+      test: function() {
+        // Check if agent API is reachable (implies RPC is set)
+        return PocAPI.isConnected();
+      },
+      action: 'PocAPI.showConnectModal()',
+      actionLabel: 'Connect Agent'
+    },
+    {
+      id: 'wallet',
+      label: 'Fund agent wallet',
+      sublabel: '<span style="font-family:var(--font-mono);font-size:10px;color:var(--cyan);user-select:all;">' + esc(WALLET_ADDR) + '</span> \u2014 send Sepolia ETH from a <a href="https://sepoliafaucet.com" target="_blank" rel="noopener" style="color:var(--cyan);">faucet</a>',
+      test: function() { return false; }, // async check below
+      asyncTest: function() {
+        var conn = PocAPI.getConnection();
+        if (!conn) return Promise.resolve(false);
+        return PocAPI.fetchStatus(conn.url)
+          .then(function(s) { return s && s.wallet_balance_wei && s.wallet_balance_wei !== '0'; })
+          .catch(function() { return false; });
+      },
+      actionLabel: 'Copy Address',
+      action: 'navigator.clipboard.writeText("' + WALLET_ADDR + '")'
+    },
+    {
+      id: 'bridge',
+      label: 'Swarm bridge running',
+      test: function() { return false; },
+      asyncTest: function() {
+        return fetch(BRIDGE_URL + '/health', { signal: AbortSignal.timeout(2000) })
+          .then(function(r) { return r.ok; })
+          .catch(function() { return false; });
+      },
+      actionLabel: 'Start Bridge',
+      action: 'alert("Run: make run-swarm-bridge")'
+    },
+    {
+      id: 'dm3',
+      label: 'DM3 delivery service running',
+      test: function() { return false; },
+      asyncTest: function() {
+        return fetch('http://localhost:3001/health', { signal: AbortSignal.timeout(2000) })
+          .then(function(r) { return r.ok; })
+          .catch(function() { return false; });
+      },
+      actionLabel: 'Start DM3',
+      action: 'alert("Run: make run-delivery-service")'
+    }
+  ];
+
+  var container = document.getElementById('setup-items');
+  var progressEl = document.getElementById('setup-progress');
+  var wrapper = document.getElementById('setup-checklist');
+  if (!container || !wrapper) return;
+
+  var completed = 0;
+  var total = checks.length;
+
+  function render() {
+    var html = '';
+    checks.forEach(function(c) {
+      var done = c._passed;
+      var icon = done
+        ? '<span style="color:var(--green);margin-right:8px;">&#x2713;</span>'
+        : '<span style="color:var(--text-dim);margin-right:8px;">&#x25CB;</span>';
+      var label = done
+        ? '<span style="color:var(--text-dim);text-decoration:line-through;">' + esc(c.label) + '</span>'
+        : '<span style="color:var(--text-primary);">' + esc(c.label) + '</span>';
+      var sub = c.sublabel && !done ? '<div style="margin-left:22px;margin-top:2px;font-size:11px;color:var(--text-secondary);">' + c.sublabel + '</div>' : '';
+      var btn = !done && c.action
+        ? ' <button onclick="' + c.action + '" style="margin-left:auto;padding:3px 10px;font-size:11px;background:var(--bg-card);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;">' + esc(c.actionLabel) + '</button>'
+        : '';
+      html += '<div style="display:flex;align-items:center;padding:6px 0;">' + icon + label + btn + '</div>' + sub;
+    });
+    container.innerHTML = html;
+    progressEl.textContent = completed + ' / ' + total;
+
+    if (completed >= total) {
+      wrapper.style.display = 'none';
+    } else {
+      wrapper.style.display = 'block';
+    }
+  }
+
+  // Run sync checks first
+  checks.forEach(function(c) {
+    c._passed = c.test();
+    if (c._passed) completed++;
+  });
+  render();
+
+  // Run async checks
+  var asyncChecks = checks.filter(function(c) { return c.asyncTest && !c._passed; });
+  if (asyncChecks.length === 0) return;
+
+  Promise.all(asyncChecks.map(function(c) {
+    return c.asyncTest().then(function(ok) {
+      if (ok) { c._passed = true; completed++; }
+    });
+  })).then(render);
+}
+
+// Run checklist after short delay to let other init run first
+setTimeout(runSetupChecklist, 500);
+
+// =====================================================
 // BOOT
 // =====================================================
 init();
-
-// Sidebar collapse
-function toggleSidebar() {
-  document.body.classList.toggle('sidebar-collapsed');
-  localStorage.setItem('poc-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed'));
-}
-if (localStorage.getItem('poc-sidebar-collapsed') === 'true') {
-  document.body.classList.add('sidebar-collapsed');
-}
 </script>
 </body>
 </html>

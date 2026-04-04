@@ -4,6 +4,8 @@
 
 > Autonomous AI agents with cryptographically provable behavior, end-to-end encrypted communication, and hardware-signed human approval.
 
+> **⚠ Prototype / Testnet Only** — This project is under active development. Core security modules (ZK proof generation, Ledger approval) currently use mock or stub implementations. Contracts are deployed to 0G Galileo Testnet (chain 16602) and verified on-chain but are unaudited. Do not use with real funds or in production environments.
+
 ---
 
 ## Overview
@@ -43,7 +45,7 @@ The success screen shows the exact `cargo run` command pre-filled with your conf
 ```bash
 cd agent && \
 AGENT_ID=my-agent \
-ENS_NAME=my-agent.proofclaw.eth \
+ENS_NAME=my-agent.proofofclaw.eth \
 PRIVATE_KEY=0x... \
 RPC_URL=https://eth-sepolia.g.alchemy.com/v2/... \
 ZERO_G_INDEXER_RPC=https://indexer-storage-testnet.0g.ai \
@@ -154,30 +156,29 @@ Response:
 
 ```
 proof-of-claw/
-├── agent/                      # Rust agent runtime
+├── agent/                      # Rust agent runtime (IronClaw workspace)
+│   ├── crates/
+│   │   ├── proof_of_claw/      # Core Proof of Claw agent crate
+│   │   ├── ironclaw_engine/    # Agent reasoning loop, capabilities, memory
+│   │   ├── ironclaw_safety/    # Safety layer (injection detection, leak detection, fuzzing)
+│   │   ├── ironclaw_skills/    # Extensible skills system
+│   │   └── ironclaw_common/    # Shared types and utilities
 │   └── src/
-│       ├── main.rs             # Entry point — API server + agent loop
-│       ├── api.rs              # REST API (status, chat, proofs, messages, activity)
-│       ├── proof_agent.rs      # IronClaw-based agent with shared state
-│       ├── proof_generator.rs  # ZK proof generation (Boundless / mock)
-│       ├── ironclaw_adapter.rs # IronClaw trace conversion
-│       ├── core/
-│       │   ├── config.rs       # Environment-based configuration
-│       │   ├── intent_router.rs # Action classification (swap, transfer, query)
-│       │   ├── job_scheduler.rs # Async task management
-│       │   └── types.rs        # Core data structures
-│       ├── tools/
-│       │   ├── registry.rs     # Tool registration with SHA256 capability hashes
-│       │   └── sandbox.rs      # Wasmtime WASM execution sandbox
-│       ├── safety/
-│       │   ├── policy_engine.rs     # Tool allowlist, value threshold enforcement
-│       │   └── injection_detector.rs # Prompt injection detection
-│       └── integrations/
-│           ├── zero_g.rs       # 0G Compute (inference) + 0G Storage (traces)
-│           ├── ens_dm3.rs      # ENS resolution + DM3 encrypted messaging
-│           ├── ledger.rs       # Ledger hardware approval gate (stub)
-│           ├── eip8004.rs      # EIP-8004 identity, reputation, validation
-│           └── inft.rs         # iNFT (ERC-7857) agent identity minting
+│       ├── main.rs             # Entry point + CLI
+│       ├── app.rs              # App startup orchestration
+│       ├── agent/              # Core agent loop, dispatcher, sessions
+│       ├── channels/           # Multi-channel input (HTTP, CLI, REPL, WebSocket, WASM)
+│       ├── tools/              # Extensible tool system with WASM sandbox + MCP
+│       ├── llm/                # Multi-provider LLM abstraction
+│       ├── db/                 # Dual-backend persistence (PostgreSQL + libSQL)
+│       ├── workspace/          # Persistent memory (hybrid FTS + vector search)
+│       ├── safety/             # Prompt injection detection (re-exports ironclaw_safety)
+│       ├── sandbox/            # Docker execution isolation + network proxy
+│       ├── skills/             # SKILL.md prompt extension system
+│       ├── hooks/              # Lifecycle hooks (6 hook points)
+│       ├── tunnel/             # Public exposure (Cloudflare, ngrok, Tailscale)
+│       ├── secrets/            # AES-256-GCM secrets management
+│       └── integrations/       # 0G, ENS, DM3, Ledger, EIP-8004, iNFT
 │
 ├── zkvm/                       # RISC Zero zkVM programs
 │   ├── guest/src/main.rs       # Policy verification guest program
@@ -187,29 +188,41 @@ proof-of-claw/
 │   ├── src/
 │   │   ├── ProofOfClawVerifier.sol  # RISC Zero proof verification + execution routing
 │   │   ├── EIP8004Integration.sol   # EIP-8004 registry bridge
-│   │   └── ProofOfClawINFT.sol      # ERC-7857 iNFT for agent identity
+│   │   ├── ProofOfClawINFT.sol      # ERC-7857 iNFT for agent identity
+│   │   ├── SoulVaultSwarm.sol       # Epoch-based swarm coordination
+│   │   ├── SoulVaultERC8004RegistryAdapter.sol  # Self-sovereign agent identity
+│   │   └── RiscZeroMockVerifier.sol # Testnet mock verifier (DO NOT use in prod)
 │   ├── interfaces/
 │   │   ├── IRiscZeroVerifier.sol
-│   │   └── IEIP8004.sol
+│   │   ├── IEIP8004.sol
+│   │   └── ISoulVaultSwarm.sol
 │   ├── clear-signing/
 │   │   └── proofofclaw.json         # ERC-7730 Ledger Clear Signing metadata
 │   └── script/
 │       ├── Deploy.s.sol             # Sepolia/Mainnet deployment
-│       └── Deploy0G.s.sol           # 0G Chain deployment
+│       ├── Deploy0G.s.sol           # 0G Chain deployment (auto-deploys mock verifier)
+│       └── DeploySwarm.s.sol        # SoulVault swarm + identity deployment
 │
 ├── frontend/                   # Web UI (vanilla HTML/CSS/JS)
-│   ├── index.html              # Landing page
+│   ├── index.html              # Landing page + architecture overview
 │   ├── agents.html             # Agent registry, wizard, inline chat, profile editor
 │   ├── dashboard.html          # Live monitoring (polls API every 3s when connected)
 │   ├── messages.html           # DM3 message threads
 │   ├── proofs.html             # ZK proof explorer
+│   ├── soul-vault.html         # Agent deployment interface
+│   ├── docs.html               # Interactive technical documentation
+│   ├── deploy.html             # Redirect → agents.html
 │   ├── poc-api.js              # API client (connect, fetch, send)
-│   └── ens-resolver.js         # On-chain ENS resolution (keccak256 + namehash)
+│   ├── ens-resolver.js         # On-chain ENS resolution (keccak256 + namehash)
+│   ├── shared.css              # Unified design system
+│   ├── shared.js               # Shared UI utilities
+│   └── public/                 # Favicons, logos, sponsor assets
 │
 ├── spec.md                     # Full technical specification
 ├── ARCHITECTURE.md             # System architecture docs
 ├── IRONCLAW_INTEGRATION.md     # IronClaw integration guide
 ├── Makefile                    # Build/test/deploy targets
+├── vercel.json                 # Vercel deployment config (serves frontend/)
 └── .env.example                # Configuration reference
 ```
 
@@ -217,7 +230,7 @@ proof-of-claw/
 
 ### Prerequisites
 
-- Rust 1.75+
+- Rust 1.92+
 - Foundry (`curl -L https://foundry.paradigm.xyz | bash && foundryup`)
 - RISC Zero toolchain (`curl -L https://risczero.com/install | bash && rzup install`)
 
@@ -236,9 +249,11 @@ cd zkvm && cargo build --release
 
 ### Run
 
+> **Warning:** The private key below is a well-known Hardhat/Anvil test key. Never use it on mainnet or with real funds. If `PRIVATE_KEY` is omitted, the server falls back to a hardcoded demo key — this is only safe for local development.
+
 ```bash
 # Terminal 1: Start the agent
-cd agent && AGENT_ID=my-agent ENS_NAME=my-agent.proofclaw.eth \
+cd agent && AGENT_ID=my-agent ENS_NAME=my-agent.proofofclaw.eth \
   PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
   RPC_URL=https://eth-sepolia.g.alchemy.com/v2/demo \
   ZERO_G_INDEXER_RPC=https://indexer-storage-testnet.0g.ai \
@@ -255,11 +270,50 @@ cd frontend && python3 -m http.server 8080
 
 Open `http://localhost:8080/agents.html` → Connect OpenClaw → Chat.
 
+## Deployed Contracts (0G Testnet)
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| ProofOfClawVerifier | `0xe34dab193105f3d7ec6ee4e6172cbe6213108d8b` | [View on 0G ChainScan](https://chainscan-dev.0g.ai/address/0xe34dab193105f3d7ec6ee4e6172cbe6213108d8b) |
+| ProofOfClawINFT | `0x45c69b7be9dc9a4126053a17a43e664b4ae031a1` | [View on 0G ChainScan](https://chainscan-dev.0g.ai/address/0x45c69b7be9dc9a4126053a17a43e664b4ae031a1) |
+
+**Network Details:**
+- Chain ID: 16602
+- RPC: https://evmrpc-testnet.0g.ai
+- Explorer: https://chainscan-dev.0g.ai
+
 ### Deploy Contracts
+
+All contracts are deployed and verified on **0G Galileo Testnet** (chain ID 16602).
+
+#### Deployed Addresses
+
+| Contract | Address | Role |
+|----------|---------|------|
+| **SoulVaultSwarm** | `0xa70EB0DF1563708F28285C2DeA2BF31aadFB544D` | Epoch-based swarm coordination |
+| **ERC8004RegistryAdapter** | `0x9De4F1b14660B5f8145a78Cfc0312B1BFb812C46` | Self-sovereign agent identity |
+| **RiscZeroMockVerifier** | `0x93e985aCA4112771c0B05114Ad99677DB85a6A9e` | Testnet proof verifier (mock) |
+| **ProofOfClawVerifier** | `0xa2Df3F3998FdF9Fb7E11e43d10d6B3C62264e3A4` | RISC Zero proof verification + routing |
+| **ProofOfClawINFT** | `0xDe61e80Cdc7ba0000d9eB9040e59f98A3C9991a3` | ERC-7857 agent identity NFT |
+
+View on explorer: [chainscan-galileo.0g.ai](https://chainscan-galileo.0g.ai/)
+
+#### Redeploy (if needed)
 
 ```bash
 cd contracts
-forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --private-key $PRIVATE_KEY
+
+# Deploy swarm + identity contracts
+PRIVATE_KEY=$PRIVATE_KEY forge script script/DeploySwarm.s.sol \
+  --rpc-url https://evmrpc-testnet.0g.ai --broadcast --evm-version cancun --with-gas-price 4000000000
+
+# Deploy verifier + iNFT (auto-deploys mock verifier if RISC_ZERO_VERIFIER_ADDRESS is unset)
+PRIVATE_KEY=$PRIVATE_KEY forge script script/Deploy0G.s.sol \
+  --rpc-url https://evmrpc-testnet.0g.ai --broadcast --evm-version cancun --with-gas-price 4000000000
+
+# Deploy to Sepolia (with EIP-8004 integration)
+PRIVATE_KEY=$PRIVATE_KEY forge script script/Deploy.s.sol \
+  --rpc-url $SEPOLIA_RPC_URL --broadcast
 ```
 
 ## Integrations
@@ -267,34 +321,36 @@ forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --private-key $P
 | Integration | Purpose | Status |
 |-------------|---------|--------|
 | **0G Compute** | Private LLM inference with attestation | Working — real HTTP + attestation extraction |
-| **0G Storage** | Decentralized execution trace storage | Working — upload/retrieve with content hashing |
+| **0G Storage** | Decentralized execution trace storage | Working — upload/retrieve with content hashing (local fallback when offline) |
 | **ENS** | Agent identity via subnames | Working — on-chain namehash + text records |
 | **DM3** | End-to-end encrypted messaging | Working — 3-tier resolution (ENS → HTTP → fallback) |
-| **RISC Zero** | ZK proofs of policy compliance | Working — guest/host programs + Boundless |
-| **Ledger** | Hardware-gated human approval | Stub — needs real DMK/DSK integration |
-| **EIP-8004** | Trustless agent discovery & reputation | Working — identity, reputation, validation queries |
-| **iNFT (ERC-7857)** | Agent identity NFT on 0G Chain | Working — minting, metadata, proof recording |
+| **RISC Zero** | ZK proofs of policy compliance | **Mock** — contracts deployed with mock verifier on 0G testnet; guest/host programs exist but agent uses SHA-256 mock receipts in dev; Boundless not yet wired end-to-end |
+| **Ledger** | Hardware-gated human approval | **Stub** — always returns `Ok(true)`; no real device communication |
+| **EIP-8004** | Trustless agent discovery & reputation | Working — identity, reputation, validation queries (contracts unaudited) |
+| **iNFT (ERC-7857)** | Agent identity NFT on 0G Chain | Working — minting, metadata, proof recording (custom ERC-721, not OZ-based) |
 
 ## Security Model
 
+> **Note:** The mitigations below describe the intended design. Items marked *(planned)* are not yet fully implemented — see the Integrations table above for current status.
+
 | Threat | Mitigation |
 |--------|-----------|
-| Agent acts outside policy | RISC Zero proof fails; action blocked on-chain |
+| Agent acts outside policy | RISC Zero proof fails; action blocked on-chain *(planned — currently mock proofs)* |
 | Inference tampering | 0G Compute attestation; signature in proof |
 | Message interception | DM3 end-to-end encryption with keys from ENS profiles |
-| Identity spoofing | ENS ownership tied to Ledger EOA |
-| High-value action without consent | Physical Ledger approval with Clear Signing display |
-| Prompt injection | Safety layer (injection detector) in proven execution trace |
+| Identity spoofing | ENS ownership tied to Ledger EOA *(planned — Ledger integration is stub)* |
+| High-value action without consent | Physical Ledger approval with Clear Signing display *(planned — Ledger integration is stub)* |
+| Prompt injection | Regex-based injection detector in execution trace *(basic — not adversarially robust)* |
 | Sybil agents / fake reputation | EIP-8004 Reputation Registry filtering by trusted reviewers |
 
 ## Build Status
 
 | Component | Status |
 |-----------|--------|
-| Rust Agent | 0 warnings, 35/35 tests pass |
-| Smart Contracts | `forge build` compiles clean |
-| RISC Zero | Toolchain installed (cargo-risczero 3.0.5) |
-| Frontend | All pages functional, no external dependencies |
+| Rust Agent | 0 warnings, 35/35 tests pass (tests use mock proof generation) |
+| Smart Contracts | `forge build` compiles clean; 5 contracts deployed + verified on 0G Galileo Testnet |
+| RISC Zero | Guest/host programs ready; mock verifier deployed on-chain; Boundless integration pending |
+| Frontend | All pages functional; contract addresses populated in `.env` |
 
 ## Tech Stack
 
@@ -313,6 +369,7 @@ forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --private-key $P
 
 ## Documentation
 
+- [docs.html](frontend/docs.html) — Interactive technical documentation (served at `/docs.html`)
 - [spec.md](spec.md) — Full technical specification
 - [ARCHITECTURE.md](ARCHITECTURE.md) — System architecture
 - [IRONCLAW_INTEGRATION.md](IRONCLAW_INTEGRATION.md) — IronClaw integration guide

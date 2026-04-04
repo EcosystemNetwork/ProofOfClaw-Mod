@@ -1,0 +1,2183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Soul Vault — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<meta name="description" content="Soul Vault — manage agent memory backups, iNFTs, and clearance permissions.">
+<style>
+/* ─── TOPBAR ─── */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 240px;
+  right: 0;
+  height: 64px;
+  background: rgba(6,8,13,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  z-index: 90;
+}
+
+.topbar-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* ─── MAIN CONTENT ─── */
+.main-content {
+  margin-left: 240px;
+  margin-top: 64px;
+  padding: 32px;
+  min-height: calc(100vh - 64px);
+  position: relative;
+  z-index: 1;
+}
+
+body.sidebar-collapsed .topbar { left: 60px; }
+body.sidebar-collapsed .main-content { margin-left: 60px; }
+
+/* ─── VAULT STATS ─── */
+.vault-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.vault-stat {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s;
+}
+
+.vault-stat:hover {
+  border-color: var(--border-cyan);
+}
+
+.vault-stat-label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.vault-stat-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.vault-stat-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+/* ─── SECTION HEADER ─── */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.section-subtitle {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.filter-bar select, .filter-bar input {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+}
+
+.filter-bar input {
+  width: 200px;
+}
+
+/* ─── iNFT GRID ─── */
+.inft-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.inft-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: all 0.25s;
+}
+
+.inft-card:hover {
+  border-color: var(--border-cyan);
+  box-shadow: 0 4px 24px rgba(0,229,255,0.06);
+}
+
+.inft-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.inft-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: rgba(0,229,255,0.08);
+  border: 1px solid var(--border-cyan);
+  flex-shrink: 0;
+}
+
+.inft-header-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.inft-name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inft-ens {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--cyan);
+  margin-top: 2px;
+}
+
+.inft-token-id {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.inft-card-body {
+  padding: 16px 20px;
+}
+
+/* ─── Memory Metrics ─── */
+.memory-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.memory-metric {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.memory-metric-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.memory-metric-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+/* ─── Backup List ─── */
+.backup-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.backup-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.backup-item:hover {
+  border-color: var(--border-cyan);
+}
+
+.backup-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.backup-icon.memory { background: rgba(0,229,255,0.08); color: var(--cyan); }
+.backup-icon.persona { background: rgba(179,136,255,0.08); color: var(--purple); }
+.backup-icon.policy { background: rgba(0,230,118,0.08); color: var(--green); }
+
+.backup-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.backup-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.backup-meta {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+
+.backup-size {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.backup-status {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.backup-status.encrypted {
+  background: rgba(0,230,118,0.08);
+  color: var(--green);
+  border: 1px solid rgba(0,230,118,0.15);
+}
+
+.backup-status.synced {
+  background: rgba(0,229,255,0.08);
+  color: var(--cyan);
+  border: 1px solid rgba(0,229,255,0.15);
+}
+
+/* ─── Clearance Section ─── */
+.clearance-section {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+
+.clearance-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.clearance-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.clearance-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.clearance-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.clearance-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11px;
+}
+
+.clearance-agent-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.clearance-agent-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.clearance-agent-name {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.clearance-agent-scope {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.clearance-status {
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  font-weight: 600;
+}
+
+.clearance-status.active {
+  background: rgba(0,230,118,0.08);
+  color: var(--green);
+  border: 1px solid rgba(0,230,118,0.15);
+}
+
+.clearance-status.expired {
+  background: rgba(255,179,0,0.08);
+  color: var(--amber);
+  border: 1px solid rgba(255,179,0,0.15);
+}
+
+.clearance-status.revoked {
+  background: rgba(255,61,90,0.08);
+  color: var(--red);
+  border: 1px solid rgba(255,61,90,0.15);
+}
+
+.btn-revoke {
+  padding: 4px 10px;
+  font-size: 10px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  background: rgba(255,61,90,0.08);
+  border: 1px solid rgba(255,61,90,0.15);
+  border-radius: 4px;
+  color: var(--red);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-revoke:hover {
+  background: rgba(255,61,90,0.15);
+}
+
+.btn-grant {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  background: rgba(0,229,255,0.08);
+  border: 1px solid var(--border-cyan);
+  border-radius: 6px;
+  color: var(--cyan);
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: center;
+}
+
+.btn-grant:hover {
+  background: rgba(0,229,255,0.15);
+  box-shadow: 0 2px 12px rgba(0,229,255,0.1);
+}
+
+/* ─── Empty State ─── */
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-dim);
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  font-size: 13px;
+  max-width: 400px;
+  margin: 0 auto 20px;
+  line-height: 1.6;
+}
+
+.empty-state a {
+  display: inline-block;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, var(--cyan), #00b8d4);
+  color: #000;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.empty-state a:hover {
+  box-shadow: 0 4px 20px rgba(0,229,255,0.3);
+  transform: translateY(-1px);
+}
+
+/* ─── GRANT MODAL ─── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-header h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.modal-header p {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.modal-body {
+  padding: 20px 24px;
+}
+
+.modal-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-modal-cancel {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.btn-modal-cancel:hover { color: var(--text-primary); border-color: var(--border-cyan); }
+
+.btn-modal-confirm {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--cyan), #00b8d4);
+  border: none;
+  color: #000;
+  transition: all 0.2s;
+}
+
+.btn-modal-confirm:hover { box-shadow: 0 4px 16px rgba(0,229,255,0.3); transform: translateY(-1px); }
+.btn-modal-confirm:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) {
+  .topbar { left: 0 !important; padding: 0 16px; }
+  .main-content { margin-left: 0 !important; padding: 20px 16px; }
+  .vault-stats { grid-template-columns: repeat(2, 1fr); }
+  .inft-grid { grid-template-columns: 1fr; }
+  .memory-metrics { grid-template-columns: repeat(3, 1fr); }
+  .filter-bar { flex-wrap: wrap; }
+  .filter-bar input { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .topbar { height: 52px; }
+  .main-content { margin-top: 52px !important; padding: 16px 12px; }
+  .topbar-title { font-size: 16px; }
+  .vault-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .vault-stat { padding: 14px; }
+  .vault-stat-value { font-size: 22px; }
+}
+</style>
+</head>
+<body class="has-grid">
+
+<!-- SIDEBAR -->
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
+  <a href="index.html" class="sidebar-logo">
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
+    <span class="logo-text">Proof of Claw</span>
+  </a>
+  <nav class="sidebar-nav" aria-label="App navigation">
+    <a href="agents.html">
+      <span class="nav-icon">&#x2726;</span> Agents
+    </a>
+    <a href="dashboard.html">
+      <span class="nav-icon">&#x25A3;</span> Dashboard
+    </a>
+    <a href="auth-modules.html">
+      <span class="nav-icon">&#x1F512;</span> Auth Modules
+    </a>
+    <a href="messages.html">
+      <span class="nav-icon">&#x2709;</span> Messages
+    </a>
+    <a href="proofs.html">
+      <span class="nav-icon">&#x2731;</span> Proofs
+    </a>
+    <a href="kanban.html">
+      <span class="nav-icon">&#x25A0;</span> Kanban
+    </a>
+    <a href="soul-vault.html" class="active" aria-current="page">
+      <span class="nav-icon">&#x2B23;</span> Soul Vault
+    </a>
+    <a href="approve.html">
+      <span class="nav-icon">&#x2714;</span> Approve
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div id="poc-connection-slot"></div>
+    <a href="index.html" class="back-link btn-home">Back to Home</a>
+  </div>
+</aside>
+
+<div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<!-- TOPBAR -->
+<header class="topbar" role="banner">
+  <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
+  <h1 class="topbar-title">Soul Vault</h1>
+  <div class="topbar-right">
+    <button id="wallet-connect-btn" class="btn-wizard" style="background:transparent;border:1px solid var(--border-cyan);color:var(--cyan);padding:6px 16px;font-size:12px;" onclick="connectWalletUI()">Connect Wallet</button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:8px;margin-left:8px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);"></span>
+      <span class="status-dot online" style="display:inline-block;"></span>
+    </div>
+    <span class="badge badge-count" style="background:var(--purple-glow);color:var(--purple);border:1px solid rgba(179,136,255,0.2);padding:4px 12px;border-radius:100px;font-size:11px;letter-spacing:0.06em;margin-left:8px;">Agent Registration</span>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="main-content" role="main">
+
+  <!-- Vault-level Stats -->
+  <div class="vault-stats" id="vault-stats">
+    <div class="vault-stat">
+      <div class="vault-stat-label">Total iNFTs</div>
+      <div class="vault-stat-value" id="stat-total-infts">0</div>
+      <div class="vault-stat-sub">ERC-7857 tokens held</div>
+    </div>
+    <div class="vault-stat">
+      <div class="vault-stat-label">Memory Backups</div>
+      <div class="vault-stat-value" id="stat-total-backups">0</div>
+      <div class="vault-stat-sub">Encrypted on 0G Storage</div>
+    </div>
+    <div class="vault-stat">
+      <div class="vault-stat-label">Active Clearances</div>
+      <div class="vault-stat-value" id="stat-active-clearances">0</div>
+      <div class="vault-stat-sub">Agents with access</div>
+    </div>
+    <div class="vault-stat">
+      <div class="vault-stat-label">Total Memory Size</div>
+      <div class="vault-stat-value" id="stat-total-size">0 KB</div>
+      <div class="vault-stat-sub">Across all backups</div>
+    </div>
+  </div>
+
+    <div class="vault-body" id="vault-body">
+
+      <!-- Progress -->
+      <div class="wizard-progress" id="wizard-progress">
+        <div class="wizard-step-dot current" data-step="1"></div>
+        <div class="wizard-step-dot" data-step="2"></div>
+        <div class="wizard-step-dot" data-step="3"></div>
+        <div class="wizard-step-dot" data-step="4"></div>
+        <div class="wizard-step-dot" data-step="5"></div>
+        <div class="wizard-step-dot" data-step="6"></div>
+      </div>
+
+      <!-- Step 1: Agent Type -->
+      <div class="wizard-panel active" id="step-1">
+        <div class="wizard-step-title">Choose Agent Type</div>
+        <div class="wizard-step-subtitle">Select the role and specialization for your agent</div>
+        <div class="type-grid" id="type-grid"></div>
+      </div>
+
+      <!-- Step 2: Identity -->
+      <div class="wizard-panel" id="step-2">
+        <div class="wizard-step-title">Agent Identity</div>
+        <div class="wizard-step-subtitle">Define your agent's on-chain identity</div>
+        <div class="form-group">
+          <label>Agent Name</label>
+          <input type="text" id="agent-name" placeholder="e.g. defi-optimizer">
+        </div>
+        <div class="form-group">
+          <label>ENS Subdomain</label>
+          <input type="text" id="agent-ens" placeholder="e.g. my-agent.proofclaw.eth">
+          <div class="form-hint">Enter a full ENS name or it will auto-generate as name.proofclaw.eth</div>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="agent-desc" placeholder="What does this agent do?"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Network</label>
+          <select id="agent-network">
+            <option value="sepolia">Sepolia (Testnet)</option>
+            <option value="og_testnet">0G Testnet (Chain ID 16602)</option>
+            <option value="mainnet">Ethereum Mainnet</option>
+            <option value="og_mainnet">0G Mainnet (Chain ID 16661)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Step 3: Tools & Integrations -->
+      <div class="wizard-panel" id="step-3">
+        <div class="wizard-step-title">Tools &amp; Integrations</div>
+        <div class="wizard-step-subtitle">Configure external tools and runtime environment</div>
+
+        <div class="form-group">
+          <label>External Tools</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" id="tool-llm-context" value="llm_context" checked><span><strong>LLM Context</strong> — Fetch pre-extracted web content from Brave Search for RAG/fact-checking</span></label>
+            <label class="checkbox-item"><input type="checkbox" id="tool-slack" value="slack"><span><strong>Slack Tool</strong> — Post and read messages in your Slack workspace (OAuth required)</span></label>
+            <label class="checkbox-item"><input type="checkbox" id="tool-telegram" value="telegram"><span><strong>Telegram Tool</strong> — Read and send messages via Telegram bot</span></label>
+            <label class="checkbox-item"><input type="checkbox" id="tool-web-search" value="web_search" checked><span><strong>Web Search</strong> — Search the web using Brave Search API</span></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tool Credentials (Optional)</label>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Slack OAuth Token</label>
+              <input type="password" id="slack-token" placeholder="xoxb-...">
+            </div>
+            <div class="form-group">
+              <label>Telegram Bot Token</label>
+              <input type="password" id="telegram-token" placeholder="bot...">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Brave Search API Key</label>
+              <input type="password" id="brave-api-key" placeholder="BSA...">
+            </div>
+            <div class="form-group">
+              <label>Notification Channel</label>
+              <input type="text" id="notify-channel" placeholder="e.g. telegram, slack">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Docker Sandbox</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+            <label class="toggle-switch" style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+              <input type="checkbox" id="docker-sandbox" style="display:none;" checked>
+              <span class="toggle-slider" style="width:44px;height:24px;background:var(--green);border-radius:12px;position:relative;transition:all 0.3s;">
+                <span style="position:absolute;top:2px;left:22px;width:20px;height:20px;background:#fff;border-radius:50%;transition:all 0.3s;"></span>
+              </span>
+              <span style="font-size:13px;color:var(--text-secondary);">Enable Docker sandbox for code execution</span>
+            </label>
+          </div>
+          <div class="info-box" style="background:rgba(0,230,118,0.05);border-color:rgba(0,230,118,0.2);">
+            <strong>Security:</strong> Docker sandbox keeps your system safe — commands run in isolated containers with no access to your credentials, limited filesystem access, and network traffic restricted to an allowlist.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Background Tasks (Heartbeat)</label>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Check Interval (minutes)</label>
+              <input type="number" id="heartbeat-interval" value="60" min="5" max="1440">
+              <div class="form-hint">How often to check for notifications, calendar updates, etc.</div>
+            </div>
+            <div class="form-group">
+              <label>Heartbeat Enabled</label>
+              <select id="heartbeat-enabled">
+                <option value="true" selected>Yes — Enable periodic background tasks</option>
+                <option value="false">No — Run on-demand only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Skills -->
+      <div class="wizard-panel" id="step-4">
+        <div class="wizard-step-title">Skills &amp; Capabilities</div>
+        <div class="wizard-step-subtitle">Choose capabilities and define the agent's persona</div>
+        <div class="form-group">
+          <label>Skill Tags</label>
+          <div class="skill-tags" id="skill-tags"></div>
+        </div>
+        <div class="form-group">
+          <label>Custom Skill</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="custom-skill" placeholder="Add a custom skill...">
+            <button class="btn-wizard btn-wizard-next" style="padding:10px 16px;font-size:12px;" onclick="addCustomSkill()">Add</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Max Concurrent Tasks</label>
+          <input type="number" id="max-tasks" value="5" min="1" max="50">
+        </div>
+        <div class="form-group">
+          <label>SOUL Persona</label>
+          <textarea id="soul-persona" placeholder="Define the agent's personality, decision-making style, and behavioral guidelines..."></textarea>
+        </div>
+      </div>
+
+      <!-- Step 5: Policy -->
+      <div class="wizard-panel" id="step-5">
+        <div class="wizard-step-title">Policy &amp; Security</div>
+        <div class="wizard-step-subtitle">Define what your agent can and cannot do</div>
+        <div class="form-group">
+          <label>Allowed Tools</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" value="swap_tokens" checked><span>swap_tokens - Execute token swaps on DEXs</span></label>
+            <label class="checkbox-item"><input type="checkbox" value="transfer" checked><span>transfer - Transfer tokens between wallets</span></label>
+            <label class="checkbox-item"><input type="checkbox" value="query" checked><span>query - Read on-chain data and APIs</span></label>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Autonomous Value Limit (USD)</label>
+            <input type="number" id="value-limit" value="100" min="0" step="10">
+            <div class="form-hint">Actions above this require Ledger approval</div>
+          </div>
+          <div class="form-group">
+            <label>Endpoint Allowlist</label>
+            <input type="text" id="endpoints" placeholder="api.uniswap.org, api.0x.org">
+          </div>
+        </div>
+        <div class="info-box">
+          <strong>RISC Zero Policy Enforcement:</strong> All agent actions are verified against this policy inside a zkVM guest. Any violation produces a cryptographic proof of non-compliance. This ensures provable, trustless agent behavior.
+        </div>
+      </div>
+
+      <!-- Step 6: Secrets -->
+      <div class="wizard-panel" id="step-6">
+        <div class="wizard-step-title">Secrets &amp; Keys</div>
+        <div class="wizard-step-subtitle">Provide credentials for your agent (encrypted at rest)</div>
+        <div class="form-group">
+          <label>Private Key</label>
+          <input type="password" id="private-key" placeholder="0x...">
+          <div class="form-hint">Optional. Used for signing transactions. A demo keypair is generated if omitted.</div>
+        </div>
+        <div class="form-group">
+          <label>0G Compute API Key (Optional)</label>
+          <input type="password" id="og-api-key" placeholder="og-...">
+        </div>
+        <div class="form-group">
+          <label>Ledger Origin Token (Optional)</label>
+          <input type="password" id="ledger-token" placeholder="ledger-...">
+        </div>
+        <div class="security-badges">
+          <div class="security-badge">&#x1F512; AES-256-GCM Encryption</div>
+          <div class="security-badge">&#x1F6E1; Secure Enclave Storage</div>
+          <div class="security-badge">&#x2705; Zero-Knowledge Ready</div>
+        </div>
+        <div class="warning-box">
+          Warning: Your private key controls real funds. In production, use a dedicated agent wallet with limited funds. Never reuse your primary wallet key.
+        </div>
+      </div>
+
+      <!-- Step 7: Review -->
+      <div class="wizard-panel" id="step-7">
+        <div class="wizard-step-title">Review &amp; Deploy</div>
+        <div class="wizard-step-subtitle">Confirm your agent configuration</div>
+
+        <div id="review-content">
+          <div class="review-section" id="review-identity"></div>
+          <div class="review-section" id="review-capabilities"></div>
+          <div class="review-section" id="review-policy"></div>
+
+          <div class="review-section">
+            <h4>What Happens Next</h4>
+            <ul class="checklist">
+              <li>Secrets encrypted with AES-256-GCM</li>
+              <li>ENS subdomain registered on-chain</li>
+              <li>Policy contract deployed to selected network</li>
+              <li>Agent iNFT minted on 0G Chain (ERC-7857)</li>
+              <li>Encrypted metadata uploaded to 0G Storage</li>
+              <li>Agent runtime initialized with SOUL persona</li>
+              <li>0G decentralized compute configured</li>
+              <li>Agent started and monitoring begins</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Deploy Progress (replaces review content) -->
+        <div class="deploy-progress" id="deploy-progress">
+          <div style="font-size:40px;margin-bottom:12px;">&#x2699;</div>
+          <div class="wizard-step-title" style="margin-bottom:4px;">Deploying Agent...</div>
+          <div class="wizard-step-subtitle" style="margin-bottom:16px;">This may take a moment</div>
+          <div class="deploy-steps" id="deploy-steps">
+            <div class="deploy-step-item" data-deploy="encrypt"><span class="step-icon">&#x25E6;</span> Encrypting secrets with AES-256-GCM</div>
+            <div class="deploy-step-item" data-deploy="ens"><span class="step-icon">&#x25E6;</span> Registering ENS subdomain</div>
+            <div class="deploy-step-item" data-deploy="contract"><span class="step-icon">&#x25E6;</span> Deploying policy contract</div>
+            <div class="deploy-step-item" data-deploy="inft"><span class="step-icon">&#x25E6;</span> Minting agent iNFT on 0G Chain (ERC-7857)</div>
+            <div class="deploy-step-item" data-deploy="storage"><span class="step-icon">&#x25E6;</span> Uploading encrypted metadata to 0G Storage</div>
+            <div class="deploy-step-item" data-deploy="runtime"><span class="step-icon">&#x25E6;</span> Initializing agent runtime</div>
+            <div class="deploy-step-item" data-deploy="og"><span class="step-icon">&#x25E6;</span> Configuring 0G decentralized compute</div>
+            <div class="deploy-step-item" data-deploy="start"><span class="step-icon">&#x25E6;</span> Starting agent</div>
+          </div>
+        </div>
+
+        <!-- Success -->
+        <div class="deploy-success" id="deploy-success">
+          <div class="success-icon">&#x2705;</div>
+          <h3>Agent Deployed Successfully!</h3>
+          <p id="success-message">Your agent is now live and generating cryptographic proofs.</p>
+          <div class="success-links" id="success-links"></div>
+        </div>
+      </div>
+
+    </div>
+
+  <!-- Section Header + Filters -->
+  <div class="section-header">
+    <div>
+      <div class="section-title">Agent Memory iNFTs</div>
+      <div class="section-subtitle">Each iNFT holds encrypted memory backups. Grant clearance to agents to restore from these backups.</div>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="search-infts" placeholder="Search by agent name..." oninput="renderINFTs()">
+      <select id="filter-status" onchange="renderINFTs()">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="archived">Archived</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- iNFT Grid -->
+  <div id="inft-grid" class="inft-grid"></div>
+
+  <!-- Empty State -->
+  <div id="empty-state" class="empty-state" style="display:none;">
+    <div class="empty-state-icon">&#x2B23;</div>
+    <h3>No iNFTs in your Soul Vault</h3>
+    <p>Deploy an agent to mint an iNFT (ERC-7857) that stores encrypted memory backups on 0G Storage. You can then manage clearances from here.</p>
+    <a href="agents.html">Register an Agent</a>
+  </div>
+
+</main>
+
+<!-- GRANT CLEARANCE MODAL -->
+<div class="modal-overlay" id="grant-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Grant Memory Clearance</h3>
+      <p id="grant-modal-subtitle">Allow an agent to access memory backups from this iNFT</p>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;display:block;">Target Agent</label>
+        <select id="grant-agent-select" style="width:100%;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;">
+          <option value="">Select an agent...</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;display:block;">Access Scope</label>
+        <select id="grant-scope" style="width:100%;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;">
+          <option value="full">Full Memory Access</option>
+          <option value="persona">Persona Only</option>
+          <option value="context">Context Memory Only</option>
+          <option value="policy">Policy Snapshot Only</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;display:block;">Expiry</label>
+        <select id="grant-expiry" style="width:100%;padding:10px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-primary);font-family:var(--font-mono);font-size:12px;">
+          <option value="24h">24 Hours</option>
+          <option value="7d">7 Days</option>
+          <option value="30d">30 Days</option>
+          <option value="permanent">Permanent</option>
+        </select>
+      </div>
+      <div style="padding:12px 14px;background:rgba(0,229,255,0.04);border:1px solid var(--border-cyan);border-radius:8px;font-size:11px;color:var(--text-secondary);line-height:1.6;">
+        <strong style="color:var(--cyan);">How clearance works:</strong> The selected agent will receive a decryption key scoped to the chosen memory subset. Access is logged on-chain via the iNFT's ERC-7857 metadata. You can revoke clearance at any time.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeGrantModal()">Cancel</button>
+      <button class="btn-modal-confirm" id="btn-confirm-grant" onclick="confirmGrant()">Grant Clearance</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="viem-client.js"></script>
+<script type="module" src="config-validator.js"></script>
+<script type="module" src="0g-registration.js"></script>
+<script src="wallet.js"></script>
+<script src="shared.js"></script>
+<script type="module">
+import { configValidator, generateENS } from './config-validator.js';
+import { agentRegistration, ZERO_G_CONFIG } from './0g-registration.js';
+
+// ═══════════════════════════════════════
+// DATA & STATE
+// ═══════════════════════════════════════
+
+let currentGrantInftId = null;
+
+// Memory backup types for demo generation
+const BACKUP_TYPES = [
+  { type: 'memory', icon: '&#x1F9E0;', label: 'Context Memory', prefix: 'ctx_snapshot' },
+  { type: 'persona', icon: '&#x1F3AD;', label: 'SOUL Persona', prefix: 'persona_backup' },
+  { type: 'policy', icon: '&#x1F6E1;', label: 'Policy Snapshot', prefix: 'policy_state' },
+];
+
+const SKILLS = [
+  'solidity', 'rust', 'typescript', 'python', 'smart-contracts',
+  'defi-protocols', 'zk-proofs', 'data-analysis', 'web3', 'security-audit',
+  'governance', 'frontend', 'devops', 'ml-ops', 'mev'
+];
+
+let wizardStep = 1;
+let wizardData = { type: null, skills: [], allowedTools: ['swap_tokens', 'transfer', 'query'] };
+let vaultMode = 'register'; // 'register' or 'deploy'
+
+// Register mode uses steps: 1 (type), 2 (identity), 3 (tools), 4 (skills), 5 (policy), then register
+// Deploy mode uses all 7 steps (+ secrets + deploy)
+const REGISTER_STEPS = [1, 2, 3, 4, 5];
+const DEPLOY_STEPS = [1, 2, 3, 4, 5, 6, 7];
+
+function getSteps() { return vaultMode === 'register' ? REGISTER_STEPS : DEPLOY_STEPS; }
+function getTotalSteps() { return getSteps().length; }
+function getStepNumber() { return getSteps()[wizardStep - 1]; }
+function isLastStep() { return wizardStep >= getTotalSteps(); }
+
+// Bind real-time validation events
+function bindValidationEvents() {
+  // Agent name validation
+  const nameEl = document.getElementById('agent-name');
+  nameEl?.addEventListener('blur', () => {
+    const result = configValidator.validateField('agentName', nameEl.value.trim());
+    showFieldValidation('agent-name', result);
+  });
+  nameEl?.addEventListener('input', () => {
+    validateStep(); // Live validation for next button
+  });
+
+  // ENS validation
+  const ensEl = document.getElementById('agent-ens');
+  ensEl?.addEventListener('blur', () => {
+    const val = ensEl.value.trim() || generateENS(nameEl?.value || '');
+    const result = configValidator.validateField('ensName', val);
+    showFieldValidation('agent-ens', result);
+  });
+
+  // Private key validation (step 5)
+  const pkEl = document.getElementById('private-key');
+  pkEl?.addEventListener('blur', () => {
+    const val = pkEl.value.trim();
+    if (val) {
+      const result = configValidator.validateField('privateKey', val);
+      showFieldValidation('private-key', result, true);
+    }
+  });
+
+  // Value limit validation
+  const limitEl = document.getElementById('value-limit');
+  limitEl?.addEventListener('blur', () => {
+    const result = configValidator.validateField('valueLimit', limitEl.value);
+    showFieldValidation('value-limit', result);
+  });
+
+  // Endpoints validation
+  const endpointsEl = document.getElementById('endpoints');
+  endpointsEl?.addEventListener('blur', () => {
+    const result = configValidator.validateField('endpoints', endpointsEl.value.trim());
+    showFieldValidation('endpoints', result);
+  });
+
+  // Network selection - show contract info
+  const networkEl = document.getElementById('agent-network');
+  networkEl?.addEventListener('change', () => {
+    const network = networkEl.value;
+    const is0G = network.includes('og_');
+
+    // Update UI to indicate 0G network
+    if (is0G) {
+      showNetworkInfo(network);
+    }
+  });
+}
+
+// Show network-specific information
+function showNetworkInfo(networkId) {
+  const network = ZERO_G_CONFIG[networkId.includes('mainnet') ? 'mainnet' : 'testnet'];
+  if (!network) return;
+
+  // Remove old info
+  document.querySelectorAll('.network-info').forEach(el => el.remove());
+
+  const infoEl = document.createElement('div');
+  infoEl.className = 'network-info info-box';
+  infoEl.innerHTML = `
+    <strong>0G Network Selected:</strong> ${network.name}<br>
+    <span style="font-size:11px;">
+      Chain ID: ${network.chainId} |
+      Currency: ${network.nativeCurrency.symbol} |
+      RPC: ${network.rpcUrl}
+    </span>
+  `;
+
+  const networkParent = document.getElementById('agent-network')?.closest('.form-group');
+  if (networkParent) {
+    networkParent.appendChild(infoEl);
+  }
+}
+
+function setVaultMode(mode) {
+  vaultMode = mode;
+  wizardStep = 1;
+
+  // Update toggle buttons
+  document.getElementById('mode-register').style.background = mode === 'register' ? 'var(--cyan)' : 'transparent';
+  document.getElementById('mode-register').style.color = mode === 'register' ? '#000' : 'var(--text-dim)';
+  document.getElementById('mode-deploy').style.background = mode === 'deploy' ? 'var(--cyan)' : 'transparent';
+  document.getElementById('mode-deploy').style.color = mode === 'deploy' ? '#000' : 'var(--text-dim)';
+
+  // Update header
+  document.getElementById('vault-title').textContent = mode === 'register' ? 'Register Agent Identity' : 'Deploy IronClaw Agent';
+  document.getElementById('vault-subtitle').textContent = mode === 'register'
+    ? 'Claim an on-chain identity for your agent. Works with any framework.'
+    : 'Deploy a Rust/IronClaw agent with full runtime. Other frameworks? Use Register + Connect.';
+
+  // Update progress dots
+  const dotsContainer = document.getElementById('wizard-progress');
+  const steps = getSteps();
+  dotsContainer.innerHTML = steps.map((_, i) =>
+    `<div class="wizard-step-dot${i === 0 ? ' current' : ''}" data-step="${i + 1}"></div>`
+  ).join('');
+
+  // Reset form state
+  resetVault();
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function getAgents() {
+  try { return JSON.parse(localStorage.getItem('poc_agents')) || []; } catch { return []; }
+}
+
+function saveAgents(agents) {
+  localStorage.setItem('poc_agents', JSON.stringify(agents));
+}
+
+function getClearances() {
+  try { return JSON.parse(localStorage.getItem('poc_clearances')) || []; } catch { return []; }
+}
+
+function saveClearances(clearances) {
+  localStorage.setItem('poc_clearances', JSON.stringify(clearances));
+}
+
+function getBackups() {
+  try { return JSON.parse(localStorage.getItem('poc_memory_backups')) || []; } catch { return []; }
+}
+
+function saveBackups(backups) {
+  localStorage.setItem('poc_memory_backups', JSON.stringify(backups));
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
+
+function timeAgoShort(iso) {
+  if (!iso) return '-';
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return mins + 'm ago';
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return hours + 'h ago';
+  const days = Math.floor(hours / 24);
+  return days + 'd ago';
+}
+
+function expiryLabel(expiry, grantedAt) {
+  if (expiry === 'permanent') return 'Permanent';
+  const durations = { '24h': 86400000, '7d': 604800000, '30d': 2592000000 };
+  const ms = durations[expiry] || 0;
+  const expires = new Date(new Date(grantedAt).getTime() + ms);
+  if (expires < new Date()) return 'Expired';
+  const remaining = expires - Date.now();
+  const hours = Math.floor(remaining / 3600000);
+  if (hours < 24) return hours + 'h left';
+  return Math.floor(hours / 24) + 'd left';
+}
+
+function clearanceIsActive(c) {
+  if (c.revoked) return false;
+  if (c.expiry === 'permanent') return true;
+  const durations = { '24h': 86400000, '7d': 604800000, '30d': 2592000000 };
+  const ms = durations[c.expiry] || 0;
+  return new Date(c.grantedAt).getTime() + ms > Date.now();
+}
+
+// ═══════════════════════════════════════
+// ENSURE BACKUPS EXIST FOR iNFT AGENTS
+// ═══════════════════════════════════════
+
+function ensureBackups() {
+  const agents = getAgents().filter(a => a.inftTokenId);
+  let backups = getBackups();
+
+  agents.forEach(agent => {
+    const hasBackups = backups.some(b => b.agentId === agent.id);
+    if (!hasBackups) {
+      // Generate initial backups for this agent
+      const now = new Date();
+      BACKUP_TYPES.forEach((bt, i) => {
+        backups.push({
+          id: agent.id + '_' + bt.prefix + '_' + Date.now() + i,
+          agentId: agent.id,
+          type: bt.type,
+          name: bt.prefix + '_' + now.toISOString().slice(0, 10).replace(/-/g, ''),
+          size: Math.floor(Math.random() * 200000) + 5000,
+          createdAt: new Date(now.getTime() - Math.random() * 7 * 86400000).toISOString(),
+          encrypted: true,
+          storageRef: '0g://' + Array.from({length: 16}, () => Math.floor(Math.random()*16).toString(16)).join(''),
+        });
+      });
+    }
+  });
+
+  saveBackups(backups);
+  return backups;
+}
+
+function updateWizardUI() {
+  const currentStepNum = getStepNumber();
+  for (let i = 1; i <= 7; i++) {
+    document.getElementById('step-' + i)?.classList.toggle('active', i === currentStepNum);
+  }
+
+  const btnBack = document.getElementById('btn-back');
+  const btnNext = document.getElementById('btn-next');
+
+  if (btnBack) btnBack.style.visibility = wizardStep > 1 ? 'visible' : 'hidden';
+
+  if (btnNext) {
+    if (isLastStep()) {
+      if (vaultMode === 'register') {
+        btnNext.textContent = 'Register Agent';
+        btnNext.className = 'btn-wizard btn-wizard-deploy';
+        btnNext.style.background = 'linear-gradient(135deg, #bb86fc, #9c27b0)';
+      } else {
+        btnNext.textContent = 'Deploy Agent';
+        btnNext.className = 'btn-wizard btn-wizard-deploy';
+        btnNext.style.background = '';
+      }
+    } else {
+      btnNext.textContent = 'Next';
+      btnNext.className = 'btn-wizard btn-wizard-next';
+      btnNext.style.background = '';
+    }
+  }
+
+  validateStep();
+  if (vaultMode === 'deploy' && currentStepNum === 7) buildReview();
+}
+
+// ═══════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════
+
+function validateStep() {
+  const stepNum = getStepNumber();
+  let valid = true;
+
+  switch(stepNum) {
+    case 1:
+      valid = wizardData.type !== null;
+      break;
+    case 2:
+      const nameVal = document.getElementById('agent-name')?.value.trim() || '';
+      const ensVal = document.getElementById('agent-ens')?.value.trim() || '';
+      const nameValid = configValidator.validateField('agentName', nameVal);
+      const ensValid = configValidator.validateField('ensName', ensVal || generateENS(nameVal));
+      valid = nameValid.valid && (ensVal ? ensValid.valid : true);
+      showFieldValidation('agent-name', nameValid);
+      if (ensVal) showFieldValidation('agent-ens', ensValid);
+      break;
+    case 5:
+      const limitVal = document.getElementById('value-limit')?.value;
+      const limitValid = configValidator.validateField('valueLimit', limitVal);
+      valid = limitValid.valid;
+      break;
+    case 6:
+      const pkVal = document.getElementById('private-key')?.value.trim() || '';
+      const pkValid = configValidator.validateField('privateKey', pkVal || null);
+      valid = pkVal === '' || pkValid.valid; // Private key is optional
+      showFieldValidation('private-key', pkValid, true); // Show warnings but allow
+      break;
+  }
+
+  const btnNext = document.getElementById('btn-next');
+  if (btnNext) btnNext.disabled = !valid;
+}
+
+// Show validation feedback on form fields
+function showFieldValidation(fieldId, validation, allowWarnings = false) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+
+  const parent = field.closest('.form-group');
+  if (!parent) return;
+
+  // Remove old validation messages
+  parent.querySelectorAll('.validation-msg').forEach(el => el.remove());
+  parent.classList.remove('valid', 'invalid', 'warning');
+
+  if (!validation.valid) {
+    parent.classList.add('invalid');
+    const msg = document.createElement('div');
+    msg.className = 'validation-msg error';
+    msg.style.cssText = 'font-size:11px;color:var(--red);margin-top:4px;';
+    msg.textContent = validation.errors?.[0] || 'Invalid input';
+    parent.appendChild(msg);
+  } else if (validation.warnings?.length && !allowWarnings) {
+    parent.classList.add('warning');
+    const msg = document.createElement('div');
+    msg.className = 'validation-msg warning';
+    msg.style.cssText = 'font-size:11px;color:var(--amber);margin-top:4px;';
+    msg.textContent = validation.warnings[0];
+    parent.appendChild(msg);
+  } else if (validation.valid) {
+    parent.classList.add('valid');
+  }
+}
+
+function wizardNext() {
+  if (document.getElementById('btn-next')?.disabled) return;
+  gatherStepData();
+
+  if (isLastStep()) {
+    if (vaultMode === 'register') {
+      startRegister();
+    } else {
+      startDeploy();
+    }
+    return;
+  }
+
+  wizardStep++;
+  updateWizardUI();
+}
+
+function wizardBack() {
+  if (wizardStep > 1) {
+    wizardStep--;
+    updateWizardUI();
+  }
+}
+
+function gatherStepData() {
+  switch(wizardStep) {
+    case 2:
+      wizardData.name = document.getElementById('agent-name').value.trim();
+      const ensField = document.getElementById('agent-ens').value.trim();
+      const parentDomain = localStorage.getItem('poc_ens_domain') || 'proofclaw.eth';
+      wizardData.ens = ensField || (wizardData.name.toLowerCase().replace(/[^a-z0-9-]/g, '') + '.' + parentDomain);
+      wizardData.description = document.getElementById('agent-desc').value.trim();
+      wizardData.network = document.getElementById('agent-network').value;
+      break;
+    case 3:
+      // Tools & Integrations
+      wizardData.tools = {
+        llmContext: document.getElementById('tool-llm-context')?.checked || false,
+        slack: document.getElementById('tool-slack')?.checked || false,
+        telegram: document.getElementById('tool-telegram')?.checked || false,
+        webSearch: document.getElementById('tool-web-search')?.checked || false
+      };
+      wizardData.credentials = {
+        slackToken: document.getElementById('slack-token')?.value?.trim() || '',
+        telegramToken: document.getElementById('telegram-token')?.value?.trim() || '',
+        braveApiKey: document.getElementById('brave-api-key')?.value?.trim() || ''
+      };
+      wizardData.dockerSandbox = document.getElementById('docker-sandbox')?.checked || false;
+      wizardData.heartbeat = {
+        enabled: document.getElementById('heartbeat-enabled')?.value === 'true',
+        interval: parseInt(document.getElementById('heartbeat-interval')?.value) || 60,
+        notifyChannel: document.getElementById('notify-channel')?.value?.trim() || ''
+      };
+      break;
+    case 4:
+      wizardData.skills = [];
+      document.querySelectorAll('.skill-tag.selected').forEach(t => {
+        wizardData.skills.push(t.dataset.skill);
+      });
+      wizardData.maxTasks = parseInt(document.getElementById('max-tasks').value) || 5;
+      wizardData.soulPersona = document.getElementById('soul-persona').value.trim();
+      break;
+    case 5:
+      wizardData.allowedTools = [];
+      document.querySelectorAll('#step-5 input[type="checkbox"]:checked').forEach(cb => {
+        wizardData.allowedTools.push(cb.value);
+      });
+      wizardData.valueLimit = parseInt(document.getElementById('value-limit').value) || 0;
+      wizardData.endpoints = document.getElementById('endpoints').value.trim();
+      break;
+  }
+}
+
+function renderStats() {
+  const agents = getAgents().filter(a => a.inftTokenId);
+  const backups = getBackups();
+  const clearances = getClearances();
+  const activeClearances = clearances.filter(c => clearanceIsActive(c));
+  const totalSize = backups.reduce((sum, b) => sum + (b.size || 0), 0);
+
+  document.getElementById('stat-total-infts').textContent = agents.length;
+  document.getElementById('stat-total-backups').textContent = backups.length;
+  document.getElementById('stat-active-clearances').textContent = activeClearances.length;
+  document.getElementById('stat-total-size').textContent = formatBytes(totalSize);
+}
+
+function renderINFTs() {
+  const agents = getAgents().filter(a => a.inftTokenId);
+  const backups = getBackups();
+  const clearances = getClearances();
+  const allAgents = getAgents();
+
+  // Apply filters
+  const search = (document.getElementById('search-infts').value || '').toLowerCase();
+  const statusFilter = document.getElementById('filter-status').value;
+
+  let filtered = agents;
+  if (search) {
+    filtered = filtered.filter(a => (a.name || '').toLowerCase().includes(search) || (a.ens || '').toLowerCase().includes(search));
+  }
+  if (statusFilter === 'active') {
+    filtered = filtered.filter(a => a.status === 'online' || a.status === 'registered');
+  } else if (statusFilter === 'archived') {
+    filtered = filtered.filter(a => a.status === 'offline');
+  }
+
+  const grid = document.getElementById('inft-grid');
+  const empty = document.getElementById('empty-state');
+
+  if (filtered.length === 0) {
+    grid.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  grid.style.display = 'grid';
+  empty.style.display = 'none';
+
+  grid.innerHTML = filtered.map(agent => {
+    const agentBackups = backups.filter(b => b.agentId === agent.id);
+    const agentClearances = clearances.filter(c => c.inftAgentId === agent.id);
+    const activeClearanceCount = agentClearances.filter(c => clearanceIsActive(c)).length;
+    const totalSize = agentBackups.reduce((sum, b) => sum + (b.size || 0), 0);
+    const latestBackup = agentBackups.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+    return `
+      <div class="inft-card" data-agent-id="${esc(agent.id)}">
+        <div class="inft-card-header">
+          <div class="inft-avatar">${agent.typeIcon || '&#x2B23;'}</div>
+          <div class="inft-header-info">
+            <div class="inft-name">${esc(agent.name)}</div>
+            <div class="inft-ens">${esc(agent.ens || '-')}</div>
+          </div>
+          <div class="inft-token-id">iNFT #${esc(String(agent.inftTokenId))}</div>
+        </div>
+        <div class="inft-card-body">
+          <!-- Metrics -->
+          <div class="memory-metrics">
+            <div class="memory-metric">
+              <div class="memory-metric-value">${agentBackups.length}</div>
+              <div class="memory-metric-label">Backups</div>
+            </div>
+            <div class="memory-metric">
+              <div class="memory-metric-value">${formatBytes(totalSize)}</div>
+              <div class="memory-metric-label">Total Size</div>
+            </div>
+            <div class="memory-metric">
+              <div class="memory-metric-value">${activeClearanceCount}</div>
+              <div class="memory-metric-label">Clearances</div>
+            </div>
+          </div>
+
+          <!-- Backup List -->
+          <div class="backup-list">
+            ${agentBackups.map(b => {
+              const bt = BACKUP_TYPES.find(t => t.type === b.type) || BACKUP_TYPES[0];
+              return `
+                <div class="backup-item">
+                  <div class="backup-icon ${esc(b.type)}">${bt.icon}</div>
+                  <div class="backup-info">
+                    <div class="backup-name">${esc(b.name)}</div>
+                    <div class="backup-meta">${timeAgoShort(b.createdAt)} &middot; ${esc(b.storageRef || '-')}</div>
+                  </div>
+                  <div class="backup-size">${formatBytes(b.size)}</div>
+                  <span class="backup-status encrypted">Encrypted</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <!-- Clearances -->
+          <div class="clearance-section">
+            <div class="clearance-header">
+              <span class="clearance-title">Agent Clearances</span>
+              <span class="clearance-count">${activeClearanceCount} active</span>
+            </div>
+            ${agentClearances.length > 0 ? `
+              <div class="clearance-list">
+                ${agentClearances.map(c => {
+                  const targetAgent = allAgents.find(a => a.id === c.targetAgentId);
+                  const isActive = clearanceIsActive(c);
+                  const statusClass = c.revoked ? 'revoked' : (isActive ? 'active' : 'expired');
+                  const statusLabel = c.revoked ? 'Revoked' : (isActive ? expiryLabel(c.expiry, c.grantedAt) : 'Expired');
+                  return `
+                    <div class="clearance-item">
+                      <span class="clearance-agent-icon">${targetAgent ? (targetAgent.typeIcon || '&#x2726;') : '&#x2726;'}</span>
+                      <div class="clearance-agent-info">
+                        <div class="clearance-agent-name">${esc(targetAgent ? targetAgent.name : c.targetAgentId)}</div>
+                        <div class="clearance-agent-scope">${esc({full:'Full Memory',persona:'Persona Only',context:'Context Only',policy:'Policy Only'}[c.scope] || c.scope)}</div>
+                      </div>
+                      <span class="clearance-status ${statusClass}">${statusLabel}</span>
+                      ${isActive && !c.revoked ? `<button class="btn-revoke" onclick="revokeClearance('${esc(c.id)}')">Revoke</button>` : ''}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            ` : `<div style="font-size:11px;color:var(--text-dim);margin-bottom:10px;">No clearances granted yet</div>`}
+            <button class="btn-grant" onclick="openGrantModal('${esc(agent.id)}')">Grant Clearance</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// WIZARD RENDERING
+// ═══════════════════════════════════════
+
+function renderTypeGrid() {
+  const grid = document.getElementById('type-grid');
+  grid.innerHTML = AGENT_TYPES.map(t => `
+    <div class="type-option" data-type="${t.id}" onclick="selectType('${t.id}', this)">
+      <span class="type-emoji">${t.icon}</span>
+      <div>
+        <div class="type-label">${t.name}</div>
+        <div class="type-desc">${t.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectType(typeId, el) {
+  document.querySelectorAll('.type-option').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  wizardData.type = typeId;
+  const typeObj = AGENT_TYPES.find(t => t.id === typeId);
+  wizardData.typeIcon = typeObj ? typeObj.emoji : '';
+  wizardData.typeName = typeObj ? typeObj.name : '';
+  validateStep();
+}
+
+// ─── Name field -> ENS auto-gen ───
+
+function bindNameField() {
+  const nameEl = document.getElementById('agent-name');
+  const ensEl = document.getElementById('agent-ens');
+  let ensManuallyEdited = false;
+
+  nameEl.addEventListener('input', function() {
+    if (!ensManuallyEdited) {
+      const slug = this.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+      const parentDomain = localStorage.getItem('poc_ens_domain') || 'proofclaw.eth';
+      ensEl.value = slug ? slug + '.' + parentDomain : '';
+    }
+    validateStep();
+  });
+
+  ensEl.addEventListener('input', function() {
+    ensManuallyEdited = this.value.trim().length > 0;
+    validateStep();
+  });
+}
+
+// ─── Skill Tags ───
+
+function renderSkillTags() {
+  const container = document.getElementById('skill-tags');
+  container.innerHTML = SKILLS.map(s => `
+    <span class="skill-tag" data-skill="${s}" onclick="toggleSkill(this)">${s}</span>
+  `).join('');
+}
+
+function toggleSkill(el) { el.classList.toggle('selected'); }
+
+function addCustomSkill() {
+  const input = document.getElementById('custom-skill');
+  const val = input.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+  if (!val) return;
+  const container = document.getElementById('skill-tags');
+  if (container.querySelector(`[data-skill="${val}"]`)) {
+    container.querySelector(`[data-skill="${val}"]`).classList.add('selected');
+    input.value = '';
+    return;
+  }
+  const tag = document.createElement('span');
+  tag.className = 'skill-tag selected';
+  tag.dataset.skill = val;
+  tag.textContent = val;
+  tag.onclick = function() { toggleSkill(this); };
+  container.appendChild(tag);
+  input.value = '';
+}
+
+// ─── Review ───
+
+function buildReview() {
+  gatherStepData();
+
+  document.getElementById('review-identity').innerHTML = `
+    <h4>Identity</h4>
+    <div class="review-row"><span class="label">Name</span><span class="value">${esc(wizardData.name || '-')}</span></div>
+    <div class="review-row"><span class="label">ENS</span><span class="value">${esc(wizardData.ens || '-')}</span></div>
+    <div class="review-row"><span class="label">Type</span><span class="value">${esc(wizardData.typeName || '-')}</span></div>
+    <div class="review-row"><span class="label">Network</span><span class="value">${esc({sepolia:'Sepolia',og_testnet:'0G Testnet',mainnet:'Ethereum Mainnet',og_mainnet:'0G Mainnet'}[wizardData.network] || wizardData.network)}</span></div>
+  `;
+
+  document.getElementById('review-capabilities').innerHTML = `
+    <h4>Capabilities</h4>
+    <div class="review-row"><span class="label">Skills</span><span class="value">${wizardData.skills.length > 0 ? wizardData.skills.map(s => esc(s)).join(', ') : 'None'}</span></div>
+    <div class="review-row"><span class="label">Max Tasks</span><span class="value">${wizardData.maxTasks || 5}</span></div>
+    <div class="review-row"><span class="label">Tools</span><span class="value">${Object.entries(wizardData.tools || {}).filter(([_,v]) => v).map(([k]) => k).join(', ') || 'None'}</span></div>
+    <div class="review-row"><span class="label">Docker Sandbox</span><span class="value">${wizardData.dockerSandbox ? 'Enabled' : 'Disabled'}</span></div>
+    <div class="review-row"><span class="label">Heartbeat</span><span class="value">${(wizardData.heartbeat?.enabled) ? (wizardData.heartbeat?.interval + ' min') : 'Disabled'}</span></div>
+  `;
+
+  document.getElementById('review-policy').innerHTML = `
+    <h4>Policy</h4>
+    <div class="review-row"><span class="label">Allowed Tools</span><span class="value">${esc(wizardData.allowedTools.join(', ') || 'None')}</span></div>
+    <div class="review-row"><span class="label">Value Limit</span><span class="value">$${esc(String(wizardData.valueLimit || 0))}</span></div>
+    <div class="review-row"><span class="label">Endpoints</span><span class="value">${esc(wizardData.endpoints || 'Any')}</span></div>
+  `;
+}
+
+// ─── Deploy ───
+
+function startDeploy() {
+  const footer = document.getElementById('vault-footer');
+  const progress = document.getElementById('deploy-progress');
+  const reviewContent = document.getElementById('review-content');
+  const wizardProgress = document.getElementById('wizard-progress');
+
+  footer.style.display = 'none';
+  reviewContent.style.display = 'none';
+  wizardProgress.style.display = 'none';
+  progress.classList.add('active');
+
+  document.getElementById('vault-title').textContent = 'Deploying Agent...';
+
+  const steps = document.querySelectorAll('.deploy-step-item');
+  let idx = 0;
+
+  function nextDeployStep() {
+    if (idx > 0) {
+      steps[idx - 1].classList.remove('active');
+      steps[idx - 1].classList.add('done');
+      steps[idx - 1].querySelector('.step-icon').innerHTML = '\u2713';
+    }
+    if (idx < steps.length) {
+      steps[idx].classList.add('active');
+      steps[idx].querySelector('.step-icon').innerHTML = '\u25E6';
+      idx++;
+      setTimeout(nextDeployStep, 600 + Math.random() * 400);
+    } else {
+      setTimeout(deployComplete, 400);
+    }
+  }
+
+  nextDeployStep();
+}
+
+function deployComplete() {
+  document.getElementById('deploy-progress').classList.remove('active');
+  document.getElementById('deploy-success').classList.add('active');
+  document.getElementById('vault-title').textContent = 'Agent Deployed!';
+
+  const agentId = wizardData.name.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'agent-' + Date.now();
+
+  const demoAddr = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
+  const demoPolicyHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
+  const demoImageId = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
+
+  const newAgent = {
+    id: agentId,
+    name: wizardData.name,
+    ens: wizardData.ens,
+    type: wizardData.type,
+    typeIcon: wizardData.typeIcon,
+    network: wizardData.network,
+    skills: wizardData.skills,
+    allowedTools: wizardData.allowedTools,
+    valueLimit: wizardData.valueLimit,
+    endpoints: wizardData.endpoints,
+    status: 'online',
+    origin: 'deployed',
+    deployedAt: new Date().toISOString(),
+    description: wizardData.description || '',
+    inftTokenId: Math.floor(Math.random() * 9000) + 1000,
+    policyHash: demoPolicyHash,
+    imageId: demoImageId,
+    address: demoAddr,
+    stats: { actions: 0, proofs: 0, uptime: '0m' }
+  };
+
+  // Save to shared localStorage
+  let agents = [];
+  try { agents = JSON.parse(localStorage.getItem('poc_agents')) || []; } catch(e) { agents = []; }
+  agents.push(newAgent);
+  localStorage.setItem('poc_agents', JSON.stringify(agents));
+
+  document.getElementById('success-message').textContent =
+    `${newAgent.name} (${newAgent.ens}) registered. Start your agent to connect.`;
+
+  const pk = document.getElementById('private-key').value.trim() || '0x_YOUR_PRIVATE_KEY';
+  const rpcUrl = wizardData.network === 'sepolia' ? 'https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY'
+    : wizardData.network === 'og_testnet' ? 'https://evmrpc-testnet.0g.ai'
+    : wizardData.network === 'og_mainnet' ? 'https://evmrpc.0g.ai'
+    : 'https://eth-mainnet.g.alchemy.com/v2/YOUR_KEY';
+  const tools = (wizardData.allowedTools || []).join(',') || 'swap_tokens,transfer,query';
+  const endpoints = wizardData.endpoints || 'https://api.uniswap.org,https://api.0x.org';
+  const maxWei = (wizardData.valueLimit || 100) * 1e16;
+
+  const runCmd = buildRunCmd(agentId, newAgent.ens, {
+    privateKey: pk, rpcUrl, tools, endpoints, maxWei
+  });
+
+  saveAgentConfig(agentId, {
+    runCmd, privateKey: pk, rpcUrl, tools, endpoints, maxWei,
+    network: wizardData.network, lastUrl: 'http://localhost:8420',
+  });
+
+  document.getElementById('success-links').innerHTML = `
+    <div style="text-align:left;width:100%;margin-bottom:16px;">
+      <div style="color:var(--text-dim);font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Step 1 — Run your agent</div>
+      <div style="position:relative;">
+        <pre id="run-command" style="background:var(--bg-primary);border:1px solid var(--border-cyan);border-radius:8px;padding:14px 16px;font-size:11px;color:var(--cyan);overflow-x:auto;white-space:pre-wrap;word-break:break-all;line-height:1.8;max-height:200px;overflow-y:auto;">${esc(runCmd)}</pre>
+        <button onclick="navigator.clipboard.writeText(document.getElementById('run-command').textContent);this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500);" style="position:absolute;top:8px;right:8px;padding:4px 12px;font-size:10px;background:rgba(0,229,255,0.15);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;font-family:var(--font-mono);">Copy</button>
+      </div>
+      <div style="color:var(--text-dim);font-size:11px;margin-top:16px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Step 2 — Connect &amp; Chat</div>
+      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">Once your agent is running, connect and start chatting.</p>
+    </div>
+    <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
+      <a href="agents.html" class="btn-primary" style="flex:1;text-align:center;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">View Agents</a>
+      <button class="btn-wizard btn-wizard-next" style="flex:1;" onclick="resetVault()">Deploy Another</button>
+    </div>
+  `;
+}
+
+// ─── Register (identity only, with 0G chain integration) ───
+
+async function startRegister() {
+  gatherStepData();
+
+  const footer = document.getElementById('vault-footer');
+  const wizardProgress = document.getElementById('wizard-progress');
+  footer.style.display = 'none';
+  wizardProgress.style.display = 'none';
+
+  // Hide current step
+  for (let i = 1; i <= 7; i++) {
+    document.getElementById('step-' + i).classList.remove('active');
+  }
+
+  // Show registration progress
+  const successEl = document.getElementById('deploy-success');
+  successEl.classList.add('active');
+  successEl.querySelector('.success-icon').innerHTML = '<div style="animation:spin 1s linear infinite;">&#x2699;</div>';
+  successEl.querySelector('h3').textContent = 'Registering on 0G Chain...';
+  document.getElementById('success-message').textContent = 'Validating configuration and preparing on-chain registration...';
+
+  try {
+    // Check wallet connection
+    if (!window.PocViem) {
+      throw new Error('Blockchain module not loaded. Please refresh and try again.');
+    }
+
+    const walletState = window.PocViem.getWalletState();
+    if (!walletState.connected) {
+      await connectWalletUI();
+      if (!window.PocViem.getWalletState().connected) {
+        throw new Error('Wallet connection required for registration');
+      }
+    }
+
+    // Switch to target network
+    const network = wizardData.network || 'og_testnet';
+    await window.PocViem.switchNetwork(network);
+    window.PocViem.init(network);
+
+    // Prepare agent configuration
+    const agentConfig = {
+      agentName: wizardData.name,
+      ensName: wizardData.ens,
+      network: network,
+      description: wizardData.description,
+      skills: wizardData.skills,
+      maxTasks: wizardData.maxTasks,
+      soulPersona: wizardData.soulPersona,
+      allowedTools: wizardData.allowedTools,
+      valueLimit: wizardData.valueLimit,
+      endpoints: wizardData.endpoints
+    };
+
+    // Create registration session
+    const sessionId = agentRegistration.createSession(agentConfig);
+    
+    // Subscribe to progress updates
+    agentRegistration.onStatusChange(sessionId, (session) => {
+      updateRegistrationUI(session);
+    });
+
+    // Execute registration
+    const metadata = {
+      ...agentConfig,
+      createdAt: new Date().toISOString(),
+      version: '1.0'
+    };
+
+    const result = await agentRegistration.executeFullRegistration(
+      sessionId,
+      null, // wallet client - handled by viem
+      null, // public client - handled by viem
+      metadata
+    );
+
+    if (result.success) {
+      completeRegistration(result, agentConfig);
+    } else {
+      handleRegistrationError(result);
+    }
+
+  } catch (error) {
+    handleRegistrationError({ error: error.message });
+  }
+}
+
+// Update UI during registration progress
+function updateRegistrationUI(session) {
+  const msgEl = document.getElementById('success-message');
+  const h3El = document.querySelector('#deploy-success h3');
+  
+  switch (session.status) {
+    case 'validating':
+      h3El.textContent = 'Validating Configuration...';
+      msgEl.textContent = `Validation: ${session.progress.validation}% complete`;
+      break;
+    case 'uploading':
+      h3El.textContent = 'Uploading to 0G Storage...';
+      msgEl.textContent = `Storage upload: ${session.progress.upload}% complete`;
+      break;
+    case 'registering':
+      h3El.textContent = 'Registering on 0G Chain...';
+      msgEl.textContent = `On-chain registration: ${session.progress.registration}% complete`;
+      break;
+    case 'confirming':
+      h3El.textContent = 'Waiting for Confirmation...';
+      msgEl.textContent = `Transaction confirmation: ${session.progress.confirmation}% complete`;
+      break;
+    case 'completed':
+      h3El.textContent = 'Registration Complete!';
+      msgEl.textContent = 'Your agent identity is now registered on 0G Chain.';
+      break;
+    case 'failed':
+      h3El.textContent = 'Registration Failed';
+      msgEl.textContent = session.errors.join(', ');
+      break;
+  }
+}
+
+// Complete successful registration
+function completeRegistration(result, config) {
+  const { results } = result;
+  
+  const agentId = config.agentName.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'agent-' + Date.now();
+  
+  const newAgent = {
+    id: agentId,
+    name: config.agentName,
+    ens: config.ensName,
+    type: wizardData.type,
+    typeIcon: wizardData.typeIcon,
+    typeName: wizardData.typeName,
+    network: config.network,
+    skills: config.skills,
+    allowedTools: config.allowedTools,
+    valueLimit: config.valueLimit,
+    endpoints: config.endpoints,
+    status: 'registered',
+    origin: 'registered',
+    deployedAt: new Date().toISOString(),
+    description: config.description || '',
+    // On-chain data
+    policyHash: results.onchain?.policyHash,
+    agentId: results.onchain?.agentId,
+    txHash: results.onchain?.txHash,
+    tokenId: results.onchain?.tokenId,
+    // 0G Storage
+    storageRoot: results.storage?.rootHash,
+    // DM3
+    dm3Profile: results.dm3,
+    stats: { actions: 0, proofs: 0, uptime: '-' }
+  };
+
+  // Save to localStorage
+  let agents = [];
+  try { agents = JSON.parse(localStorage.getItem('poc_agents')) || []; } catch(e) { agents = []; }
+  agents.push(newAgent);
+  localStorage.setItem('poc_agents', JSON.stringify(agents));
+
+  // Update UI
+  const successEl = document.getElementById('deploy-success');
+  successEl.querySelector('.success-icon').innerHTML = '&#x2705;';
+  successEl.querySelector('h3').textContent = 'Identity Registered on 0G Chain!';
+  document.getElementById('success-message').textContent = 
+    `${newAgent.name} is now registered with on-chain identity.`;
+
+  // Build explorer link
+  const network = config.network.includes('mainnet') ? 'mainnet' : 'testnet';
+  const explorerBase = network === 'mainnet' ? 'https://chainscan.0g.ai' : 'https://chainscan-dev.0g.ai';
+  const txUrl = results.onchain?.txHash ? `${explorerBase}/tx/${results.onchain.txHash}` : null;
+
+  document.getElementById('success-links').innerHTML = `
+    <div style="text-align:left;width:100%;margin-bottom:16px;">
+      <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">0G Chain Registration</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+          <div><span style="color:var(--text-dim);">Agent ID:</span> <strong style="color:var(--text-primary);">${esc(agentId)}</strong></div>
+          <div><span style="color:var(--text-dim);">ENS:</span> <strong style="color:var(--cyan);">${esc(newAgent.ens)}</strong></div>
+          <div><span style="color:var(--text-dim);">Network:</span> ${esc(config.network)}</div>
+          <div><span style="color:var(--text-dim);">Token ID:</span> <span style="color:var(--amber);">#${esc(String(results.onchain?.tokenId || '—'))}</span></div>
+          ${results.onchain?.txHash ? `<div style="grid-column:1/-1;"><span style="color:var(--text-dim);">Transaction:</span> <a href="${esc(txUrl)}" target="_blank" style="color:var(--cyan);font-family:var(--font-mono);font-size:10px;">${esc(results.onchain.txHash.slice(0,20))}... &#x2197;</a></div>` : ''}
+          ${results.dm3?.setup ? `<div style="grid-column:1/-1;"><span style="color:var(--green);">&#x2713;</span> <span style="color:var(--text-secondary);">DM3 messaging profile configured</span></div>` : ''}
+        </div>
+      </div>
+
+      <div style="background:rgba(187,134,252,0.08);border:1px solid rgba(187,134,252,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:600;color:#bb86fc;margin-bottom:8px;">Next Steps</div>
+        <ol style="font-size:12px;color:var(--text-secondary);line-height:1.8;padding-left:20px;margin:0;">
+          <li>Your agent identity is committed on 0G Chain with policy hash</li>
+          <li>Build your agent using any framework (Python, Node, Go, Rust...)</li>
+          <li>Implement the <a href="docs.html#agent-api-spec" style="color:var(--cyan);">Agent API Spec</a> endpoints</li>
+          <li>Go to <a href="agents.html" style="color:var(--cyan);">Agents</a> and click <strong>Connect Agent</strong> to link your running agent</li>
+        </ol>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
+      <a href="agents.html" class="btn-primary" style="flex:1;text-align:center;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">View Agents</a>
+      <a href="docs.html#agent-api-spec" style="flex:1;text-align:center;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;background:rgba(187,134,252,0.15);border:1px solid rgba(187,134,252,0.3);color:#bb86fc;">View API Spec</a>
+      <button class="btn-wizard btn-wizard-next" style="flex:1;" onclick="resetVault()">Register Another</button>
+    </div>
+  `;
+}
+
+// Handle registration errors
+function handleRegistrationError(result) {
+  const successEl = document.getElementById('deploy-success');
+  successEl.querySelector('.success-icon').innerHTML = '&#x26A0;';
+  successEl.querySelector('h3').textContent = 'Registration Failed';
+  
+  const errorMsg = result.error || result.errors?.join(', ') || 'Unknown error';
+  document.getElementById('success-message').textContent = errorMsg;
+
+  document.getElementById('success-links').innerHTML = `
+    <div style="text-align:left;width:100%;margin-bottom:16px;">
+      <div style="background:rgba(255,61,90,0.08);border:1px solid rgba(255,61,90,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Error Details</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">${esc(errorMsg)}</div>
+        ${result.warnings?.length ? `
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--amber);margin-bottom:6px;">Warnings:</div>
+          ${result.warnings.map(w => `<div style="font-size:11px;color:var(--text-dim);">&#x26A0; ${esc(w)}</div>`).join('')}
+        </div>
+        ` : ''}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
+      <button class="btn-wizard btn-wizard-next" style="flex:1;" onclick="retryRegistration()">Retry</button>
+      <button class="btn-wizard btn-wizard-back" style="flex:1;" onclick="resetVault()">Start Over</button>
+    </div>
+  `;
+}
+
+// Retry registration
+function retryRegistration() {
+  document.getElementById('deploy-success').classList.remove('active');
+  document.getElementById('wizard-progress').style.display = 'flex';
+  document.getElementById('vault-footer').style.display = 'flex';
+  updateWizardUI();
+}
+
+
+function resetVault() {
+  wizardStep = 1;
+  wizardData = { type: null, skills: [], allowedTools: ['swap_tokens', 'transfer', 'query'] };
+
+  // Reset Tools & Integrations fields
+  const llm = document.getElementById('tool-llm-context'); if (llm) llm.checked = true;
+  const slack = document.getElementById('tool-slack'); if (slack) slack.checked = false;
+  const tg = document.getElementById('tool-telegram'); if (tg) tg.checked = false;
+  const ws = document.getElementById('tool-web-search'); if (ws) ws.checked = true;
+  const st = document.getElementById('slack-token'); if (st) st.value = '';
+  const tt = document.getElementById('telegram-token'); if (tt) tt.value = '';
+  const bk = document.getElementById('brave-api-key'); if (bk) bk.value = '';
+  const nc = document.getElementById('notify-channel'); if (nc) nc.value = '';
+  const ds = document.getElementById('docker-sandbox'); if (ds) ds.checked = true;
+  const he = document.getElementById('heartbeat-enabled'); if (he) he.value = 'true';
+  const hi = document.getElementById('heartbeat-interval'); if (hi) hi.value = '60';
+
+  document.querySelectorAll('.type-option').forEach(t => t.classList.remove('selected'));
+  document.querySelectorAll('.skill-tag').forEach(t => t.classList.remove('selected'));
+  document.querySelectorAll('#step-5 input[type="checkbox"]').forEach(cb => cb.checked = true);
+
+  // Reset wizard UI
+  const dp = document.getElementById('deploy-progress'); if (dp) dp.classList.remove('active');
+  const ds2 = document.getElementById('deploy-success'); if (ds2) ds2.classList.remove('active');
+  const rc = document.getElementById('review-content'); if (rc) rc.style.display = '';
+  const wp = document.getElementById('wizard-progress'); if (wp) wp.style.display = 'flex';
+  const vf = document.getElementById('vault-footer'); if (vf) vf.style.display = 'flex';
+
+  updateWizardUI();
+}
+
+// ═══════════════════════════════════════
+// GRANT MODAL
+// ═══════════════════════════════════════
+
+function openGrantModal(inftAgentId) {
+  currentGrantInftId = inftAgentId;
+  const agents = getAgents();
+  const sourceAgent = agents.find(a => a.id === inftAgentId);
+  const otherAgents = agents.filter(a => a.id !== inftAgentId);
+
+  document.getElementById('grant-modal-subtitle').textContent =
+    `Allow an agent to access memory backups from ${sourceAgent ? sourceAgent.name : inftAgentId}'s iNFT`;
+
+  const select = document.getElementById('grant-agent-select');
+  select.innerHTML = '<option value="">Select an agent...</option>' +
+    otherAgents.map(a => `<option value="${esc(a.id)}">${esc(a.typeIcon || '')} ${esc(a.name)} — ${esc(a.ens || a.id)}</option>`).join('');
+
+  document.getElementById('grant-scope').value = 'full';
+  document.getElementById('grant-expiry').value = '7d';
+  document.getElementById('grant-modal').classList.add('active');
+}
+
+function closeGrantModal() {
+  currentGrantInftId = null;
+  document.getElementById('grant-modal').classList.remove('active');
+}
+
+function confirmGrant() {
+  const targetAgentId = document.getElementById('grant-agent-select').value;
+  if (!targetAgentId || !currentGrantInftId) return;
+
+  const scope = document.getElementById('grant-scope').value;
+  const expiry = document.getElementById('grant-expiry').value;
+
+  const clearances = getClearances();
+  clearances.push({
+    id: 'clr_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+    inftAgentId: currentGrantInftId,
+    targetAgentId: targetAgentId,
+    scope: scope,
+    expiry: expiry,
+    grantedAt: new Date().toISOString(),
+    revoked: false,
+  });
+  saveClearances(clearances);
+
+  closeGrantModal();
+  renderStats();
+  renderINFTs();
+}
+
+function revokeClearance(clearanceId) {
+  const clearances = getClearances();
+  const c = clearances.find(x => x.id === clearanceId);
+  if (c) {
+    c.revoked = true;
+    c.revokedAt = new Date().toISOString();
+    saveClearances(clearances);
+    renderStats();
+    renderINFTs();
+  }
+}
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+
+function init() {
+  ensureBackups();
+  renderStats();
+  renderINFTs();
+}
+
+init();
+
+// Expose functions to global scope for HTML onclick handlers
+window.setVaultMode = setVaultMode;
+window.selectType = selectType;
+window.toggleSkill = toggleSkill;
+window.addCustomSkill = addCustomSkill;
+window.wizardNext = wizardNext;
+window.wizardBack = wizardBack;
+window.startRegister = startRegister;
+window.startDeploy = startDeploy;
+window.retryRegistration = retryRegistration;
+window.resetVault = resetVault;
+</script>
+<script src="poc-api.js"></script>
+<script>
+// Sidebar collapse
+function toggleSidebar() {
+  document.body.classList.toggle('sidebar-collapsed');
+  localStorage.setItem('poc-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed'));
+}
+if (localStorage.getItem('poc-sidebar-collapsed') === 'true') {
+  document.body.classList.add('sidebar-collapsed');
+}
+</script>
+</body>
+</html>

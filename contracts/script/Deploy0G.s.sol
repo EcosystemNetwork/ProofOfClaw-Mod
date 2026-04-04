@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
+import "forge-std/console.sol";
 import "../src/ProofOfClawVerifier.sol";
 import "../src/ProofOfClawINFT.sol";
 
@@ -44,7 +45,7 @@ contract Deploy0GScript is Script {
         console.log("Chain: 0G");
         console.log("Verifier:", address(proofOfClaw));
         console.log("iNFT:", address(inft));
-        console.log("Image ID:", vm.toString(imageId));
+        console.log("Image ID set");
         console.log("---");
         console.log("Next steps:");
         console.log("  1. Set INFT_CONTRACT in .env to the iNFT address above");

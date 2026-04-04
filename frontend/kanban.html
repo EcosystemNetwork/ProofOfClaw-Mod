@@ -3,171 +3,504 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ZK-verified tool operations on a live kanban — Proof of Claw.">
 <title>ZK Kanban — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
 <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#06080d;--bg2:#0c1018;--card:#0f1520;--card-hover:#141c2a;
-  --cyan:#00e5ff;--cyan-dim:#00a3b5;--cyan-glow:rgba(0,229,255,.15);
-  --amber:#ffb300;--green:#00e676;--red:#ff3d5a;--purple:#b388ff;
-  --text:#e8ecf4;--text2:#8892a4;--dim:#4a5568;
-  --border:rgba(255,255,255,.06);--border-cyan:rgba(0,229,255,.2);
-  --font:'Syne',sans-serif;--mono:'JetBrains Mono',monospace;
+/* ===================== MAIN LAYOUT (match proofs-style app pages) ===================== */
+.main-content {
+  margin-left: 240px;
+  min-height: 100vh;
 }
-body{font-family:var(--mono);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
-body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,229,255,.008) 2px,rgba(0,229,255,.008) 4px);pointer-events:none;z-index:9999}
-body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:-1}
 
-/* sidebar */
-.sidebar{position:fixed;top:0;left:0;bottom:0;width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;padding:1.5rem 0}
-.sidebar-logo{display:flex;align-items:center;gap:.75rem;padding:0 1.25rem;margin-bottom:2rem;text-decoration:none}
-.claw-symbol{font-size:1.6rem;color:var(--cyan);filter:drop-shadow(0 0 8px var(--cyan));line-height:1}
-.logo-text{font-family:var(--font);font-weight:800;font-size:1rem;color:var(--text);letter-spacing:-.02em}
-.sidebar-nav{flex:1;display:flex;flex-direction:column;gap:2px}
-.sidebar-nav a{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.25rem;text-decoration:none;color:var(--text2);font-size:.8rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;transition:all .2s;border-left:3px solid transparent}
-.sidebar-nav a:hover{color:var(--text);background:rgba(255,255,255,.02)}
-.sidebar-nav a.active{color:var(--cyan);border-left-color:var(--cyan);background:rgba(0,229,255,.05)}
-.sidebar-nav a .nav-icon{font-size:1rem;width:20px;text-align:center}
-.sidebar-bottom{padding:1rem 1.25rem;border-top:1px solid var(--border);margin-top:auto;display:flex;flex-direction:column;gap:.5rem}
-.btn-new-agent{display:flex;align-items:center;justify-content:center;gap:.5rem;padding:.65rem 1rem;background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(0,229,255,.04));border:1px solid var(--border-cyan);border-radius:8px;color:var(--cyan);font-family:var(--mono);font-size:.78rem;font-weight:600;text-decoration:none;text-transform:uppercase;letter-spacing:.06em;transition:all .25s;cursor:pointer}
-.btn-new-agent:hover{background:rgba(0,229,255,.18);box-shadow:0 0 20px rgba(0,229,255,.1)}
-.sidebar-toggle{position:absolute;top:12px;right:-14px;width:28px;height:28px;border-radius:50%;background:var(--bg2);border:1px solid var(--border);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;z-index:201;transition:all .2s}
-.sidebar-toggle:hover{color:var(--cyan);border-color:var(--border-cyan);background:var(--card)}
-.sidebar{transition:width .25s ease}.main-content{transition:margin-left .25s ease}
-body.sidebar-collapsed .sidebar{width:60px}
-body.sidebar-collapsed .sidebar .logo-text,body.sidebar-collapsed .sidebar .btn-new-agent span,body.sidebar-collapsed .btn-back-home,body.sidebar-collapsed #poc-connection-slot{display:none}
-body.sidebar-collapsed .sidebar-logo{justify-content:center}
-body.sidebar-collapsed .sidebar-nav a{justify-content:center;padding:.7rem 0;font-size:0;gap:0;letter-spacing:0}
-body.sidebar-collapsed .sidebar-nav a .nav-icon{font-size:1.1rem;width:auto}
-body.sidebar-collapsed .sidebar-bottom{padding:.75rem .5rem}
-body.sidebar-collapsed .sidebar-toggle{transform:rotate(180deg)}
-body.sidebar-collapsed .main-content{margin-left:60px}
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(6, 8, 13, 0.7);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
 
-/* top bar */
-.top-bar{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;background:rgba(6,8,13,.7);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
-.top-bar-title{font-family:var(--font);font-weight:700;font-size:1.2rem}
-.eth-badge{padding:.3rem .8rem;border:1px solid var(--border-cyan);border-radius:100px;font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;color:var(--cyan);background:var(--cyan-glow)}
+.top-bar-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
 
-/* main */
-.main-content{margin-left:240px;min-height:100vh}
-.page-body{padding:1.75rem 2rem 3rem}
+.eth-badge {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border-cyan);
+  border-radius: 100px;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  background: var(--cyan-glow);
+  white-space: nowrap;
+}
 
-/* hero */
-.hero{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;flex-wrap:wrap;gap:1rem}
-.hero-title{font-family:var(--font);font-weight:800;font-size:1.8rem;letter-spacing:-.03em}
-.hero-subtitle{color:var(--text2);font-size:.85rem;margin-top:.25rem}
-.btn-run{display:flex;align-items:center;gap:.6rem;padding:.7rem 1.4rem;background:linear-gradient(135deg,rgba(0,230,118,.15),rgba(0,230,118,.05));border:1px solid rgba(0,230,118,.3);border-radius:10px;color:var(--green);font-family:var(--mono);font-size:.8rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:all .25s}
-.btn-run:hover{background:rgba(0,230,118,.2);box-shadow:0 0 24px rgba(0,230,118,.15)}
-.btn-run.running{background:rgba(255,179,0,.12);border-color:rgba(255,179,0,.3);color:var(--amber);animation:pulse-amber 2s ease-in-out infinite}
-.btn-run:disabled{opacity:.5;cursor:not-allowed}
+.page-body {
+  padding: 1.75rem 2rem 3rem;
+}
 
-@keyframes pulse-amber{0%,100%{box-shadow:0 0 0 0 rgba(255,179,0,0)}50%{box-shadow:0 0 12px rgba(255,179,0,.2)}}
+/* ===================== KANBAN PAGE ===================== */
+.kanban-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
 
-/* image id banner */
-.image-id-banner{display:inline-flex;align-items:center;gap:.5rem;padding:.4rem .85rem;background:var(--card);border:1px solid var(--border);border-radius:8px;font-size:.72rem;color:var(--text2)}
-.image-id-banner code{color:var(--cyan);word-break:break-all}
+.kanban-hero-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.8rem;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
 
-/* prompt input */
-.prompt-bar{display:flex;gap:.75rem;margin-bottom:2rem;flex-wrap:wrap}
-.prompt-bar input{flex:1;min-width:300px;background:var(--card);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:.85rem;padding:.75rem 1rem;outline:none;transition:border-color .2s}
-.prompt-bar input:focus{border-color:var(--border-cyan)}
-.prompt-bar input::placeholder{color:var(--dim)}
+.kanban-hero-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
 
-/* kanban board */
-.board{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;min-height:600px}
-.col{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1rem;display:flex;flex-direction:column}
-.col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border)}
-.col-title{font-family:var(--font);font-weight:700;font-size:.9rem}
-.col-count{padding:.2rem .6rem;background:var(--bg-card);border:1px solid var(--border);border-radius:100px;font-size:.68rem;color:var(--text2)}
-.col-cards{display:flex;flex-direction:column;gap:.6rem;flex:1;overflow-y:auto}
+.btn-run {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.4rem;
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.15), rgba(0, 230, 118, 0.05));
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  border-radius: 10px;
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+}
 
-/* cards */
-.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:.9rem 1rem;transition:all .3s ease;cursor:default}
-.card:hover{border-color:rgba(0,229,255,.15);background:var(--card-hover)}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
-.tool-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .55rem;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.2);border-radius:6px;font-size:.7rem;font-weight:600;color:var(--cyan)}
-.tool-badge.exec{background:rgba(179,136,255,.08);border-color:rgba(179,136,255,.2);color:var(--purple)}
-.tool-badge.write{background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.2);color:var(--green)}
-.card-status{padding:.2rem .55rem;border-radius:100px;font-size:.68rem;font-weight:600}
-.card-status.queued{background:rgba(136,146,164,.1);color:var(--text2);border:1px solid rgba(136,146,164,.2)}
-.card-status.verifying{background:rgba(255,179,0,.1);color:var(--amber);border:1px solid rgba(255,179,0,.3);animation:pulse-amber 2s ease-in-out infinite}
-.card-status.verified{background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.3)}
-.card-status.blocked{background:rgba(255,61,90,.1);color:var(--red);border:1px solid rgba(255,61,90,.3)}
-.card-hashes{font-size:.7rem;color:var(--text2);margin-bottom:.6rem;display:flex;flex-direction:column;gap:.15rem}
-.hash-row{display:flex;gap:.4rem;align-items:center}
-.hash-label{color:var(--dim);min-width:40px}
-.hash-val{color:var(--cyan);opacity:.8;word-break:break-all;font-size:.68rem}
-.verify-btn{display:block;width:100%;padding:.45rem .75rem;background:none;border:1px solid var(--border-cyan);border-radius:6px;color:var(--cyan);font-family:var(--mono);font-size:.7rem;font-weight:600;cursor:pointer;text-align:center;transition:all .2s;text-transform:uppercase;letter-spacing:.06em}
-.verify-btn:hover{background:rgba(0,229,255,.08)}
-.verify-btn.verified{background:rgba(0,230,118,.1);border-color:rgba(0,230,118,.3);color:var(--green);cursor:default}
-.verify-btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-run:hover {
+  background: rgba(0, 230, 118, 0.2);
+  box-shadow: 0 0 24px rgba(0, 230, 118, 0.15);
+}
 
-/* zk result */
-.zk-result{margin-top:.5rem;padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:.72rem}
-.zk-result.success{border-color:rgba(0,230,118,.3);background:rgba(0,230,118,.05)}
-.zk-result.error{border-color:rgba(255,61,90,.3);background:rgba(255,61,90,.05)}
-.zk-result .zk-time{color:var(--green);font-weight:600}
-.zk-result .zk-error{color:var(--red)}
+.btn-run.running {
+  background: rgba(255, 179, 0, 0.12);
+  border-color: rgba(255, 179, 0, 0.3);
+  color: var(--amber);
+  animation: pulse-amber 2s ease-in-out infinite;
+}
 
-/* spinner */
-.spinner{display:inline-block;width:12px;height:12px;border:2px solid rgba(255,179,0,.2);border-top-color:var(--amber);border-radius:50%;animation:spin .8s linear infinite;margin-right:.4rem}
-@keyframes spin{to{transform:rotate(360deg)}}
+.btn-run:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-/* empty state */
-.empty-col{text-align:center;padding:2rem 1rem;color:var(--dim);font-size:.78rem}
-.empty-col-icon{font-size:1.5rem;opacity:.4;margin-bottom:.5rem}
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0); }
+  50% { box-shadow: 0 0 12px rgba(255, 179, 0, 0.2); }
+}
 
-/* wasm status */
-.wasm-status{font-size:.72rem;color:var(--dim);margin-left:1rem}
-.wasm-status.ready{color:var(--green)}
-.wasm-status.loading{color:var(--amber)}
+.image-id-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
 
-/* live dot */
-.live-dot{display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:var(--text2)}
-.live-dot::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease-in-out infinite}
-@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.3}}
+.image-id-banner code {
+  color: var(--cyan);
+  word-break: break-all;
+}
 
-@media(max-width:1100px){.board{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:768px){.sidebar{display:none}.main-content{margin-left:0}.board{grid-template-columns:1fr}}
+.prompt-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.prompt-bar input {
+  flex: 1;
+  min-width: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.prompt-bar input:focus {
+  border-color: var(--border-cyan);
+}
+
+.prompt-bar input::placeholder {
+  color: var(--text-dim);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  min-height: 600px;
+}
+
+.col {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.col-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.col-count {
+  padding: 0.2rem 0.6rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.col-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.card:hover {
+  border-color: rgba(0, 229, 255, 0.15);
+  background: var(--bg-card-hover);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.tool-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--cyan);
+}
+
+.tool-badge.exec {
+  background: rgba(179, 136, 255, 0.08);
+  border-color: rgba(179, 136, 255, 0.2);
+  color: var(--purple);
+}
+
+.tool-badge.write {
+  background: rgba(0, 230, 118, 0.08);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  color: var(--green);
+}
+
+.card-status {
+  padding: 0.2rem 0.55rem;
+  border-radius: 100px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.card-status.queued {
+  background: rgba(136, 146, 164, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid rgba(136, 146, 164, 0.2);
+}
+
+.card-status.verifying {
+  background: rgba(255, 179, 0, 0.1);
+  color: var(--amber);
+  border: 1px solid rgba(255, 179, 0, 0.3);
+  animation: pulse-amber 2s ease-in-out infinite;
+}
+
+.card-status.verified {
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--green);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.card-status.blocked {
+  background: rgba(255, 61, 90, 0.1);
+  color: var(--red);
+  border: 1px solid rgba(255, 61, 90, 0.3);
+}
+
+.card-hashes {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.hash-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.hash-label {
+  color: var(--text-dim);
+  min-width: 40px;
+}
+
+.hash-val {
+  color: var(--cyan);
+  opacity: 0.8;
+  word-break: break-all;
+  font-size: 0.68rem;
+}
+
+.verify-btn {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  background: none;
+  border: 1px solid var(--border-cyan);
+  border-radius: 6px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.verify-btn:hover {
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.verify-btn.verified {
+  background: rgba(0, 230, 118, 0.1);
+  border-color: rgba(0, 230, 118, 0.3);
+  color: var(--green);
+  cursor: default;
+}
+
+.verify-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.zk-result {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.72rem;
+}
+
+.zk-result.success {
+  border-color: rgba(0, 230, 118, 0.3);
+  background: rgba(0, 230, 118, 0.05);
+}
+
+.zk-result.error {
+  border-color: rgba(255, 61, 90, 0.3);
+  background: rgba(255, 61, 90, 0.05);
+}
+
+.zk-result .zk-time {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.zk-result .zk-error {
+  color: var(--red);
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 179, 0, 0.2);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.4rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-col {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.empty-col-icon {
+  font-size: 1.5rem;
+  opacity: 0.4;
+  margin-bottom: 0.5rem;
+}
+
+.wasm-status {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-left: 1rem;
+}
+
+.wasm-status.ready {
+  color: var(--green);
+}
+
+.wasm-status.loading {
+  color: var(--amber);
+}
+
+.live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.live-dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; }
+  .board { grid-template-columns: 1fr; }
+}
 </style>
 </head>
-<body>
+<body class="has-grid">
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse">&#x276E;</button>
+<a href="#kanban-main" class="skip-link">Skip to kanban board</a>
+
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
+  <button type="button" class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
   <a href="index.html" class="sidebar-logo">
-    <span class="claw-symbol">&#x27C1;</span>
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
     <span class="logo-text">Proof of Claw</span>
   </a>
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" aria-label="App navigation">
     <a href="agents.html"><span class="nav-icon">&#x2B21;</span> Agents</a>
     <a href="dashboard.html"><span class="nav-icon">&#x25A3;</span> Dashboard</a>
+    <a href="auth-modules.html"><span class="nav-icon">&#x1F512;</span> Auth Modules</a>
     <a href="messages.html"><span class="nav-icon">&#x2709;</span> Messages</a>
     <a href="proofs.html"><span class="nav-icon">&#x2713;</span> Proofs</a>
-    <a href="kanban.html" class="active"><span class="nav-icon">&#x25A0;</span> Kanban</a>
+    <a href="kanban.html" class="active" aria-current="page"><span class="nav-icon">&#x25A0;</span> Kanban</a>
+    <a href="soul-vault.html"><span class="nav-icon">&#x2B23;</span> Soul Vault</a>
   </nav>
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
-    <a href="agents.html" class="btn-new-agent">+ New Agent</a>
+    <a href="soul-vault.html" class="btn-new-agent">+ New Agent</a>
+    <a href="index.html" class="btn-home">&larr; Back to Home</a>
   </div>
 </aside>
 
-<!-- MAIN -->
-<div class="main-content">
-  <header class="top-bar">
+<main class="main-content" id="kanban-main" role="main">
+  <header class="top-bar" role="banner">
     <div class="top-bar-title">ZK Kanban</div>
-    <div class="eth-badge">&#x29C9; RISC Zero Verified</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+      <div id="wallet-display" style="display:none;align-items:center;gap:6px;">
+        <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
+        <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
+      </div>
+      <div class="eth-badge">&#x29C9; RISC Zero Verified</div>
+    </div>
   </header>
 
   <div class="page-body">
-    <!-- HERO -->
-    <div class="hero">
+    <div class="kanban-hero">
       <div>
-        <div class="hero-title">ZK-Verified Operations</div>
-        <div class="hero-subtitle">Each card = one tool call verified in-browser via RISC Zero WASM</div>
-        <div class="image-id-banner" id="imageIdBanner" style="margin-top:.75rem">
+        <div class="kanban-hero-title">ZK-Verified Operations</div>
+        <div class="kanban-hero-subtitle">Each card = one tool call verified in-browser via RISC Zero WASM</div>
+        <div class="image-id-banner" id="imageIdBanner" style="margin-top:0.75rem">
           Circuit: <code id="imageIdDisplay">not loaded</code>
           <span class="wasm-status" id="wasmStatus">loading...</span>
         </div>
@@ -175,14 +508,12 @@ body.sidebar-collapsed .main-content{margin-left:60px}
       <div class="live-dot">SSE live</div>
     </div>
 
-    <!-- PROMPT BAR -->
     <div class="prompt-bar">
       <input type="text" id="promptInput" placeholder="e.g. grep for TODO comments then fix them, or swap 0.01 ETH for USDC" />
-      <button class="btn-run" id="runBtn" onclick="runAgent()">&#x25B6; Run Agent + ZK Demo</button>
+      <button type="button" class="btn-run" id="runBtn" onclick="runAgent()">&#x25B6; Run Agent + ZK Demo</button>
     </div>
 
-    <!-- KANBAN BOARD -->
-    <div class="board">
+    <div class="board" aria-label="ZK verification columns">
       <div class="col" id="col-queued">
         <div class="col-header">
           <div class="col-title">&#x23EF; Queued</div>
@@ -221,19 +552,20 @@ body.sidebar-collapsed .main-content{margin-left:60px}
       </div>
     </div>
   </div>
-</div>
+</main>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
+<script src="shared.js"></script>
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
 const state = {
-  cards: {},       // cardId -> { tool_name, input_hash, output_hash, within_policy, timestamp, column }
-  proofs: {},      // proofId -> { journal_b64, seal_b64, image_id }
+  cards: {},
+  proofs: {},
   sse: null,
   currentSession: null,
   wasmReady: false,
 };
 
-// ─── Tool metadata ────────────────────────────────────────────────────────────
 const TOOL_ICONS = {
   grep_search: '&#x1F50D;', bash: '&#x2699;', read_file: '&#x1F4C4;',
   write_file: '&#x1F4DD;', edit_file: '&#x270F;', glob_search: '&#x1F4C1;',
@@ -254,7 +586,6 @@ const TOOL_CATEGORY = {
 function toolIcon(name) { return TOOL_ICONS[name] || TOOL_ICONS.default; }
 function toolClass(name) { return TOOL_CATEGORY[name] || ''; }
 
-// ─── Render ───────────────────────────────────────────────────────────────────
 function renderCard(card, id) {
   const cls = toolClass(card.tool_name);
   return `<div class="card" id="card-${id}">
@@ -266,7 +597,7 @@ function renderCard(card, id) {
       <div class="hash-row"><span class="hash-label">Input</span><span class="hash-val">${truncate(card.input_hash)}</span></div>
       <div class="hash-row"><span class="hash-label">Output</span><span class="hash-val">${truncate(card.output_hash)}</span></div>
     </div>
-    <button class="verify-btn" id="vbtn-${id}" onclick="verifyCard('${id}')">Verify in Browser</button>
+    <button type="button" class="verify-btn" id="vbtn-${id}" onclick="verifyCard('${id}')">Verify in Browser</button>
     <div class="zk-result" id="zk-${id}" style="display:none"></div>
   </div>`;
 }
@@ -292,13 +623,11 @@ function moveCard(id, toCol) {
   syncColumnCount(fromCol);
   syncColumn(toCol, id);
   syncColumnCount(toCol);
-  // update status badge
   const statusEl = document.getElementById(`status-${id}`);
   if (statusEl) {
     statusEl.className = `card-status ${toCol}`;
     statusEl.textContent = toCol.charAt(0).toUpperCase() + toCol.slice(1);
   }
-  // update verify button
   const btn = document.getElementById(`vbtn-${id}`);
   if (btn && toCol === 'verified') {
     btn.className = 'verify-btn verified';
@@ -319,17 +648,14 @@ function syncColumnCount(col) {
   if (el) el.textContent = n;
 }
 
-// ─── Verify ───────────────────────────────────────────────────────────────────
 async function verifyCard(cardId) {
   const card = state.cards[cardId];
   if (!card) return;
-  // Find matching proof by scanning state.proofs
   const proof = findProofForCard(cardId);
   if (!proof) {
     showZkResult(cardId, null, false, 'No proof receipt available yet — wait for proof_receipt SSE event');
     return;
   }
-  // Set column to verifying
   if (card.column !== 'verifying') moveCard(cardId, 'verifying');
   const btn = document.getElementById(`vbtn-${cardId}`);
   if (btn) { btn.textContent = 'Verifying…'; btn.disabled = true; }
@@ -369,28 +695,17 @@ function showZkResult(cardId, result, ok, msg) {
   }
 }
 
-// ─── Demo fixture data (for EthGlobal when live proving is loading) ────────────
-const FIXTURES = [
-  { cardId:'fx-1', tool_name:'grep_search', input_hash:'0x'+(Math.random().toString(16).slice(2)+'abcd1234ef56').slice(0,64), output_hash:'0x'+(Math.random().toString(16).slice(2)+'7890abcd').slice(0,64), within_policy:true, timestamp:Date.now() },
-  { cardId:'fx-2', tool_name:'read_file',   input_hash:'0x'+(Math.random().toString(16).slice(2)+'ef12345678').slice(0,64), output_hash:'0x'+(Math.random().toString(16).slice(2)+'12345678ab').slice(0,64), within_policy:true, timestamp:Date.now() },
-  { cardId:'fx-3', tool_name:'edit_file',   input_hash:'0x'+(Math.random().toString(16).slice(2)+'90abcdef12').slice(0,64), output_hash:'0x'+(Math.random().toString(16).slice(2)+'abcdef3456').slice(0,64), within_policy:true, timestamp:Date.now() },
-];
-// These get replaced with real receipts when /api/proofs/:id/receipt is called
-const FIXTURE_PROOFS = {};
-// ─── Run Agent ─────────────────────────────────────────────────────────────────
 async function runAgent() {
   const btn = document.getElementById('runBtn');
   if (btn.classList.contains('running')) return;
   btn.classList.add('running');
-  btn.textContent = '&#x23F3; Running…';
+  btn.textContent = '\u23F3 Running…';
 
   const prompt = document.getElementById('promptInput').value || 'grep for TODO comments, then fix each one';
   const baseUrl = localStorage.getItem('poc_connection') ? JSON.parse(localStorage.getItem('poc_connection')).url : 'http://localhost:8420';
 
-  // Open SSE stream
   connectSSE(baseUrl);
 
-  // Post chat
   try {
     const resp = await fetch(`${baseUrl}/api/chat`, {
       method: 'POST',
@@ -400,18 +715,13 @@ async function runAgent() {
     if (!resp.ok) throw new Error('chat failed: ' + resp.status);
     const data = await resp.json();
     state.currentSession = data.session_id;
-    // Use proof_id from response to fetch receipt
-    if (data.proof_id) {
-      // Receipt will arrive via SSE as proof_receipt event
-    }
   } catch(e) {
     console.error('[kanban] chat error:', e);
     btn.classList.remove('running');
-    btn.textContent = '&#x25B6; Run Agent + ZK Demo';
+    btn.textContent = '\u25B6 Run Agent + ZK Demo';
   }
 }
 
-// ─── SSE ───────────────────────────────────────────────────────────────────────
 function connectSSE(baseUrl) {
   if (state.sse) { state.sse.close(); state.sse = null; }
   const url = `${baseUrl}/api/traces/stream${state.currentSession ? '?session_id='+state.currentSession : ''}`;
@@ -436,7 +746,6 @@ function handleTraceEvent(evt) {
       within_policy: evt.within_policy,
       timestamp: evt.timestamp,
     }, 'queued');
-    // Move to verifying immediately since we have the invocation
     setTimeout(() => moveCard(id, 'verifying'), 500);
   } else if (evt.event === 'proof_receipt') {
     state.proofs[evt.proof_id] = {
@@ -444,26 +753,22 @@ function handleTraceEvent(evt) {
       seal_b64: evt.seal_b64,
       image_id: evt.image_id,
     };
-    // Auto-verify all verifying cards
     Object.keys(state.cards).forEach(cid => {
       if (state.cards[cid].column === 'verifying') verifyCard(cid);
     });
-    // Update run button
     const btn = document.getElementById('runBtn');
-    if (btn) { btn.classList.remove('running'); btn.textContent = '&#x25B6; Run Agent + ZK Demo'; }
+    if (btn) { btn.classList.remove('running'); btn.textContent = '\u25B6 Run Agent + ZK Demo'; }
   } else if (evt.event === 'trace_complete') {
-    // all good
+    /* no-op */
   }
 }
 
 function findProofForCard(cardId) {
-  // For now: return the most recent proof receipt
   const keys = Object.keys(state.proofs);
   if (keys.length === 0) return null;
   return state.proofs[keys[keys.length - 1]];
 }
 
-// ─── WASM init ───────────────────────────────────────────────────────────────
 async function initWasm() {
   const statusEl = document.getElementById('wasmStatus');
   const displayEl = document.getElementById('imageIdDisplay');
@@ -475,21 +780,12 @@ async function initWasm() {
     displayEl.textContent = imgId.slice(0, 20) + '…';
     if (statusEl) { statusEl.textContent = 'WASM ready'; statusEl.className = 'wasm-status ready'; }
   } catch(e) {
-    const msg = 'WASM not built — run:\n  cargo build --release --target wasm32-unknown-unknown -p proof-of-claw-verifier';
     if (displayEl) displayEl.textContent = 'not loaded';
     if (statusEl) { statusEl.textContent = 'missing'; statusEl.className = 'wasm-status'; }
-    console.warn('[kanban] ' + msg);
+    console.warn('[kanban] WASM not built — run: cargo build --release --target wasm32-unknown-unknown -p proof-of-claw-verifier');
   }
 }
 
-// ─── Sidebar ───────────────────────────────────────────────────────────────────
-function toggleSidebar() {
-  document.body.classList.toggle('sidebar-collapsed');
-  localStorage.setItem('poc-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed'));
-}
-if (localStorage.getItem('poc-sidebar-collapsed') === 'true') document.body.classList.add('sidebar-collapsed');
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
 initWasm();
 </script>
 <script src="poc-api.js"></script>

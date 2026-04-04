@@ -1,0 +1,18 @@
+{
+  "chainId": 16602,
+  "rpc": "https://evmrpc-testnet.0g.ai",
+  "deployer": "0x116C28e6DCABCa363f83217C712d79DCE168d90e",
+  "contracts": [
+    {
+      "name": "ProofOfClawVerifier",
+      "constructorArgs": [
+        "0x0000000000000000000000000000000000000000",
+        "0x0000000000000000000000000000000000000000000000000000000000000000"
+      ]
+    },
+    {
+      "name": "ProofOfClawINFT",
+      "constructorArgs": ["<VERIFIER_ADDRESS_PLACEHOLDER>"]
+    }
+  ]
+}
