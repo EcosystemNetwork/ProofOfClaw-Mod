@@ -2118,6 +2118,11 @@ footer {
   <ul class="nav-links">
   </ul>
   <div class="nav-actions">
+    <button id="wallet-connect-btn" class="nav-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:6px;margin-right:8px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
+      <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
+    </div>
     <a href="agents.html" class="nav-badge green">Launch App →</a>
     <a href="docs.html" class="nav-badge">Docs</a>
   </div>
@@ -2248,6 +2253,7 @@ footer {
     <a href="https://github.com/EcosystemNetwork/ProofOfClaw">GitHub</a>
     <a href="docs.html">Documentation</a>
     <a href="dashboard.html">Dashboard</a>
+    <a href="kanban.html">Kanban</a>
     <a href="deploy.html">Deploy</a>
     <a href="#how-its-made">How It's Made</a>
   </div>
@@ -2420,6 +2426,8 @@ document.querySelectorAll('.fade-in').forEach(function(el) { fadeObserver.observ
 
 </script>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
 <script src="shared.js"></script>
 </body>
 </html>

@@ -783,7 +783,12 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
       const proofId = m.proof.proof_id ? m.proof.proof_id.substring(0, 12) + '...' : 'n/a';
       const status = m.proof.status || 'verified';
       const approvalType = m.proof.approval_type || m.proof.policy_result?.approval_type || 'autonomous';
-      proofHtml = `<div class="message-proof">&#x2713; Proof ${esc(status)} | ${esc(approvalType)} | proof_id: ${esc(proofId)}</div>`;
+      const isLedger = approvalType === 'ledger' || approvalType === 'eip712' || approvalType === 'hardware';
+      const proofIcon = isLedger ? '&#x1F511;' : '&#x2713;';
+      const proofStyle = isLedger
+        ? 'color:var(--green);background:rgba(0,230,118,0.06);border-color:rgba(0,230,118,0.25);'
+        : '';
+      proofHtml = `<div class="message-proof" style="${proofStyle}">${proofIcon} Proof ${esc(status)} | ${esc(approvalType)} | proof_id: ${esc(proofId)}</div>`;
     }
     div.innerHTML = `
       <div class="message-header">
@@ -880,10 +885,13 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
 
       try {
         const baseUrl = getBaseUrl();
-        const response = await fetch(baseUrl + '/api/chat', {
+        const response = await fetch(baseUrl + '/api/chat/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('poc_gateway_token') || '')
+          },
+          body: JSON.stringify({ content: text, thread_id: null })
         });
 
         if (!response.ok) {

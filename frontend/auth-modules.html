@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="OAuth and agent auth modules: GitHub, Google, Discord, Telegram, Slack, and custom credentials.">
+<title>Auth Modules — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<link rel="stylesheet" href="auth-modules-panel.css">
+<style>
+/* ═══ TOPBAR ═══ */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  height: var(--topbar-h);
+  background: rgba(6, 8, 13, 0.88);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.75rem;
+  z-index: 150;
+  transition: left 0.25s ease;
+}
+
+body.sidebar-collapsed .topbar { left: var(--sidebar-w-collapsed); }
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.topbar-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* ═══ MAIN CONTENT ═══ */
+.main-content {
+  position: relative;
+  z-index: 1;
+  margin-left: var(--sidebar-w);
+  margin-top: var(--topbar-h);
+  padding: 1.75rem;
+  min-height: calc(100vh - var(--topbar-h));
+  transition: margin-left 0.25s ease;
+}
+
+body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); }
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 768px) {
+  .topbar { left: 0; }
+  .main-content { margin-left: 0; }
+}
+</style>
+</head>
+<body>
+<a href="#main-content" class="skip-link">Skip to auth modules</a>
+
+<div class="grid-bg"></div>
+
+<!-- ═══════ SIDEBAR ═══════ -->
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
+  <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
+  <a href="index.html" class="sidebar-logo">
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
+    <span class="logo-text">Proof of Claw</span>
+  </a>
+  <nav class="sidebar-nav" aria-label="App navigation">
+    <a href="agents.html">
+      <span class="nav-icon">&#x2726;</span> Agents
+    </a>
+    <a href="dashboard.html">
+      <span class="nav-icon">&#x25A3;</span> Dashboard
+    </a>
+    <a href="auth-modules.html" class="active">
+      <span class="nav-icon">&#x1F512;</span> Auth Modules
+    </a>
+    <a href="messages.html">
+      <span class="nav-icon">&#x2709;</span> Messages
+    </a>
+    <a href="proofs.html">
+      <span class="nav-icon">&#x2731;</span> Proofs
+    </a>
+    <a href="kanban.html">
+      <span class="nav-icon">&#x25A0;</span> Kanban
+    </a>
+    <a href="soul-vault.html">
+      <span class="nav-icon">&#x2B23;</span> Soul Vault
+    </a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div id="poc-connection-slot"></div>
+    <a href="soul-vault.html" class="sidebar-btn primary">+ New Agent</a>
+    <a href="index.html" class="sidebar-btn ghost">Back to Home</a>
+  </div>
+</aside>
+
+<!-- ═══════ TOPBAR ═══════ -->
+<header class="topbar" role="banner">
+  <div class="topbar-left">
+    <span class="topbar-title">Authentication Modules</span>
+  </div>
+  <div class="topbar-right">
+    <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:8px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);"></span>
+      <span class="status-dot" style="background:var(--green);display:inline-block;width:8px;height:8px;border-radius:50%;"></span>
+    </div>
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span>Online</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════ MAIN CONTENT ═══════ -->
+<main class="main-content" id="main-content" role="main">
+  <div id="auth-modules-root"></div>
+</main>
+
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
+<script src="shared.js"></script>
+<script src="poc-api.js"></script>
+<script src="auth-modules-panel.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Configure your Google OAuth Client ID here
+  // Get one at: https://console.cloud.google.com/apis/credentials
+  const GOOGLE_CLIENT_ID = null; // Replace with: 'YOUR_CLIENT_ID.apps.googleusercontent.com'
+  
+  // Backend API auth keys (for proxy/calendar API)
+  const USER_AUTH_KEY = 'ce87c003337354d7e906d4dbd30d133affce711449801f16b58ff1c6b2ddf327';
+  const OPERATOR_AUTH_KEY = 'ce87c003337354d7e906d4dbd30d133affce711449801f16b58ff1c6b2ddf327';
+  
+  // 1clawAI Configuration - REAL API CREDENTIALS
+  // From https://docs.1claw.xyz dashboard
+  const ONECLAW_API_KEY = 'ocv_XsJpRrM_b5aB7dcd-tzzg6yUzZSIuz2dlLs431DBs4U';
+  const ONECLAW_ENDPOINT = 'https://api.1claw.xyz/v1';
+  const AGENT_ID = '61a7016a-b417-4f49-87f1-ade2ed1cf99b';
+  const VAULT_ID = '358ff77c-4c0d-4d1a-85a1-b25bde541cd8'; // Your first vault
+  
+  PocAuthModules.mount('auth-modules-root', {
+    googleClientId: GOOGLE_CLIENT_ID,
+    userAuthKey: USER_AUTH_KEY,
+    operatorAuthKey: OPERATOR_AUTH_KEY,
+    oneclawApiKey: ONECLAW_API_KEY,
+    oneclawEndpoint: ONECLAW_ENDPOINT,
+    agentId: AGENT_ID,
+    vaultId: VAULT_ID,
+    onConnect: function(moduleId) {
+      console.log('Connected to:', moduleId);
+    },
+    onDisconnect: function(moduleId) {
+      console.log('Disconnected from:', moduleId);
+    }
+  });
+
+  if (typeof updateWalletDisplay === 'function') {
+    updateWalletDisplay();
+  }
+});
+</script>
+</body>
+</html>

@@ -208,8 +208,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
   flex-shrink: 0;
+  color: var(--cyan);
+}
+.agent-avatar svg {
+  width: 26px;
+  height: 26px;
 }
 
 .agent-info {
@@ -308,6 +312,77 @@
   border-color: var(--border-cyan);
   color: var(--cyan);
   background: rgba(0,229,255,0.08);
+}
+
+/* ─── AGENT URL ROW ─── */
+.agent-url-row {
+  padding: 10px 16px;
+  margin: 8px 0;
+  background: rgba(0,229,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.agent-url-row .url-label {
+  font-size: 9px;
+  color: var(--cyan-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+}
+
+.agent-url-row .url-box {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.agent-url-row input {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+}
+
+.agent-url-row button,
+.agent-url-row a {
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-url-row button:hover,
+.agent-url-row a:hover {
+  border-color: var(--border-cyan);
+  color: var(--cyan);
+  background: rgba(0,229,255,0.08);
+}
+
+.agent-url-row a {
+  background: linear-gradient(135deg, var(--cyan), #00b8d4);
+  color: #000;
+  border: none;
+  font-weight: 700;
+}
+
+.agent-url-row a:hover {
+  background: linear-gradient(135deg, #00b8d4, var(--cyan));
+  color: #000;
+  box-shadow: 0 4px 12px rgba(0,229,255,0.3);
 }
 
 /* ─── EMPTY STATE ─── */
@@ -432,10 +507,20 @@
 }
 
 .type-option .type-emoji {
-  font-size: 24px;
   width: 36px;
-  text-align: center;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  color: var(--cyan);
+}
+.type-option .type-emoji svg {
+  width: 24px;
+  height: 24px;
+}
+.type-option.selected .type-emoji {
+  color: #fff;
 }
 
 .type-option .type-label {
@@ -821,7 +906,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  color: var(--cyan);
+}
+.profile-modal .profile-avatar svg {
+  width: 34px;
+  height: 34px;
 }
 
 .profile-modal .profile-info h3 {
@@ -1008,8 +1097,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
   flex-shrink: 0;
+  color: var(--cyan);
+}
+.chat-drawer-header .chat-agent-avatar svg {
+  width: 22px;
+  height: 22px;
 }
 .chat-drawer-header .chat-agent-info {
   flex: 1;
@@ -1180,8 +1273,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
   flex-shrink: 0;
+  color: var(--cyan);
+}
+.chat-typing-avatar svg {
+  width: 16px;
+  height: 16px;
 }
 .chat-typing-dots {
   display: flex;
@@ -1279,9 +1376,13 @@
   justify-content: center;
 }
 .chat-welcome .welcome-icon {
-  font-size: 48px;
   margin-bottom: 12px;
   opacity: 0.4;
+  color: var(--cyan);
+}
+.chat-welcome .welcome-icon svg {
+  width: 48px;
+  height: 48px;
 }
 .chat-welcome h3 {
   font-family: var(--font-display);
@@ -1363,11 +1464,17 @@
     <a href="dashboard.html">
       <span class="nav-icon">&#x25A3;</span> Dashboard
     </a>
+    <a href="auth-modules.html">
+      <span class="nav-icon">&#x1F512;</span> Auth Modules
+    </a>
     <a href="messages.html">
       <span class="nav-icon">&#x2709;</span> Messages
     </a>
     <a href="proofs.html">
       <span class="nav-icon">&#x2731;</span> Proofs
+    </a>
+    <a href="kanban.html">
+      <span class="nav-icon">&#x25A0;</span> Kanban
     </a>
     <a href="soul-vault.html">
       <span class="nav-icon">&#x2B23;</span> Soul Vault
@@ -1392,6 +1499,13 @@
   <h1 class="topbar-title">Agent Command Center</h1>
   <div class="topbar-right">
     <span class="badge badge-count" id="agent-count-badge">0 agents</span>
+    <button id="wallet-connect-btn" class="btn-new-agent-top" style="background:transparent;border:1px solid var(--border-cyan);color:var(--cyan);margin-left:12px;" onclick="connectWalletUI()">
+      Connect Wallet
+    </button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:8px;margin-left:12px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);"></span>
+      <span class="status-dot online" style="display:inline-block;"></span>
+    </div>
 
   </div>
 </header>
@@ -1609,14 +1723,14 @@
           <div class="wizard-step-title" style="margin-bottom:4px;">Deploying Agent...</div>
           <div class="wizard-step-subtitle" style="margin-bottom:16px;">This may take a moment</div>
           <div class="deploy-steps" id="deploy-steps">
-            <div class="deploy-step-item" data-deploy="encrypt"><span class="step-icon">&#x25E6;</span> Encrypting secrets with AES-256-GCM</div>
-            <div class="deploy-step-item" data-deploy="ens"><span class="step-icon">&#x25E6;</span> Registering ENS subdomain</div>
-            <div class="deploy-step-item" data-deploy="contract"><span class="step-icon">&#x25E6;</span> Deploying policy contract</div>
-            <div class="deploy-step-item" data-deploy="inft"><span class="step-icon">&#x25E6;</span> Minting agent iNFT on 0G Chain (ERC-7857)</div>
-            <div class="deploy-step-item" data-deploy="storage"><span class="step-icon">&#x25E6;</span> Uploading encrypted metadata to 0G Storage</div>
-            <div class="deploy-step-item" data-deploy="runtime"><span class="step-icon">&#x25E6;</span> Initializing agent runtime</div>
-            <div class="deploy-step-item" data-deploy="og"><span class="step-icon">&#x25E6;</span> Configuring 0G decentralized compute</div>
-            <div class="deploy-step-item" data-deploy="start"><span class="step-icon">&#x25E6;</span> Starting agent</div>
+            <div class="deploy-step-item" data-deploy="encrypt"><span class="step-icon">&#x25E6;</span> Preparing agent configuration</div>
+            <div class="deploy-step-item" data-deploy="wallet"><span class="step-icon">&#x25E6;</span> Connecting wallet</div>
+            <div class="deploy-step-item" data-deploy="network"><span class="step-icon">&#x25E6;</span> Switching to target network</div>
+            <div class="deploy-step-item" data-deploy="inft"><span class="step-icon">&#x25E6;</span> Minting agent iNFT (ERC-7857)</div>
+            <div class="deploy-step-item" data-deploy="registry"><span class="step-icon">&#x25E6;</span> Registering in identity registry</div>
+            <div class="deploy-step-item" data-deploy="storage"><span class="step-icon">&#x25E6;</span> Storing encrypted metadata</div>
+            <div class="deploy-step-item" data-deploy="finalize"><span class="step-icon">&#x25E6;</span> Finalizing deployment</div>
+            <div class="deploy-step-item" data-deploy="complete"><span class="step-icon">&#x25E6;</span> Complete!</div>
           </div>
         </div>
 
@@ -1711,24 +1825,49 @@
 </div>
 
 <script src="crypto.js"></script>
+<script type="module" src="viem-client.js"></script>
+<script type="module" src="config-validator.js"></script>
+<script type="module" src="0g-registration.js"></script>
+<script src="wallet.js"></script>
 <script src="shared.js"></script>
-<script>
+<script type="module">
+import { configValidator, generateENS } from './config-validator.js';
+import { agentRegistration, ZERO_G_CONFIG } from './0g-registration.js';
+
 // ═══════════════════════════════════════
 // DATA & STATE
 // ═══════════════════════════════════════
 
+const AGENT_SVGS = {
+  'full-stack-dev': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/><line x1="14" y1="4" x2="10" y2="20" opacity="0.5"/></svg>`,
+  'blockchain-research': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="7"/><line x1="15" y1="15" x2="21" y2="21"/><path d="M10 7v6l3 3" opacity="0.5"/></svg>`,
+  'security-auditor': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5.25-3.5 9.74-8 11-4.5-1.26-8-5.75-8-11V6l8-4z"/><polyline points="9 12 11 14 15 10" opacity="0.7"/></svg>`,
+  'defi-strategist': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>`,
+  'data-analyst': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="14" width="4" height="7" rx="1" opacity="0.5"/><rect x="10" y="9" width="4" height="12" rx="1"/><rect x="17" y="4" width="4" height="17" rx="1" opacity="0.7"/><line x1="2" y1="3" x2="2" y2="21"/><line x1="2" y1="21" x2="22" y2="21"/></svg>`,
+  'devops-engineer': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`,
+  'coordinator': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2" opacity="0.5"/><circle cx="20" cy="6" r="2" opacity="0.5"/><circle cx="4" cy="18" r="2" opacity="0.5"/><circle cx="20" cy="18" r="2" opacity="0.5"/><line x1="10" y1="10" x2="5.5" y2="7.5"/><line x1="14" y1="10" x2="18.5" y2="7.5"/><line x1="10" y1="14" x2="5.5" y2="16.5"/><line x1="14" y1="14" x2="18.5" y2="16.5"/></svg>`,
+  'frontend-specialist': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="9" x2="9" y2="21"/><rect x="12" y="12" width="6" height="3" rx="0.5" opacity="0.5"/></svg>`,
+  'ml-engineer': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="9" ry="4"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9" ry="4" transform="rotate(120 12 12)"/><circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.4"/></svg>`,
+  'governance-agent': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M4 20v-8"/><path d="M8 20v-8"/><path d="M16 20v-8"/><path d="M20 20v-8"/><path d="M12 20v-8" opacity="0.5"/><path d="M3 12l9-8 9 8"/></svg>`,
+  'openclaw-agent': `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2" opacity="0.7"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg>`,
+};
+
 const AGENT_TYPES = [
-  { id: 'full-stack-dev', icon: '&#x1F4BB;', emoji: '\uD83D\uDCBB', name: 'Full-Stack Dev', desc: 'Build end-to-end dApps and smart contracts' },
-  { id: 'blockchain-research', icon: '&#x1F52C;', emoji: '\uD83D\uDD2C', name: 'Blockchain Research', desc: 'Analyze protocols, MEV, and on-chain data' },
-  { id: 'security-auditor', icon: '&#x1F512;', emoji: '\uD83D\uDD12', name: 'Security Auditor', desc: 'Audit smart contracts for vulnerabilities' },
-  { id: 'defi-strategist', icon: '&#x1F4C8;', emoji: '\uD83D\uDCC8', name: 'DeFi Strategist', desc: 'Optimize yield farming and liquidity' },
-  { id: 'data-analyst', icon: '&#x1F4CA;', emoji: '\uD83D\uDCCA', name: 'Data Analyst', desc: 'Analyze blockchain data and metrics' },
-  { id: 'devops-engineer', icon: '&#x2699;', emoji: '\u2699\uFE0F', name: 'DevOps Engineer', desc: 'Manage infrastructure and deployments' },
-  { id: 'coordinator', icon: '&#x1F30F;', emoji: '\uD83C\uDF0F', name: 'Coordinator', desc: 'Orchestrate multi-agent workflows' },
-  { id: 'frontend-specialist', icon: '&#x1F3A8;', emoji: '\uD83C\uDFA8', name: 'Frontend Specialist', desc: 'Build responsive web3 interfaces' },
-  { id: 'ml-engineer', icon: '&#x1F9E0;', emoji: '\uD83E\uDDE0', name: 'ML Engineer', desc: 'Train models on on-chain data patterns' },
-  { id: 'governance-agent', icon: '&#x1F3DB;', emoji: '\uD83C\uDFDB\uFE0F', name: 'Governance Agent', desc: 'Participate in DAO governance and voting' },
+  { id: 'full-stack-dev', name: 'Full-Stack Dev', desc: 'Build end-to-end dApps and smart contracts' },
+  { id: 'blockchain-research', name: 'Blockchain Research', desc: 'Analyze protocols, MEV, and on-chain data' },
+  { id: 'security-auditor', name: 'Security Auditor', desc: 'Audit smart contracts for vulnerabilities' },
+  { id: 'defi-strategist', name: 'DeFi Strategist', desc: 'Optimize yield farming and liquidity' },
+  { id: 'data-analyst', name: 'Data Analyst', desc: 'Analyze blockchain data and metrics' },
+  { id: 'devops-engineer', name: 'DevOps Engineer', desc: 'Manage infrastructure and deployments' },
+  { id: 'coordinator', name: 'Coordinator', desc: 'Orchestrate multi-agent workflows' },
+  { id: 'frontend-specialist', name: 'Frontend Specialist', desc: 'Build responsive web3 interfaces' },
+  { id: 'ml-engineer', name: 'ML Engineer', desc: 'Train models on on-chain data patterns' },
+  { id: 'governance-agent', name: 'Governance Agent', desc: 'Participate in DAO governance and voting' },
 ];
+
+function agentSvg(typeId) {
+  return AGENT_SVGS[typeId] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>`;
+}
 
 // No hardcoded agent data — agents are loaded from localStorage (persisted after
 // deployment via the wizard) or discovered dynamically via ENS resolution.
@@ -1809,7 +1948,7 @@ function renderAgents() {
   grid.innerHTML = filtered.map(a => `
     <div class="agent-card" onclick="openChat('${a.id}')">
       <div class="agent-card-header">
-        <div class="agent-avatar">${a.typeIcon}</div>
+        <div class="agent-avatar">${agentSvg(a.type)}</div>
         <div class="agent-info">
           <div class="agent-name">${esc(a.name)}</div>
           <div class="agent-ens">${esc(a.ens)}</div>
@@ -1835,6 +1974,16 @@ function renderAgents() {
           <div class="stat-label">Uptime</div>
         </div>
       </div>
+      ${a.endpoints ? `
+      <div class="agent-url-row" onclick="event.stopPropagation();">
+        <div class="url-label">Message URL</div>
+        <div class="url-box">
+          <input type="text" value="${esc(a.endpoints)}" readonly id="url-${a.id}">
+          <button onclick="copyAgentUrl('${a.id}')" title="Copy URL">&#x2398;</button>
+          <a href="messages.html?agent=${a.id}&url=${encodeURIComponent(a.endpoints)}" title="Message this agent">&#x2709;</a>
+        </div>
+      </div>
+      ` : ''}
       ${a.address ? `<div style="font-size:10px;color:var(--text-dim);padding:0 16px;margin-top:-4px;margin-bottom:4px;font-family:var(--font-mono);word-break:break-all;">${esc(a.address)}</div>` : ''}
       ${a.inftTokenId ? `<div style="font-size:10px;padding:0 16px;margin-bottom:4px;"><span style="color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:0.5px;">iNFT #${esc(String(a.inftTokenId))}</span></div>` : ''}
       <div class="agent-actions" onclick="event.stopPropagation();">
@@ -1850,6 +1999,32 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}
+
+function copyAgentUrl(agentId) {
+  const input = document.getElementById('url-' + agentId);
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    if (btn) {
+      btn.innerHTML = '&#x2713;';
+      setTimeout(() => btn.innerHTML = '&#x2398;', 1500);
+    }
+  });
+}
+
+function copyProfileUrl(agentId) {
+  const input = document.getElementById('profile-url-' + agentId);
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    if (btn) {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    }
+  });
 }
 
 // ═══════════════════════════════════════
@@ -1885,7 +2060,7 @@ function openProfile(agentId) {
 
   document.getElementById('profile-body').innerHTML = `
     <div class="agent-profile-header">
-      <div class="profile-avatar">${a.typeIcon}</div>
+      <div class="profile-avatar">${agentSvg(a.type)}</div>
       <div class="profile-info">
         <h3>${esc(a.name)}</h3>
         <div class="ens">${esc(a.ens)}</div>
@@ -1893,6 +2068,22 @@ function openProfile(agentId) {
       </div>
     </div>
     ${a.description ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">${esc(a.description)}</p>` : ''}
+    ${a.endpoints ? `
+    <div style="margin-bottom:16px;padding:12px;background:rgba(0,229,255,0.04);border:1px solid var(--border-cyan);border-radius:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:10px;color:var(--cyan-dim);text-transform:uppercase;letter-spacing:0.6px;">Agent Messaging URL</span>
+        <span style="font-size:10px;color:var(--green);">&#x2713; Connect to message</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" value="${esc(a.endpoints)}" readonly id="profile-url-${a.id}" style="flex:1;padding:8px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;outline:none;">
+        <button onclick="copyProfileUrl('${a.id}')" style="padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;cursor:pointer;font-family:var(--font-mono);">Copy</button>
+        <a href="messages.html?agent=${a.id}&url=${encodeURIComponent(a.endpoints)}" style="padding:8px 12px;background:linear-gradient(135deg,var(--cyan),#00b8d4);border:none;border-radius:6px;color:#000;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer;font-family:var(--font-mono);">Message</a>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-dim);line-height:1.5;">
+        Share this URL to allow others to message your agent via DM3 encrypted messaging.
+      </div>
+    </div>
+    ` : ''}
     ${a.address ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Address:</span> ${esc(a.address)}</div>` : ''}
     ${a.policyHash ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Policy:</span> ${esc(a.policyHash.slice(0, 18))}...</div>` : ''}
     ${a.inftTokenId ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;">iNFT Token #${esc(String(a.inftTokenId))} on 0G Chain (ERC-7857)</div>` : ''}
@@ -2181,7 +2372,7 @@ function renderTypeGrid() {
   const grid = document.getElementById('type-grid');
   grid.innerHTML = AGENT_TYPES.map(t => `
     <div class="type-option" data-type="${t.id}" onclick="selectType('${t.id}', this)">
-      <span class="type-emoji">${t.icon}</span>
+      <span class="type-emoji">${agentSvg(t.id)}</span>
       <div>
         <div class="type-label">${t.name}</div>
         <div class="type-desc">${t.desc}</div>
@@ -2195,7 +2386,6 @@ function selectType(typeId, el) {
   el.classList.add('selected');
   wizardData.type = typeId;
   const typeObj = AGENT_TYPES.find(t => t.id === typeId);
-  wizardData.typeIcon = typeObj ? typeObj.emoji : '';
   wizardData.typeName = typeObj ? typeObj.name : '';
   validateStep();
 }
@@ -2277,7 +2467,7 @@ function buildReview() {
 
 // ─── Deploy ───
 
-function startDeploy() {
+async function startDeploy() {
   const footer = document.getElementById('wizard-footer');
   const progress = document.getElementById('deploy-progress');
   const reviewContent = document.getElementById('review-content');
@@ -2291,9 +2481,10 @@ function startDeploy() {
   document.getElementById('wizard-modal-title').textContent = 'Deploying Agent...';
 
   const steps = document.querySelectorAll('.deploy-step-item');
-  let idx = 0;
+  let currentStep = 0;
 
-  function nextDeployStep() {
+  // Update step UI
+  function setStepActive(idx) {
     if (idx > 0) {
       steps[idx - 1].classList.remove('active');
       steps[idx - 1].classList.add('done');
@@ -2302,18 +2493,78 @@ function startDeploy() {
     if (idx < steps.length) {
       steps[idx].classList.add('active');
       steps[idx].querySelector('.step-icon').innerHTML = '\u25E6';
-      idx++;
-      setTimeout(nextDeployStep, 600 + Math.random() * 400);
-    } else {
-      // Done
-      setTimeout(deployComplete, 400);
     }
   }
 
-  nextDeployStep();
+  try {
+    // Step 1: Encrypt secrets (simulate)
+    setStepActive(0);
+    await new Promise(r => setTimeout(r, 500));
+
+    // Step 2: Connect wallet if needed
+    setStepActive(1);
+    if (!window.PocViem) {
+      throw new Error('Blockchain module not loaded. Please refresh and try again.');
+    }
+    const state = window.PocViem.getWalletState();
+    if (!state.connected) {
+      await connectWalletUI();
+      if (!walletState.connected) {
+        throw new Error('Wallet connection required for deployment');
+      }
+    }
+
+    // Step 3: Switch network
+    setStepActive(2);
+    const network = wizardData.network || 'sepolia';
+    await window.PocViem.switchNetwork(network);
+    window.PocViem.init(network);
+
+    // Step 4: Execute onchain deployment
+    setStepActive(3);
+    const deployResult = await doOnchainDeploy();
+
+    // Step 5-8: Complete remaining steps
+    for (let i = 4; i < steps.length; i++) {
+      setStepActive(i);
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    // Complete deployment
+    setTimeout(() => deployComplete(deployResult), 400);
+
+  } catch (error) {
+    // Show error in deploy progress
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'warning-box';
+    errorDiv.style.marginTop = '20px';
+    errorDiv.innerHTML = `<strong>Deployment Failed:</strong> ${esc(error.message)}`;
+    progress.appendChild(errorDiv);
+
+    // Show retry button
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'btn-wizard btn-wizard-next';
+    retryBtn.textContent = 'Retry';
+    retryBtn.style.marginTop = '16px';
+    retryBtn.onclick = () => {
+      errorDiv.remove();
+      retryBtn.remove();
+      footer.style.display = 'flex';
+      reviewContent.style.display = 'block';
+      wizardProgress.style.display = 'flex';
+      progress.classList.remove('active');
+      document.querySelectorAll('.deploy-step-item').forEach(s => {
+        s.classList.remove('active', 'done');
+        s.querySelector('.step-icon').innerHTML = '\u25E6';
+      });
+    };
+    progress.appendChild(retryBtn);
+  }
 }
 
-function deployComplete() {
+function deployComplete(deployResult) {
+  deployResult = deployResult || {};
+
   document.getElementById('deploy-progress').classList.remove('active');
   document.getElementById('deploy-success').classList.add('active');
   document.getElementById('wizard-modal-title').textContent = 'Agent Deployed!';
@@ -2321,7 +2572,7 @@ function deployComplete() {
   // Create agent
   const agentId = wizardData.name.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'agent-' + Date.now();
 
-  // Generate a demo address if no private key was provided
+  // Use real onchain data if available, otherwise fall back to demo
   const pkProvided = document.getElementById('private-key').value.trim().length > 0;
   const demoAddr = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
   const demoPolicyHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
@@ -2333,7 +2584,6 @@ function deployComplete() {
     ens: wizardData.ens,
     swarmId: wizardData.swarmId || null,
     type: wizardData.type,
-    typeIcon: wizardData.typeIcon,
     network: wizardData.network,
     allowedTools: wizardData.allowedTools,
     valueLimit: wizardData.valueLimit,
@@ -2341,10 +2591,12 @@ function deployComplete() {
     status: 'online',
     deployedAt: new Date().toISOString(),
     description: wizardData.description || '',
-    inftTokenId: Math.floor(Math.random() * 9000) + 1000,
-    policyHash: demoPolicyHash,
-    imageId: demoImageId,
-    address: demoAddr,
+    // Use real onchain data
+    inftTokenId: deployResult.tokenId || Math.floor(Math.random() * 9000) + 1000,
+    policyHash: deployResult.policyHash || demoPolicyHash,
+    imageId: deployResult.imageId || demoImageId,
+    address: deployResult.contractAddress || demoAddr,
+    txHash: deployResult.txHash,
     stats: { actions: 0, proofs: 0, uptime: '0m' }
   };
 
@@ -2359,7 +2611,7 @@ function deployComplete() {
   }
 
   document.getElementById('success-message').textContent =
-    `${newAgent.name} (${newAgent.ens}) registered. Start your agent to connect.`;
+    `${newAgent.name} (${newAgent.ens}) registered on-chain. Start your agent to connect.`;
 
   // Build the cargo run command with the agent's actual config
   const pk = document.getElementById('private-key').value.trim() || '0x_YOUR_PRIVATE_KEY';
@@ -2396,7 +2648,19 @@ cargo run`;
     lastUrl: 'http://localhost:8420',
   });
 
+  // Build explorer link if txHash exists
+  const explorerUrl = deployResult.txHash && window.PocViem
+    ? window.PocViem.getExplorerUrl(deployResult.txHash, wizardData.network)
+    : null;
+
   document.getElementById('success-links').innerHTML = `
+    ${deployResult.txHash ? `
+    <div style="text-align:left;width:100%;margin-bottom:16px;padding:12px;background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.2);border-radius:8px;">
+      <div style="color:var(--green);font-size:11px;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Onchain Registration Complete</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">iNFT Token #${deployResult.tokenId || '—'} minted successfully</div>
+      ${explorerUrl ? `<a href="${esc(explorerUrl)}" target="_blank" style="font-size:11px;color:var(--cyan);text-decoration:none;word-break:break-all;">View Transaction: ${esc(deployResult.txHash.slice(0, 20))}... &#x2197;</a>` : ''}
+    </div>
+    ` : ''}
     <div style="text-align:left;width:100%;margin-bottom:16px;">
       <div style="color:var(--text-dim);font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Step 1 — Run your agent</div>
       <div style="position:relative;">
@@ -2435,7 +2699,7 @@ function openChat(agentId) {
   chatAgentId = agentId;
 
   // Populate header
-  document.getElementById('chat-agent-avatar').textContent = a.typeIcon;
+  document.getElementById('chat-agent-avatar').innerHTML = agentSvg(a.type);
   document.getElementById('chat-agent-name').textContent = a.name;
   document.getElementById('chat-agent-meta').textContent = a.ens + ' \u00B7 ' + a.type;
 
@@ -2716,7 +2980,7 @@ function renderChatHistory(agentId, agentData) {
     if (conn) {
       container.innerHTML = `
         <div class="chat-welcome">
-          <div class="welcome-icon">${agentData.typeIcon}</div>
+          <div class="welcome-icon">${agentSvg(agentData.type)}</div>
           <h3>Chat with ${esc(agentData.name)}</h3>
           <p><span style="color:var(--green);">&#x25CF;</span> Connected to live agent. Send a message to interact.<br>All actions generate cryptographic proofs via RISC Zero.</p>
           <div class="welcome-hint">
@@ -2833,7 +3097,7 @@ async function sendLiveChat(agentData, userMessage, baseUrl) {
   const typingId = 'typing-' + Date.now();
   container.insertAdjacentHTML('beforeend', `
     <div class="chat-typing" id="${typingId}">
-      <div class="chat-typing-avatar">${agentData.typeIcon}</div>
+      <div class="chat-typing-avatar">${agentSvg(agentData.type)}</div>
       <div class="chat-typing-dots"><span></span><span></span><span></span></div>
     </div>`);
   scrollChatToBottom();
@@ -3030,23 +3294,12 @@ async function resolveAndAddAgent(ensName) {
 }
 
 function ensProfileToAgent(profile) {
-  const typeIcons = {
-    'defi-strategist': '\uD83D\uDCC8',
-    'security-auditor': '\uD83D\uDD12',
-    'coordinator': '\uD83C\uDF0F',
-    'data-analyst': '\uD83D\uDCCA',
-    'governance-agent': '\uD83C\uDFDB\uFE0F',
-    'devops-engineer': '\u2699\uFE0F',
-    'unknown': '\u27C1',
-  };
-
   const agentId = profile.ensName.split('.')[0];
   return {
     id: agentId,
     name: agentId,
     ens: profile.ensName,
     type: profile.agentType || 'unknown',
-    typeIcon: typeIcons[profile.agentType] || '\u27C1',
     network: profile.network || 'sepolia',
     skills: profile.skills || [],
     allowedTools: [],
@@ -3214,10 +3467,126 @@ async function doConfirmConnect() {
 }
 
 // ═══════════════════════════════════════
+// ONCHAIN DEPLOYMENT
+// ═══════════════════════════════════════
+
+async function doOnchainDeploy() {
+  if (!window.PocViem) {
+    throw new Error('Blockchain module not loaded yet. Please wait a moment and try again.');
+  }
+
+  const state = window.PocViem.getWalletState();
+  if (!state.connected) {
+    // Try to connect first
+    await connectWalletUI();
+    if (!getWalletState().connected) {
+      throw new Error('Wallet connection required for onchain deployment');
+    }
+  }
+
+  // Switch to correct network
+  const network = wizardData.network || 'og_testnet';
+  await window.PocViem.switchNetwork(network);
+  window.PocViem.init(network);
+
+  // Prepare agent config for robust registration
+  const agentConfig = {
+    agentName: wizardData.name,
+    ensName: wizardData.ens,
+    network: network,
+    allowedTools: wizardData.allowedTools || ['swap_tokens', 'transfer', 'query'],
+    valueLimit: wizardData.valueLimit || 100,
+    endpoints: wizardData.endpoints || '',
+    description: wizardData.description || '',
+    skills: wizardData.skills || [],
+    maxTasks: wizardData.maxTasks || 5,
+    soulPersona: wizardData.soulPersona || ''
+  };
+
+  // Create registration session
+  const sessionId = agentRegistration.createSession(agentConfig);
+  
+  // Subscribe to progress updates
+  agentRegistration.onStatusChange(sessionId, (session) => {
+    updateDeployProgressUI(session);
+  });
+
+  // Prepare metadata
+  const metadata = {
+    ...agentConfig,
+    createdAt: new Date().toISOString(),
+    version: '1.0'
+  };
+
+  // Execute registration
+  const result = await agentRegistration.executeFullRegistration(
+    sessionId,
+    null, // wallet client - handled by viem
+    null, // public client - handled by viem
+    metadata
+  );
+
+  if (!result.success) {
+    throw new Error(result.error || 'Registration failed');
+  }
+
+  return {
+    tokenId: result.results.onchain?.tokenId,
+    txHash: result.results.onchain?.txHash,
+    agentId: result.results.onchain?.agentId,
+    policyHash: result.results.onchain?.policyHash,
+    contractAddress: result.results.onchain?.contractAddress,
+    storageRoot: result.results.storage?.rootHash,
+    dm3Profile: result.results.dm3
+  };
+}
+
+// Update deploy progress UI based on session status
+function updateDeployProgressUI(session) {
+  const steps = document.querySelectorAll('.deploy-step-item');
+  
+  switch (session.status) {
+    case 'validating':
+      updateStepStatus(steps, 0, 'active');
+      break;
+    case 'uploading':
+      updateStepStatus(steps, 0, 'done');
+      updateStepStatus(steps, 1, 'active');
+      break;
+    case 'registering':
+      updateStepStatus(steps, 1, 'done');
+      updateStepStatus(steps, 2, 'active');
+      break;
+    case 'confirming':
+      updateStepStatus(steps, 2, 'done');
+      updateStepStatus(steps, 3, 'active');
+      break;
+    case 'completed':
+      steps.forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('done');
+        s.querySelector('.step-icon').innerHTML = '\u2713';
+      });
+      break;
+  }
+}
+
+function updateStepStatus(steps, idx, status) {
+  if (status === 'active') {
+    steps[idx]?.classList.add('active');
+  } else if (status === 'done') {
+    steps[idx]?.classList.remove('active');
+    steps[idx]?.classList.add('done');
+    if (steps[idx]) steps[idx].querySelector('.step-icon').innerHTML = '\u2713';
+  }
+}
+
+// ═══════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════
 
 init();
+checkWalletConnection();
 </script>
 <script src="ens-resolver.js"></script>
 <script src="poc-api.js"></script>

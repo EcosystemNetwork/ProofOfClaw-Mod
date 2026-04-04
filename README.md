@@ -270,6 +270,18 @@ cd frontend && python3 -m http.server 8080
 
 Open `http://localhost:8080/agents.html` → Connect OpenClaw → Chat.
 
+## Deployed Contracts (0G Testnet)
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| ProofOfClawVerifier | `0xe34dab193105f3d7ec6ee4e6172cbe6213108d8b` | [View on 0G ChainScan](https://chainscan-dev.0g.ai/address/0xe34dab193105f3d7ec6ee4e6172cbe6213108d8b) |
+| ProofOfClawINFT | `0x45c69b7be9dc9a4126053a17a43e664b4ae031a1` | [View on 0G ChainScan](https://chainscan-dev.0g.ai/address/0x45c69b7be9dc9a4126053a17a43e664b4ae031a1) |
+
+**Network Details:**
+- Chain ID: 16602
+- RPC: https://evmrpc-testnet.0g.ai
+- Explorer: https://chainscan-dev.0g.ai
+
 ### Deploy Contracts
 
 All contracts are deployed and verified on **0G Galileo Testnet** (chain ID 16602).

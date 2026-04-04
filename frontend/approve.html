@@ -12,6 +12,33 @@
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
 <style>
+/* Ledger waiting modal animations */
+@keyframes ledgerPulse {
+  0%,100% { box-shadow:0 0 30px rgba(0,229,255,0.12); transform:scale(1); }
+  50%      { box-shadow:0 0 50px rgba(0,229,255,0.35); transform:scale(1.06); }
+}
+@keyframes dotBounce {
+  0%,80%,100% { transform:translateY(0);   opacity:0.35; }
+  40%          { transform:translateY(-8px); opacity:1; }
+}
+.wait-dot {
+  display:inline-block;
+  width:8px; height:8px; border-radius:50%;
+  background:var(--cyan);
+  animation:dotBounce 1.2s ease-in-out infinite;
+}
+/* Live demo badge on action cards */
+.live-demo-badge {
+  padding:0.2rem 0.5rem;
+  background:rgba(0,229,255,0.1);
+  border:1px solid var(--border-cyan);
+  border-radius:4px;
+  font-size:0.6rem;
+  color:var(--cyan);
+  font-weight:700;
+  letter-spacing:0.08em;
+  white-space:nowrap;
+}
 /* ======================================== */
 /* TOPBAR                                   */
 /* ======================================== */
@@ -861,10 +888,70 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 </div>
 
 <!-- ======================================== -->
+<!-- LEDGER WAITING MODAL                     -->
+<!-- ======================================== -->
+<div id="ledger-waiting-overlay" style="
+  display:none; position:fixed; inset:0; z-index:10000;
+  background:rgba(2,4,10,0.85); backdrop-filter:blur(10px);
+  align-items:center; justify-content:center;
+">
+  <div id="ledger-waiting-card" style="
+    background:linear-gradient(160deg,#0d1117,#0a0f1a);
+    border:1px solid rgba(0,229,255,0.18);
+    border-radius:20px; padding:3rem 3.5rem;
+    max-width:420px; width:90%; text-align:center;
+    box-shadow:0 0 60px rgba(0,229,255,0.08),0 20px 60px rgba(0,0,0,0.6);
+    position:relative;
+  ">
+    <!-- Animated Ledger device -->
+    <div id="ledger-wait-icon" style="
+      width:80px;height:80px;border-radius:16px;
+      background:linear-gradient(135deg,#1a2035,#111827);
+      border:2px solid rgba(0,229,255,0.3);
+      margin:0 auto 1.75rem;
+      display:flex;align-items:center;justify-content:center;
+      font-size:2.2rem;
+      animation:ledgerPulse 2s ease-in-out infinite;
+      box-shadow:0 0 30px rgba(0,229,255,0.15);
+    ">&#x1F511;</div>
+
+    <h3 style="font-family:var(--font-display);font-size:1.3rem;font-weight:700;color:var(--text-primary);margin:0 0 0.5rem;">Waiting for Ledger</h3>
+    <p id="ledger-wait-status" style="color:var(--text-dim);font-size:0.88rem;margin:0 0 2rem;line-height:1.6;">Unlock your device with PIN...</p>
+
+    <!-- Bouncing dots -->
+    <div style="display:flex;justify-content:center;gap:0.5rem;margin-bottom:2.25rem;">
+      <span class="wait-dot" style="animation-delay:0s"></span>
+      <span class="wait-dot" style="animation-delay:0.18s"></span>
+      <span class="wait-dot" style="animation-delay:0.36s"></span>
+    </div>
+
+    <button onclick="closeLedgerWaiting(true)" style="
+      background:rgba(255,255,255,0.04);border:1px solid var(--border);
+      color:var(--text-dim);padding:0.6rem 2rem;border-radius:8px;
+      font-family:var(--font-mono);font-size:0.82rem;cursor:pointer;
+      transition:all 0.2s;
+    " onmouseover="this.style.borderColor='rgba(255,61,90,0.5)';this.style.color='var(--red)';"
+       onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)';"
+    >Cancel (ESC)</button>
+  </div>
+</div>
+
+<!-- ======================================== -->
 <!-- SCRIPTS                                  -->
 <!-- ======================================== -->
 <script src="shared.js"></script>
 <script src="poc-api.js"></script>
+
+<!-- Toast notification -->
+<div id="toast" style="
+  display:none; position:fixed; bottom:1.5rem; right:1.5rem; z-index:9999;
+  padding:0.75rem 1.25rem; border-radius:8px; font-family:var(--font-mono);
+  font-size:0.8rem; font-weight:600; max-width:340px; line-height:1.4;
+  box-shadow:0 4px 24px rgba(0,0,0,0.4);
+"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+<script src="ledger-sdk.js?v=20260404f"></script>
 <script>
 // =====================================================
 // STATE
@@ -879,6 +966,23 @@ let currentSigningAction = null;
 // MOCK DATA (used when API is unavailable)
 // =====================================================
 const MOCK_PENDING = [
+  {
+    id: 'act-live-eip712',
+    agentId: 'proof-of-claw',
+    agentName: 'Proof of Claw Agent',
+    ens: 'poc-agent.proofofclaw.eth',
+    type: 'transfer',
+    description: 'EIP-712 Live Demo — Real signature required on Ledger',
+    valueEth: '0.001',
+    valueUsd: '1.93',
+    to: '0x000...0000 (Demo/No-op)',
+    gasLimit: '21,000',
+    chain: 'Sepolia Testnet',
+    policyCheck: 'passed',
+    zkProof: 'verified',
+    timestamp: Date.now(),
+    isLiveDemo: true,
+  },
   {
     id: 'act-001',
     agentId: 'agent-7f3a',
@@ -955,41 +1059,92 @@ const MOCK_HISTORY = [
 // =====================================================
 // LEDGER CONNECTION
 // =====================================================
+
+// Module-level Ledger state
+let _ethApp = null;        // hw-app-eth instance
+let _ledgerAddress = null; // full checksummed address from device
+let _openTransport = null; // keep transport alive across retries
+const DERIVE_PATH = "44'/60'/0'/0/0";
+
+// EIP-712 domain — must mirror backend ApprovalAction exactly
+const EIP712_DOMAIN = {
+  name: 'ProofOfClaw',
+  version: '1',
+  chainId: 11155111, // Sepolia
+};
+const EIP712_TYPES = {
+  ApprovalAction: [
+    { name: 'description', type: 'string' },
+    { name: 'value_wei',   type: 'uint64' },
+    { name: 'nonce',       type: 'uint64' },
+    { name: 'timestamp',   type: 'uint64' },
+  ],
+};
+
 async function connectLedger() {
   const btn = document.getElementById('btn-connect-ledger');
   btn.disabled = true;
   btn.textContent = 'Connecting...';
 
-  try {
-    // Attempt real WebHID connection
-    if (navigator.hid) {
-      try {
-        const devices = await navigator.hid.requestDevice({
-          filters: [
-            { vendorId: 0x2c97 }, // Ledger vendor ID
-          ]
-        });
+  const TransportWebHID = window.LedgerSDK?.TransportWebHID;
+  const Eth             = window.LedgerSDK?.Eth;
 
-        if (devices.length > 0) {
-          const device = devices[0];
-          await device.open();
-          onLedgerConnected(device.productName || 'Ledger Device', '0x7f3a...E8c1', false);
-          return;
-        }
-      } catch (hidErr) {
-        console.warn('WebHID not available or user cancelled, falling back to simulation:', hidErr);
+  if (!navigator.hid || !TransportWebHID) {
+    // Browser doesn't support WebHID — simulate
+    _ethApp = null; _ledgerAddress = null; _openTransport = null;
+    await new Promise(r => setTimeout(r, 1200));
+    onLedgerConnected('Ledger Nano S Plus (Simulated)', '0x7f3a...E8c1 (sim)', true);
+    return;
+  }
+
+  try {
+    // Reuse existing open transport on retries (e.g. after locked error)
+    let transport = _openTransport;
+
+    if (!transport) {
+      // list() returns already-permitted HIDDevice[] (no picker needed)
+      const permitted = await TransportWebHID.list();
+      if (permitted.length > 0) {
+        // open() wraps the raw HIDDevice into a TransportWebHID instance
+        transport = await TransportWebHID.open(permitted[0]);
+      } else {
+        // No previously permitted device — show HID picker
+        transport = await TransportWebHID.request();
       }
+      _openTransport = transport;
     }
 
-    // Fallback: simulated mode
-    await new Promise(r => setTimeout(r, 1200));
-    onLedgerConnected('Ledger Nano S Plus (Simulated)', '0x7f3a...E8c1', true);
+    const eth = new Eth(transport);
+    const { address } = await eth.getAddress(DERIVE_PATH, false, false);
+
+    _ethApp = eth;
+    _ledgerAddress = address;
+    const productName = transport.device?.productName || 'Ledger Device';
+    onLedgerConnected(productName, address, false);
 
   } catch (err) {
-    console.error('Ledger connection error:', err);
+    const msg = err?.message || String(err);
     btn.disabled = false;
     btn.innerHTML = '&#x1F517; Connect Ledger';
-    btn.className = 'btn-ledger connect';
+
+    if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('no device selected')) {
+      _openTransport = null; // picker was cancelled, clear transport
+      return;
+    }
+    if (msg.toLowerCase().includes('locked') || err?.name === 'LockedDeviceError' || msg.includes('0x5515')) {
+      // Show waiting modal — polls until device is unlocked
+      showLedgerWaiting(_openTransport, Eth, 'locked');
+      return;
+    }
+    if (msg.includes('0x6d00') || msg.includes('0x6700') || msg.includes('0x6511') || msg.includes('0x6e00') || msg.toLowerCase().includes('blindsigning')) {
+      // Show waiting modal — polls until Ethereum app is open
+      showLedgerWaiting(_openTransport, Eth, 'app');
+      return;
+    }
+    // Any other error
+    _openTransport = null; // reset so next attempt does a fresh request()
+    showToast('&#x26A0;&#xFE0F; Ledger error: ' + msg.substring(0, 120), 'error', 0);
+    console.error('Ledger connect error:', err);
   }
 }
 
@@ -1030,23 +1185,31 @@ function disconnectLedger() {
   ledgerConnected = false;
   simulatedMode = false;
 
-  const card = document.getElementById('ledger-card');
-  const icon = document.getElementById('ledger-icon');
+  // Close and clear Ledger transport state
+  if (_openTransport) {
+    _openTransport.close().catch(() => {});
+    _openTransport = null;
+  }
+  _ethApp = null;
+  _ledgerAddress = null;
+
+  const card  = document.getElementById('ledger-card');
+  const icon  = document.getElementById('ledger-icon');
   const title = document.getElementById('ledger-title');
-  const desc = document.getElementById('ledger-desc');
-  const meta = document.getElementById('ledger-meta');
-  const btn = document.getElementById('btn-connect-ledger');
+  const desc  = document.getElementById('ledger-desc');
+  const meta  = document.getElementById('ledger-meta');
+  const btn   = document.getElementById('btn-connect-ledger');
   const badge = document.getElementById('ledger-status-badge');
 
   card.classList.remove('connected');
-  icon.innerHTML = '&#x1F512;';
+  icon.innerHTML    = '&#x1F512;';
   title.textContent = 'Connect Ledger';
-  desc.textContent = 'Connect your Ledger hardware wallet to approve pending high-value agent actions with Clear Signing.';
+  desc.textContent  = 'Connect your Ledger hardware wallet to approve pending high-value agent actions with Clear Signing.';
   meta.style.display = 'none';
 
-  btn.innerHTML = '&#x1F517; Connect Ledger';
-  btn.className = 'btn-ledger connect';
-  btn.onclick = connectLedger;
+  btn.innerHTML  = '&#x1F517; Connect Ledger';
+  btn.className  = 'btn-ledger connect';
+  btn.onclick    = connectLedger;
 
   badge.style.display = 'none';
 
@@ -1109,6 +1272,9 @@ function renderPendingActions() {
             '</div>' +
           '</div>' +
           '<span class="action-type-badge ' + action.type + '">' + action.type.toUpperCase() + '</span>' +
+          (action.isLiveDemo
+            ? '<span class="live-demo-badge">&#x26A1; LIVE EIP-712</span>'
+            : '') +
         '</div>' +
         '<div class="action-details">' +
           '<div class="detail-item">' +
@@ -1180,29 +1346,91 @@ async function confirmSign() {
   btn.disabled = true;
   spinner.classList.add('active');
 
-  // Simulate Ledger signing delay
-  await new Promise(r => setTimeout(r, 2500));
-
   const action = currentSigningAction;
-  const fakeTxHash = '0x' + Array.from({ length: 8 }, () => Math.floor(Math.random() * 16).toString(16)).join('') + '...' + Array.from({ length: 4 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
 
-  // Move to history
-  approvalHistory.unshift({
-    time: 'Just now',
-    agent: action.agentName,
-    action: action.type.charAt(0).toUpperCase() + action.type.slice(1),
-    value: action.valueEth + ' ETH',
-    result: 'approved',
-    txHash: fakeTxHash,
-  });
+  // Build EIP-712 message matching backend ApprovalAction struct
+  const nonce = Math.floor(Math.random() * 2 ** 32);
+  const timestamp = Math.floor(Date.now() / 1000);
+  const valueWei = Math.round(parseFloat(action.valueEth || '0') * 1e18);
 
-  // Remove from pending
-  pendingActions = pendingActions.filter(a => a.id !== action.id);
+  const typedData = {
+    domain: EIP712_DOMAIN,
+    types: EIP712_TYPES,
+    primaryType: 'ApprovalAction',
+    message: {
+      description: action.description,
+      value_wei:   valueWei,
+      nonce:       nonce,
+      timestamp:   timestamp,
+    },
+  };
 
-  // Update UI
-  renderPendingActions();
-  renderHistory();
-  closeModal();
+  let signature = null;
+  let txHash = null;
+
+  try {
+    if (_ethApp && !simulatedMode) {
+      // ── Real Ledger path ────────────────────────────────────────────────
+      // We use signEIP712HashedMessage to completely bypass hw-app-eth's API fetching mechanism,
+      // avoiding CORS / 403 Forbidden errors which block the popup.
+      const domainHash = ethers.TypedDataEncoder.hashDomain(typedData.domain);
+      const messageHash = ethers.TypedDataEncoder.hashStruct(typedData.primaryType, typedData.types, typedData.message);
+
+      // Passed hashes must not contain the '0x' prefix for Ledger.
+      const result = await _ethApp.signEIP712HashedMessage(
+        DERIVE_PATH,
+        domainHash.substring(2),
+        messageHash.substring(2)
+      );
+
+      // result: { v, r, s } — assemble hex signature
+      const vHex = (result.v).toString(16).padStart(2, '0');
+      signature = '0x' + result.r + result.s + vHex;
+
+      // POST to backend
+      txHash = await postApproval(action.id, signature, _ledgerAddress, typedData);
+
+    } else {
+      // ── Simulated path ──────────────────────────────────────────────────
+      await new Promise(r => setTimeout(r, 2000));
+      signature = '0xSIMULATED';
+      txHash = await postApproval(action.id, signature, '0xsimulated', typedData);
+    }
+
+    // Record in history — show truncated real signature for live signings
+    const sigDisplay = signature && signature !== '0xSIMULATED'
+      ? signature.slice(0, 14) + '...'
+      : '(simulated)';
+    approvalHistory.unshift({
+      time: 'Just now',
+      agent: action.agentName,
+      action: action.type.charAt(0).toUpperCase() + action.type.slice(1),
+      value: action.valueEth + ' ETH',
+      result: 'approved',
+      txHash: txHash || sigDisplay,
+    });
+
+    pendingActions = pendingActions.filter(a => a.id !== action.id);
+    renderPendingActions();
+    renderHistory();
+    closeModal();
+    const label = signature && signature !== '0xSIMULATED'
+      ? '&#x2705; Signed on Ledger &mdash; <code>' + sigDisplay + '</code>'
+      : '&#x2705; Action approved (simulated)';
+    showToast(label, 'success', 7000);
+
+  } catch (err) {
+    spinner.classList.remove('active');
+    btn.disabled = false;
+
+    const msg = err?.message || String(err);
+    if (msg.toLowerCase().includes('denied') || msg.toLowerCase().includes('reject') || msg.toLowerCase().includes('user refused') || msg.includes('0x6985')) {
+      showToast('&#x274C; Rejected on Ledger device. Action stays pending.', 'error', 5000);
+      closeModal();
+    } else {
+      showToast('&#x26A0;&#xFE0F; Signing error: ' + msg, 'error', 0);
+    }
+  }
 
   currentSigningAction = null;
 }
@@ -1211,7 +1439,10 @@ function rejectAction(actionId) {
   const action = pendingActions.find(a => a.id === actionId);
   if (!action || !ledgerConnected) return;
 
-  // Move to history as rejected
+  // Fire-and-forget to backend
+  postRejection(actionId).catch(() => {/* backend optional */});
+
+
   approvalHistory.unshift({
     time: 'Just now',
     agent: action.agentName,
@@ -1221,11 +1452,10 @@ function rejectAction(actionId) {
     txHash: '---',
   });
 
-  // Remove from pending
   pendingActions = pendingActions.filter(a => a.id !== actionId);
-
   renderPendingActions();
   renderHistory();
+  showToast('&#x2717; Action rejected.', 'warn', 4000);
 }
 
 // =====================================================
@@ -1243,36 +1473,149 @@ function closeModalOutside(e) {
   }
 }
 
-// ESC to close modal
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closeModal();
-});
+
+
 
 // =====================================================
 // HISTORY
 // =====================================================
 function renderHistory() {
   const tbody = document.getElementById('history-body');
-  const allHistory = approvalHistory.length > 0 ? approvalHistory : MOCK_HISTORY;
-
-  // If we have live approvals, merge with mock
-  const data = approvalHistory.length > 0
-    ? [...approvalHistory, ...MOCK_HISTORY]
-    : MOCK_HISTORY;
+  const data = approvalHistory.length > 0 ? [...approvalHistory, ...MOCK_HISTORY] : MOCK_HISTORY;
 
   tbody.innerHTML = data.map(h => {
     const resultClass = h.result === 'approved' ? 'result-approved' : 'result-rejected';
     return (
       '<tr>' +
-        '<td>' + escapeHtml(h.time) + '</td>' +
-        '<td>' + escapeHtml(h.agent) + '</td>' +
+        '<td>' + escapeHtml(h.time)   + '</td>' +
+        '<td>' + escapeHtml(h.agent)  + '</td>' +
         '<td>' + escapeHtml(h.action) + '</td>' +
-        '<td>' + escapeHtml(h.value) + '</td>' +
+        '<td>' + escapeHtml(h.value)  + '</td>' +
         '<td class="' + resultClass + '">' + h.result.charAt(0).toUpperCase() + h.result.slice(1) + '</td>' +
         '<td class="tx-hash">' + escapeHtml(h.txHash) + '</td>' +
       '</tr>'
     );
   }).join('');
+}
+
+// =====================================================
+// BACKEND API HELPERS
+// =====================================================
+async function postApproval(actionId, signature, signer, typedData) {
+  if (typeof PocAPI === 'undefined' || !PocAPI.isConnected()) return null;
+  try {
+    const conn = PocAPI.getConnection();
+    const resp = await fetch(conn.url + '/api/approve-action', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + (localStorage.getItem('poc_gateway_token') || ''),
+      },
+      body: JSON.stringify({ action_id: actionId, signature, signer, typed_data: typedData }),
+    });
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data.tx_hash || null;
+  } catch {
+    return null;
+  }
+}
+
+async function postRejection(actionId) {
+  if (typeof PocAPI === 'undefined' || !PocAPI.isConnected()) return;
+  const conn = PocAPI.getConnection();
+  await fetch(conn.url + '/api/reject-action', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (localStorage.getItem('poc_gateway_token') || ''),
+    },
+    body: JSON.stringify({ action_id: actionId }),
+  });
+}
+
+// =====================================================
+// LEDGER WAITING MODAL
+// =====================================================
+let _pollTimer = null;
+
+function showLedgerWaiting(transport, Eth, reason) {
+  const overlay = document.getElementById('ledger-waiting-overlay');
+  const statusEl = document.getElementById('ledger-wait-status');
+  overlay.style.display = 'flex';
+
+  statusEl.textContent = reason === 'locked'
+    ? 'Unlock your device with PIN…'
+    : 'Open the Ethereum app on your Ledger…';
+
+  clearInterval(_pollTimer);
+  _pollTimer = setInterval(async () => {
+    try {
+      const eth = new Eth(transport);
+      const { address } = await eth.getAddress(DERIVE_PATH, false, false);
+      clearInterval(_pollTimer);
+      overlay.style.display = 'none';
+      _ethApp = eth;
+      _ledgerAddress = address;
+      const productName = transport.device?.productName || 'Ledger Device';
+      onLedgerConnected(productName, address, false);
+    } catch (e) {
+      const m = e?.message || '';
+      if (m.includes('0x5515') || m.toLowerCase().includes('locked')) {
+        statusEl.textContent = 'Unlock your device with PIN…';
+      } else if (m.includes('0x6511') || m.includes('0x6d00') || m.includes('0x6e00')) {
+        statusEl.textContent = 'Open the Ethereum app on your Ledger…';
+      }
+      // keep polling
+    }
+  }, 2000);
+}
+
+function closeLedgerWaiting(resetBtn) {
+  clearInterval(_pollTimer);
+  _pollTimer = null;
+  _openTransport = null; // force fresh picker next time
+  document.getElementById('ledger-waiting-overlay').style.display = 'none';
+  if (resetBtn) {
+    const btn = document.getElementById('btn-connect-ledger');
+    btn.disabled = false;
+    btn.innerHTML = '&#x1F517; Connect Ledger';
+  }
+}
+
+// =====================================================
+// ESC KEY — unified handler for all modals
+// =====================================================
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('ledger-waiting-overlay').style.display === 'flex') {
+    closeLedgerWaiting(true);
+  } else {
+    closeModal();
+  }
+});
+function showToast(msg, type = 'info', duration = 5000) {
+  const el = document.getElementById('toast');
+  const colors = {
+    success: { bg: 'rgba(0,230,118,0.12)', border: 'rgba(0,230,118,0.35)', color: 'var(--green)' },
+    error:   { bg: 'rgba(255,61,90,0.12)', border: 'rgba(255,61,90,0.35)',  color: 'var(--red)' },
+    warn:    { bg: 'rgba(255,179,0,0.12)', border: 'rgba(255,179,0,0.35)',  color: 'var(--amber)' },
+    info:    { bg: 'rgba(0,229,255,0.08)', border: 'rgba(0,229,255,0.25)',  color: 'var(--cyan)' },
+  };
+  const c = colors[type] || colors.info;
+  el.style.background   = c.bg;
+  el.style.border       = '1px solid ' + c.border;
+  el.style.color        = c.color;
+  el.style.cursor       = 'pointer';
+  el.title              = 'Click to dismiss';
+  el.innerHTML = msg + '<span style="float:right;margin-left:1rem;opacity:0.6;">&#x2715;</span>';
+  el.style.display = 'block';
+  el.onclick = () => { el.style.display = 'none'; clearTimeout(el._timer); };
+  clearTimeout(el._timer);
+  if (duration > 0) {
+    el._timer = setTimeout(() => { el.style.display = 'none'; }, duration);
+  }
+  // duration=0 means sticky until clicked
 }
 
 // =====================================================
@@ -1291,6 +1634,7 @@ function init() {
 }
 
 init();
+
 </script>
 </body>
 </html>

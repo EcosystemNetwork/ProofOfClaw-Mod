@@ -2,12 +2,13 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
+import "forge-std/console.sol";
 import "../src/ProofOfClawVerifier.sol";
 import "../src/EIP8004Integration.sol";
 import "../src/ProofOfClawINFT.sol";
 
 contract DeployScript is Script {
-    function run() external {
+    function run() external override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address verifierAddress = vm.envAddress("RISC_ZERO_VERIFIER_ADDRESS");
         bytes32 imageId = vm.envBytes32("RISC_ZERO_IMAGE_ID");

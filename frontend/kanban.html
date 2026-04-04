@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="ZK-verified tool operations on a live kanban — Proof of Claw.">
+<title>ZK Kanban — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<style>
+/* ===================== MAIN LAYOUT (match proofs-style app pages) ===================== */
+.main-content {
+  margin-left: 240px;
+  min-height: 100vh;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(6, 8, 13, 0.7);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.top-bar-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+}
+
+.eth-badge {
+  padding: 0.3rem 0.8rem;
+  border: 1px solid var(--border-cyan);
+  border-radius: 100px;
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  background: var(--cyan-glow);
+  white-space: nowrap;
+}
+
+.page-body {
+  padding: 1.75rem 2rem 3rem;
+}
+
+/* ===================== KANBAN PAGE ===================== */
+.kanban-hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.kanban-hero-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.8rem;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.kanban-hero-subtitle {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.btn-run {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.4rem;
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.15), rgba(0, 230, 118, 0.05));
+  border: 1px solid rgba(0, 230, 118, 0.3);
+  border-radius: 10px;
+  color: var(--green);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.btn-run:hover {
+  background: rgba(0, 230, 118, 0.2);
+  box-shadow: 0 0 24px rgba(0, 230, 118, 0.15);
+}
+
+.btn-run.running {
+  background: rgba(255, 179, 0, 0.12);
+  border-color: rgba(255, 179, 0, 0.3);
+  color: var(--amber);
+  animation: pulse-amber 2s ease-in-out infinite;
+}
+
+.btn-run:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@keyframes pulse-amber {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0); }
+  50% { box-shadow: 0 0 12px rgba(255, 179, 0, 0.2); }
+}
+
+.image-id-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.85rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.image-id-banner code {
+  color: var(--cyan);
+  word-break: break-all;
+}
+
+.prompt-bar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.prompt-bar input {
+  flex: 1;
+  min-width: 300px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.prompt-bar input:focus {
+  border-color: var(--border-cyan);
+}
+
+.prompt-bar input::placeholder {
+  color: var(--text-dim);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  min-height: 600px;
+}
+
+.col {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.col-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.col-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.col-count {
+  padding: 0.2rem 0.6rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+}
+
+.col-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  transition: all 0.3s ease;
+  cursor: default;
+}
+
+.card:hover {
+  border-color: rgba(0, 229, 255, 0.15);
+  background: var(--bg-card-hover);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.6rem;
+}
+
+.tool-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  background: rgba(0, 229, 255, 0.08);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--cyan);
+}
+
+.tool-badge.exec {
+  background: rgba(179, 136, 255, 0.08);
+  border-color: rgba(179, 136, 255, 0.2);
+  color: var(--purple);
+}
+
+.tool-badge.write {
+  background: rgba(0, 230, 118, 0.08);
+  border: 1px solid rgba(0, 230, 118, 0.2);
+  color: var(--green);
+}
+
+.card-status {
+  padding: 0.2rem 0.55rem;
+  border-radius: 100px;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.card-status.queued {
+  background: rgba(136, 146, 164, 0.1);
+  color: var(--text-secondary);
+  border: 1px solid rgba(136, 146, 164, 0.2);
+}
+
+.card-status.verifying {
+  background: rgba(255, 179, 0, 0.1);
+  color: var(--amber);
+  border: 1px solid rgba(255, 179, 0, 0.3);
+  animation: pulse-amber 2s ease-in-out infinite;
+}
+
+.card-status.verified {
+  background: rgba(0, 230, 118, 0.1);
+  color: var(--green);
+  border: 1px solid rgba(0, 230, 118, 0.3);
+}
+
+.card-status.blocked {
+  background: rgba(255, 61, 90, 0.1);
+  color: var(--red);
+  border: 1px solid rgba(255, 61, 90, 0.3);
+}
+
+.card-hashes {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.hash-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.hash-label {
+  color: var(--text-dim);
+  min-width: 40px;
+}
+
+.hash-val {
+  color: var(--cyan);
+  opacity: 0.8;
+  word-break: break-all;
+  font-size: 0.68rem;
+}
+
+.verify-btn {
+  display: block;
+  width: 100%;
+  padding: 0.45rem 0.75rem;
+  background: none;
+  border: 1px solid var(--border-cyan);
+  border-radius: 6px;
+  color: var(--cyan);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.verify-btn:hover {
+  background: rgba(0, 229, 255, 0.08);
+}
+
+.verify-btn.verified {
+  background: rgba(0, 230, 118, 0.1);
+  border-color: rgba(0, 230, 118, 0.3);
+  color: var(--green);
+  cursor: default;
+}
+
+.verify-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.zk-result {
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.72rem;
+}
+
+.zk-result.success {
+  border-color: rgba(0, 230, 118, 0.3);
+  background: rgba(0, 230, 118, 0.05);
+}
+
+.zk-result.error {
+  border-color: rgba(255, 61, 90, 0.3);
+  background: rgba(255, 61, 90, 0.05);
+}
+
+.zk-result .zk-time {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.zk-result .zk-error {
+  color: var(--red);
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 179, 0, 0.2);
+  border-top-color: var(--amber);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 0.4rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.empty-col {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.empty-col-icon {
+  font-size: 1.5rem;
+  opacity: 0.4;
+  margin-bottom: 0.5rem;
+}
+
+.wasm-status {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-left: 1rem;
+}
+
+.wasm-status.ready {
+  color: var(--green);
+}
+
+.wasm-status.loading {
+  color: var(--amber);
+}
+
+.live-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+}
+
+.live-dot::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 6px var(--green);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (max-width: 1100px) {
+  .board { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .main-content { margin-left: 0; }
+  .board { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body class="has-grid">
+
+<a href="#kanban-main" class="skip-link">Skip to kanban board</a>
+
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
+  <button type="button" class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
+  <a href="index.html" class="sidebar-logo">
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
+    <span class="logo-text">Proof of Claw</span>
+  </a>
+  <nav class="sidebar-nav" aria-label="App navigation">
+    <a href="agents.html"><span class="nav-icon">&#x2B21;</span> Agents</a>
+    <a href="dashboard.html"><span class="nav-icon">&#x25A3;</span> Dashboard</a>
+    <a href="auth-modules.html"><span class="nav-icon">&#x1F512;</span> Auth Modules</a>
+    <a href="messages.html"><span class="nav-icon">&#x2709;</span> Messages</a>
+    <a href="proofs.html"><span class="nav-icon">&#x2713;</span> Proofs</a>
+    <a href="kanban.html" class="active" aria-current="page"><span class="nav-icon">&#x25A0;</span> Kanban</a>
+    <a href="soul-vault.html"><span class="nav-icon">&#x2B23;</span> Soul Vault</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div id="poc-connection-slot"></div>
+    <a href="soul-vault.html" class="btn-new-agent">+ New Agent</a>
+    <a href="index.html" class="btn-home">&larr; Back to Home</a>
+  </div>
+</aside>
+
+<main class="main-content" id="kanban-main" role="main">
+  <header class="top-bar" role="banner">
+    <div class="top-bar-title">ZK Kanban</div>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+      <div id="wallet-display" style="display:none;align-items:center;gap:6px;">
+        <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
+        <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
+      </div>
+      <div class="eth-badge">&#x29C9; RISC Zero Verified</div>
+    </div>
+  </header>
+
+  <div class="page-body">
+    <div class="kanban-hero">
+      <div>
+        <div class="kanban-hero-title">ZK-Verified Operations</div>
+        <div class="kanban-hero-subtitle">Each card = one tool call verified in-browser via RISC Zero WASM</div>
+        <div class="image-id-banner" id="imageIdBanner" style="margin-top:0.75rem">
+          Circuit: <code id="imageIdDisplay">not loaded</code>
+          <span class="wasm-status" id="wasmStatus">loading...</span>
+        </div>
+      </div>
+      <div class="live-dot">SSE live</div>
+    </div>
+
+    <div class="prompt-bar">
+      <input type="text" id="promptInput" placeholder="e.g. grep for TODO comments then fix them, or swap 0.01 ETH for USDC" />
+      <button type="button" class="btn-run" id="runBtn" onclick="runAgent()">&#x25B6; Run Agent + ZK Demo</button>
+    </div>
+
+    <div class="board" aria-label="ZK verification columns">
+      <div class="col" id="col-queued">
+        <div class="col-header">
+          <div class="col-title">&#x23EF; Queued</div>
+          <div class="col-count" id="count-queued">0</div>
+        </div>
+        <div class="col-cards" id="cards-queued">
+          <div class="empty-col"><div class="empty-col-icon">&#x23EF;</div>Waiting for agent run...</div>
+        </div>
+      </div>
+      <div class="col" id="col-verifying">
+        <div class="col-header">
+          <div class="col-title">&#x1F9EE; Verifying</div>
+          <div class="col-count" id="count-verifying">0</div>
+        </div>
+        <div class="col-cards" id="cards-verifying">
+          <div class="empty-col"><div class="empty-col-icon">&#x1F9EE;</div>Proofs generating...</div>
+        </div>
+      </div>
+      <div class="col" id="col-verified">
+        <div class="col-header">
+          <div class="col-title">&#x2713; Verified</div>
+          <div class="col-count" id="count-verified">0</div>
+        </div>
+        <div class="col-cards" id="cards-verified">
+          <div class="empty-col"><div class="empty-col-icon">&#x2713;</div>No verified proofs yet</div>
+        </div>
+      </div>
+      <div class="col" id="col-blocked">
+        <div class="col-header">
+          <div class="col-title">&#x2717; Blocked</div>
+          <div class="col-count" id="count-blocked">0</div>
+        </div>
+        <div class="col-cards" id="cards-blocked">
+          <div class="empty-col"><div class="empty-col-icon">&#x2717;</div>No policy blocks</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
+<script src="shared.js"></script>
+<script>
+const state = {
+  cards: {},
+  proofs: {},
+  sse: null,
+  currentSession: null,
+  wasmReady: false,
+};
+
+const TOOL_ICONS = {
+  grep_search: '&#x1F50D;', bash: '&#x2699;', read_file: '&#x1F4C4;',
+  write_file: '&#x1F4DD;', edit_file: '&#x270F;', glob_search: '&#x1F4C1;',
+  web_fetch: '&#x1F310;', web_search: '&#x1F50E;', todo_write: '&#x2611;',
+  skill: '&#x1F4DA;', agent: '&#x1F916;', tool_search: '&#x1F50F;',
+  notebook_edit: '&#x1F4D6;', sleep: '&#x23F1;', send_user_message: '&#x2709;',
+  config: '&#x2699;', structured_output: '&#x1F4CC;', repl: '&#x1F7E8;',
+  powershell: '&#x1F5A5;', default: '&#x2699;',
+};
+const TOOL_CATEGORY = {
+  grep_search:'read',read_file:'read',glob_search:'read',web_fetch:'read',
+  web_search:'read',skill:'read',tool_search:'read',send_user_message:'read',
+  structured_output:'read',sleep:'read',config:'read',
+  bash:'exec',agent:'exec',repl:'exec',powershell:'exec',
+  write_file:'write',edit_file:'write',notebook_edit:'write',todo_write:'write',
+};
+
+function toolIcon(name) { return TOOL_ICONS[name] || TOOL_ICONS.default; }
+function toolClass(name) { return TOOL_CATEGORY[name] || ''; }
+
+function renderCard(card, id) {
+  const cls = toolClass(card.tool_name);
+  return `<div class="card" id="card-${id}">
+    <div class="card-header">
+      <span class="tool-badge ${cls}">${toolIcon(card.tool_name)} ${card.tool_name}</span>
+      <span class="card-status queued" id="status-${id}">Queued</span>
+    </div>
+    <div class="card-hashes">
+      <div class="hash-row"><span class="hash-label">Input</span><span class="hash-val">${truncate(card.input_hash)}</span></div>
+      <div class="hash-row"><span class="hash-label">Output</span><span class="hash-val">${truncate(card.output_hash)}</span></div>
+    </div>
+    <button type="button" class="verify-btn" id="vbtn-${id}" onclick="verifyCard('${id}')">Verify in Browser</button>
+    <div class="zk-result" id="zk-${id}" style="display:none"></div>
+  </div>`;
+}
+
+function truncate(h, len=8) {
+  if (!h || h.length < 20) return h;
+  return h.slice(0, 6 + len) + '…' + h.slice(-len);
+}
+
+function addCard(id, card, col='queued') {
+  const old = !!state.cards[id];
+  state.cards[id] = { ...card, column: col };
+  syncColumn(col, id);
+  if (!old) syncColumnCount(col);
+}
+
+function moveCard(id, toCol) {
+  const card = state.cards[id];
+  if (!card || card.column === toCol) return;
+  const fromCol = card.column;
+  card.column = toCol;
+  syncColumn(fromCol, id);
+  syncColumnCount(fromCol);
+  syncColumn(toCol, id);
+  syncColumnCount(toCol);
+  const statusEl = document.getElementById(`status-${id}`);
+  if (statusEl) {
+    statusEl.className = `card-status ${toCol}`;
+    statusEl.textContent = toCol.charAt(0).toUpperCase() + toCol.slice(1);
+  }
+  const btn = document.getElementById(`vbtn-${id}`);
+  if (btn && toCol === 'verified') {
+    btn.className = 'verify-btn verified';
+    btn.textContent = 'Verified ✓';
+    btn.disabled = true;
+  }
+}
+
+function syncColumn(col, _id) {
+  const els = Object.entries(state.cards).filter(([,c]) => c.column === col).map(([id,c]) => renderCard(c, id)).join('');
+  const container = document.getElementById(`cards-${col}`);
+  if (container) container.innerHTML = els || `<div class="empty-col"><div class="empty-col-icon">${col==='queued'?'&#x23EF;':col==='verifying'?'&#x1F9EE;':col==='verified'?'&#x2713;':'&#x2717;'}</div>${col==='queued'?'Waiting…':col==='verifying'?'Proofs generating…':col==='verified'?'No verified proofs':'No policy blocks'}</div>`;
+}
+
+function syncColumnCount(col) {
+  const n = Object.values(state.cards).filter(c => c.column === col).length;
+  const el = document.getElementById(`count-${col}`);
+  if (el) el.textContent = n;
+}
+
+async function verifyCard(cardId) {
+  const card = state.cards[cardId];
+  if (!card) return;
+  const proof = findProofForCard(cardId);
+  if (!proof) {
+    showZkResult(cardId, null, false, 'No proof receipt available yet — wait for proof_receipt SSE event');
+    return;
+  }
+  if (card.column !== 'verifying') moveCard(cardId, 'verifying');
+  const btn = document.getElementById(`vbtn-${cardId}`);
+  if (btn) { btn.textContent = 'Verifying…'; btn.disabled = true; }
+  const zkEl = document.getElementById(`zk-${cardId}`);
+  if (zkEl) { zkEl.style.display = 'block'; zkEl.className = 'zk-result'; zkEl.innerHTML = '<span class="spinner"></span>Verifying ZK proof in browser…'; }
+
+  try {
+    const result = await window.zkVerify(proof.journal_b64, proof.seal_b64, proof.image_id);
+    if (result.ok) {
+      moveCard(cardId, 'verified');
+      const ms = result.verify_ms;
+      showZkResult(cardId, result, true, `Verified in ${ms}ms via RISC Zero WASM`);
+    } else {
+      moveCard(cardId, 'blocked');
+      showZkResult(cardId, result, false, result.error || 'Verification failed');
+    }
+  } catch(e) {
+    moveCard(cardId, 'blocked');
+    showZkResult(cardId, null, false, 'JS/WASM error: ' + e.message);
+  }
+}
+
+function showZkResult(cardId, result, ok, msg) {
+  const el = document.getElementById(`zk-${cardId}`);
+  if (!el) return;
+  el.style.display = 'block';
+  el.className = `zk-result ${ok ? 'success' : 'error'}`;
+  if (ok && result && result.verified_output) {
+    const vo = result.verified_output;
+    el.innerHTML = `<div style="margin-bottom:.3rem"><span class="zk-time">&#x2713; ${msg}</span></div>
+      <div><span class="hash-label">agent_id:</span> <span class="hash-val" style="font-size:.65rem">${vo.agent_id}</span></div>
+      <div><span class="hash-label">policy:</span> <span class="hash-val" style="font-size:.65rem">${vo.policy_hash}</span></div>
+      <div><span class="hash-label">all_passed:</span> <span style="color:${vo.all_checks_passed?'var(--green)':'var(--red)'}">${vo.all_checks_passed}</span></div>
+      <div><span class="hash-label">ledger:</span> <span style="color:${vo.requires_ledger_approval?'var(--amber)':'var(--green)'}">${vo.requires_ledger_approval ? 'required' : 'autonomous'}</span></div>`;
+  } else {
+    el.innerHTML = `<span class="zk-error">&#x2717; ${msg}</span>`;
+  }
+}
+
+async function runAgent() {
+  const btn = document.getElementById('runBtn');
+  if (btn.classList.contains('running')) return;
+  btn.classList.add('running');
+  btn.textContent = '\u23F3 Running…';
+
+  const prompt = document.getElementById('promptInput').value || 'grep for TODO comments, then fix each one';
+  const baseUrl = localStorage.getItem('poc_connection') ? JSON.parse(localStorage.getItem('poc_connection')).url : 'http://localhost:8420';
+
+  connectSSE(baseUrl);
+
+  try {
+    const resp = await fetch(`${baseUrl}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt }),
+    });
+    if (!resp.ok) throw new Error('chat failed: ' + resp.status);
+    const data = await resp.json();
+    state.currentSession = data.session_id;
+  } catch(e) {
+    console.error('[kanban] chat error:', e);
+    btn.classList.remove('running');
+    btn.textContent = '\u25B6 Run Agent + ZK Demo';
+  }
+}
+
+function connectSSE(baseUrl) {
+  if (state.sse) { state.sse.close(); state.sse = null; }
+  const url = `${baseUrl}/api/traces/stream${state.currentSession ? '?session_id='+state.currentSession : ''}`;
+  const es = new EventSource(url);
+  state.sse = es;
+  es.addEventListener('trace', e => {
+    try {
+      const evt = JSON.parse(e.data);
+      handleTraceEvent(evt);
+    } catch(err) { console.error('[kanban] SSE parse error', err); }
+  });
+  es.onerror = () => { es.close(); state.sse = null; };
+}
+
+function handleTraceEvent(evt) {
+  if (evt.event === 'tool_invocation') {
+    const id = `tool-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+    addCard(id, {
+      tool_name: evt.tool_name,
+      input_hash: evt.input_hash,
+      output_hash: evt.output_hash,
+      within_policy: evt.within_policy,
+      timestamp: evt.timestamp,
+    }, 'queued');
+    setTimeout(() => moveCard(id, 'verifying'), 500);
+  } else if (evt.event === 'proof_receipt') {
+    state.proofs[evt.proof_id] = {
+      journal_b64: evt.journal_b64,
+      seal_b64: evt.seal_b64,
+      image_id: evt.image_id,
+    };
+    Object.keys(state.cards).forEach(cid => {
+      if (state.cards[cid].column === 'verifying') verifyCard(cid);
+    });
+    const btn = document.getElementById('runBtn');
+    if (btn) { btn.classList.remove('running'); btn.textContent = '\u25B6 Run Agent + ZK Demo'; }
+  } else if (evt.event === 'trace_complete') {
+    /* no-op */
+  }
+}
+
+function findProofForCard(cardId) {
+  const keys = Object.keys(state.proofs);
+  if (keys.length === 0) return null;
+  return state.proofs[keys[keys.length - 1]];
+}
+
+async function initWasm() {
+  const statusEl = document.getElementById('wasmStatus');
+  const displayEl = document.getElementById('imageIdDisplay');
+  try {
+    const wasmUrl = './proof_of_claw_verifier.js';
+    await import(wasmUrl);
+    const imgId = await window.getImageId();
+    state.wasmReady = true;
+    displayEl.textContent = imgId.slice(0, 20) + '…';
+    if (statusEl) { statusEl.textContent = 'WASM ready'; statusEl.className = 'wasm-status ready'; }
+  } catch(e) {
+    if (displayEl) displayEl.textContent = 'not loaded';
+    if (statusEl) { statusEl.textContent = 'missing'; statusEl.className = 'wasm-status'; }
+    console.warn('[kanban] WASM not built — run: cargo build --release --target wasm32-unknown-unknown -p proof-of-claw-verifier');
+  }
+}
+
+initWasm();
+</script>
+<script src="poc-api.js"></script>
+</body>
+</html>

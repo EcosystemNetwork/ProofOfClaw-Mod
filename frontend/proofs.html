@@ -489,8 +489,10 @@
   <nav class="sidebar-nav" aria-label="App navigation">
     <a href="agents.html"><span class="nav-icon">&#x2726;</span> Agents</a>
     <a href="dashboard.html"><span class="nav-icon">&#x25A3;</span> Dashboard</a>
+    <a href="auth-modules.html"><span class="nav-icon">&#x1F512;</span> Auth Modules</a>
     <a href="messages.html"><span class="nav-icon">&#x2709;</span> Messages</a>
     <a href="proofs.html" class="active" aria-current="page"><span class="nav-icon">&#x2731;</span> Proofs</a>
+    <a href="kanban.html"><span class="nav-icon">&#x25A0;</span> Kanban</a>
     <a href="soul-vault.html"><span class="nav-icon">&#x2B23;</span> Soul Vault</a>
     <a href="approve.html"><span class="nav-icon">&#x2714;</span> Approve</a>
   </nav>
@@ -513,12 +515,17 @@
       <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
       <div class="top-bar-title">Proof Verification</div>
       <div class="top-bar-agent-filter">
-        <select id="topAgentFilter" aria-label="Filter proofs by agent">
-          <option value="all">All Agents</option>
+        <select id="agentFilter" aria-label="Filter by agent">
+          <option value="">All agents</option>
         </select>
       </div>
     </div>
-    <div class="top-bar-right">
+    <div class="top-bar-right" style="display:flex;align-items:center;gap:12px;">
+      <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+      <div id="wallet-display" style="display:none;align-items:center;gap:6px;">
+        <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
+        <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
+      </div>
       <div class="top-bar-stats">
         <span>Total: <span class="stat-val" id="statTotalInline">3</span></span>
         <span>Verified: <span class="stat-val" style="color:var(--green)" id="statVerifiedInline">66%</span></span>
@@ -587,6 +594,8 @@
   </div>
 </main>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
 <script src="shared.js"></script>
 <script>
 // ===================== DATA =====================
