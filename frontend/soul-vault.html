@@ -381,8 +381,82 @@ body.sidebar-collapsed .main-content { margin-left: 60px; }
         </div>
       </div>
 
-      <!-- Step 3: Skills -->
+      <!-- Step 3: Tools & Integrations -->
       <div class="wizard-panel" id="step-3">
+        <div class="wizard-step-title">Tools &amp; Integrations</div>
+        <div class="wizard-step-subtitle">Configure external tools and runtime environment</div>
+        
+        <div class="form-group">
+          <label>External Tools</label>
+          <div class="checkbox-group">
+            <label class="checkbox-item"><input type="checkbox" id="tool-llm-context" value="llm_context" checked><span><strong>LLM Context</strong> — Fetch pre-extracted web content from Brave Search for RAG/fact-checking</span></label>
+            <label class="checkbox-item"><input type="checkbox" id="tool-slack" value="slack"><span><strong>Slack Tool</strong> — Post and read messages in your Slack workspace (OAuth required)</span></label>
+            <label class="checkbox-item"><input type="checkbox" id="tool-telegram" value="telegram"><span><strong>Telegram Tool</strong> — Read and send messages via Telegram bot</span></label>
+            <label class="checkbox-item"><input type="checkbox" id="tool-web-search" value="web_search" checked><span><strong>Web Search</strong> — Search the web using Brave Search API</span></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tool Credentials (Optional)</label>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Slack OAuth Token</label>
+              <input type="password" id="slack-token" placeholder="xoxb-...">
+            </div>
+            <div class="form-group">
+              <label>Telegram Bot Token</label>
+              <input type="password" id="telegram-token" placeholder="bot...">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Brave Search API Key</label>
+              <input type="password" id="brave-api-key" placeholder="BSA...">
+            </div>
+            <div class="form-group">
+              <label>Notification Channel</label>
+              <input type="text" id="notify-channel" placeholder="e.g. telegram, slack">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Docker Sandbox</label>
+          <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;">
+            <label class="toggle-switch" style="display:flex;align-items:center;gap:12px;cursor:pointer;">
+              <input type="checkbox" id="docker-sandbox" style="display:none;" checked>
+              <span class="toggle-slider" style="width:44px;height:24px;background:var(--green);border-radius:12px;position:relative;transition:all 0.3s;">
+                <span style="position:absolute;top:2px;left:22px;width:20px;height:20px;background:#fff;border-radius:50%;transition:all 0.3s;"></span>
+              </span>
+              <span style="font-size:13px;color:var(--text-secondary);">Enable Docker sandbox for code execution</span>
+            </label>
+          </div>
+          <div class="info-box" style="background:rgba(0,230,118,0.05);border-color:rgba(0,230,118,0.2);">
+            <strong>Security:</strong> Docker sandbox keeps your system safe — commands run in isolated containers with no access to your credentials, limited filesystem access, and network traffic restricted to an allowlist.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Background Tasks (Heartbeat)</label>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Check Interval (minutes)</label>
+              <input type="number" id="heartbeat-interval" value="60" min="5" max="1440">
+              <div class="form-hint">How often to check for notifications, calendar updates, etc.</div>
+            </div>
+            <div class="form-group">
+              <label>Heartbeat Enabled</label>
+              <select id="heartbeat-enabled">
+                <option value="true" selected>Yes — Enable periodic background tasks</option>
+                <option value="false">No — Run on-demand only</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 4: Skills -->
+      <div class="wizard-panel" id="step-4">
         <div class="wizard-step-title">Skills &amp; Capabilities</div>
         <div class="wizard-step-subtitle">Choose capabilities and define the agent's persona</div>
         <div class="form-group">
@@ -406,8 +480,8 @@ body.sidebar-collapsed .main-content { margin-left: 60px; }
         </div>
       </div>
 
-      <!-- Step 4: Policy -->
-      <div class="wizard-panel" id="step-4">
+      <!-- Step 5: Policy -->
+      <div class="wizard-panel" id="step-5">
         <div class="wizard-step-title">Policy &amp; Security</div>
         <div class="wizard-step-subtitle">Define what your agent can and cannot do</div>
         <div class="form-group">
@@ -434,8 +508,8 @@ body.sidebar-collapsed .main-content { margin-left: 60px; }
         </div>
       </div>
 
-      <!-- Step 5: Secrets -->
-      <div class="wizard-panel" id="step-5">
+      <!-- Step 6: Secrets -->
+      <div class="wizard-panel" id="step-6">
         <div class="wizard-step-title">Secrets &amp; Keys</div>
         <div class="wizard-step-subtitle">Provide credentials for your agent (encrypted at rest)</div>
         <div class="form-group">
@@ -461,8 +535,8 @@ body.sidebar-collapsed .main-content { margin-left: 60px; }
         </div>
       </div>
 
-      <!-- Step 6: Review -->
-      <div class="wizard-panel" id="step-6">
+      <!-- Step 7: Review -->
+      <div class="wizard-panel" id="step-7">
         <div class="wizard-step-title">Review &amp; Deploy</div>
         <div class="wizard-step-subtitle">Confirm your agent configuration</div>
 
@@ -558,10 +632,10 @@ let wizardStep = 1;
 let wizardData = { type: null, skills: [], allowedTools: ['swap_tokens', 'transfer', 'query'] };
 let vaultMode = 'register'; // 'register' or 'deploy'
 
-// Register mode uses steps: 1 (type), 2 (identity), 3 (skills), 4 (policy), then register
-// Deploy mode uses all 6 steps (+ secrets + deploy)
-const REGISTER_STEPS = [1, 2, 3, 4];
-const DEPLOY_STEPS = [1, 2, 3, 4, 5, 6];
+// Register mode uses steps: 1 (type), 2 (identity), 3 (tools), 4 (skills), 5 (policy), then register
+// Deploy mode uses all 7 steps (+ secrets + deploy)
+const REGISTER_STEPS = [1, 2, 3, 4, 5];
+const DEPLOY_STEPS = [1, 2, 3, 4, 5, 6, 7];
 
 function getSteps() { return vaultMode === 'register' ? REGISTER_STEPS : DEPLOY_STEPS; }
 function getTotalSteps() { return getSteps().length; }
@@ -736,7 +810,7 @@ cargo run`;
 
 function updateWizardUI() {
   const currentStepNum = getStepNumber();
-  for (let i = 1; i <= 6; i++) {
+  for (let i = 1; i <= 7; i++) {
     document.getElementById('step-' + i).classList.toggle('active', i === currentStepNum);
   }
 
@@ -769,7 +843,7 @@ function updateWizardUI() {
   }
 
   validateStep();
-  if (vaultMode === 'deploy' && currentStepNum === 6) buildReview();
+  if (vaultMode === 'deploy' && currentStepNum === 7) buildReview();
 }
 
 function validateStep() {
@@ -790,12 +864,12 @@ function validateStep() {
       showFieldValidation('agent-name', nameValid);
       if (ensVal) showFieldValidation('agent-ens', ensValid);
       break;
-    case 4:
+    case 5:
       const limitVal = document.getElementById('value-limit').value;
       const limitValid = configValidator.validateField('valueLimit', limitVal);
       valid = limitValid.valid;
       break;
-    case 5: 
+    case 6:
       const pkVal = document.getElementById('private-key').value.trim();
       const pkValid = configValidator.validateField('privateKey', pkVal || null);
       valid = pkVal === '' || pkValid.valid; // Private key is optional
@@ -872,6 +946,26 @@ function gatherStepData() {
       wizardData.network = document.getElementById('agent-network').value;
       break;
     case 3:
+      // Tools & Integrations
+      wizardData.tools = {
+        llmContext: document.getElementById('tool-llm-context')?.checked || false,
+        slack: document.getElementById('tool-slack')?.checked || false,
+        telegram: document.getElementById('tool-telegram')?.checked || false,
+        webSearch: document.getElementById('tool-web-search')?.checked || false
+      };
+      wizardData.credentials = {
+        slackToken: document.getElementById('slack-token')?.value?.trim() || '',
+        telegramToken: document.getElementById('telegram-token')?.value?.trim() || '',
+        braveApiKey: document.getElementById('brave-api-key')?.value?.trim() || ''
+      };
+      wizardData.dockerSandbox = document.getElementById('docker-sandbox')?.checked || false;
+      wizardData.heartbeat = {
+        enabled: document.getElementById('heartbeat-enabled')?.value === 'true',
+        interval: parseInt(document.getElementById('heartbeat-interval')?.value) || 60,
+        notifyChannel: document.getElementById('notify-channel')?.value?.trim() || ''
+      };
+      break;
+    case 4:
       wizardData.skills = [];
       document.querySelectorAll('.skill-tag.selected').forEach(t => {
         wizardData.skills.push(t.dataset.skill);
@@ -879,9 +973,9 @@ function gatherStepData() {
       wizardData.maxTasks = parseInt(document.getElementById('max-tasks').value) || 5;
       wizardData.soulPersona = document.getElementById('soul-persona').value.trim();
       break;
-    case 4:
+    case 5:
       wizardData.allowedTools = [];
-      document.querySelectorAll('#step-4 input[type="checkbox"]:checked').forEach(cb => {
+      document.querySelectorAll('#step-5 input[type="checkbox"]:checked').forEach(cb => {
         wizardData.allowedTools.push(cb.value);
       });
       wizardData.valueLimit = parseInt(document.getElementById('value-limit').value) || 0;
@@ -984,6 +1078,9 @@ function buildReview() {
     <h4>Capabilities</h4>
     <div class="review-row"><span class="label">Skills</span><span class="value">${wizardData.skills.length > 0 ? wizardData.skills.map(s => esc(s)).join(', ') : 'None'}</span></div>
     <div class="review-row"><span class="label">Max Tasks</span><span class="value">${wizardData.maxTasks || 5}</span></div>
+    <div class="review-row"><span class="label">Tools</span><span class="value">${Object.entries(wizardData.tools || {}).filter(([_,v]) => v).map(([k]) => k).join(', ') || 'None'}</span></div>
+    <div class="review-row"><span class="label">Docker Sandbox</span><span class="value">${wizardData.dockerSandbox ? 'Enabled' : 'Disabled'}</span></div>
+    <div class="review-row"><span class="label">Heartbeat</span><span class="value">${(wizardData.heartbeat?.enabled) ? (wizardData.heartbeat?.interval + ' min') : 'Disabled'}</span></div>
   `;
 
   document.getElementById('review-policy').innerHTML = `
@@ -1119,7 +1216,7 @@ async function startRegister() {
   wizardProgress.style.display = 'none';
 
   // Hide current step
-  for (let i = 1; i <= 6; i++) {
+  for (let i = 1; i <= 7; i++) {
     document.getElementById('step-' + i).classList.remove('active');
   }
 
@@ -1369,9 +1466,22 @@ function resetVault() {
   document.getElementById('og-api-key').value = '';
   document.getElementById('ledger-token').value = '';
 
+  // Reset Tools & Integrations fields
+  document.getElementById('tool-llm-context').checked = true;
+  document.getElementById('tool-slack').checked = false;
+  document.getElementById('tool-telegram').checked = false;
+  document.getElementById('tool-web-search').checked = true;
+  document.getElementById('slack-token').value = '';
+  document.getElementById('telegram-token').value = '';
+  document.getElementById('brave-api-key').value = '';
+  document.getElementById('notify-channel').value = '';
+  document.getElementById('docker-sandbox').checked = true;
+  document.getElementById('heartbeat-enabled').value = 'true';
+  document.getElementById('heartbeat-interval').value = '60';
+
   document.querySelectorAll('.type-option').forEach(t => t.classList.remove('selected'));
   document.querySelectorAll('.skill-tag').forEach(t => t.classList.remove('selected'));
-  document.querySelectorAll('#step-4 input[type="checkbox"]').forEach(cb => cb.checked = true);
+  document.querySelectorAll('#step-5 input[type="checkbox"]').forEach(cb => cb.checked = true);
 
   document.getElementById('deploy-progress').classList.remove('active');
   document.getElementById('deploy-success').classList.remove('active');
