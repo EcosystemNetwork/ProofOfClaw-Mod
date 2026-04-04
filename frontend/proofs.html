@@ -502,12 +502,17 @@
     <div class="top-bar-left">
       <div class="top-bar-title">Proof Verification</div>
       <div class="top-bar-agent-filter">
-        <select id="topAgentFilter" aria-label="Filter proofs by agent">
-          <option value="all">All Agents</option>
+        <select id="agentFilter" aria-label="Filter by agent">
+          <option value="">All agents</option>
         </select>
       </div>
     </div>
-    <div class="top-bar-right">
+    <div class="top-bar-right" style="display:flex;align-items:center;gap:12px;">
+      <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
+      <div id="wallet-display" style="display:none;align-items:center;gap:6px;">
+        <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
+        <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
+      </div>
       <div class="top-bar-stats">
         <span>Total: <span class="stat-val" id="statTotalInline">3</span></span>
         <span>Verified: <span class="stat-val" style="color:var(--green)" id="statVerifiedInline">66%</span></span>
@@ -576,6 +581,8 @@
   </div>
 </main>
 
+<script type="module" src="viem-client.js"></script>
+<script src="wallet.js"></script>
 <script src="shared.js"></script>
 <script>
 // ===================== DATA =====================
