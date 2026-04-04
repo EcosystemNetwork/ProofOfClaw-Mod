@@ -1036,6 +1036,17 @@ import { agentRegistration, ZERO_G_CONFIG } from './0g-registration.js';
 // DATA & STATE
 // ═══════════════════════════════════════
 
+const AGENT_TYPES = [
+  { id: 'full-stack-dev', icon: 'public/icons/full-stack-dev.svg', name: 'Full-Stack Dev', desc: 'Build end-to-end dApps and smart contracts' },
+  { id: 'blockchain-research', icon: 'public/icons/blockchain-research.svg', name: 'Blockchain Research', desc: 'Analyze protocols, MEV, and on-chain data' },
+  { id: 'security-auditor', icon: 'public/icons/security-auditor.svg', name: 'Security Auditor', desc: 'Audit smart contracts for vulnerabilities' },
+  { id: 'defi-strategist', icon: 'public/icons/defi-strategist.svg', name: 'DeFi Strategist', desc: 'Optimize yield farming and liquidity' },
+  { id: 'data-analyst', icon: 'public/icons/data-analyst.svg', name: 'Data Analyst', desc: 'Analyze blockchain data and metrics' },
+  { id: 'devops-engineer', icon: 'public/icons/devops-engineer.svg', name: 'DevOps Engineer', desc: 'Manage infrastructure and deployments' },
+  { id: 'coordinator', icon: 'public/icons/coordinator.svg', name: 'Coordinator', desc: 'Orchestrate multi-agent workflows' },
+  { id: 'frontend-specialist', icon: 'public/icons/frontend-specialist.svg', name: 'Frontend Specialist', desc: 'Build responsive web3 interfaces' },
+  { id: 'ml-engineer', icon: 'public/icons/ml-engineer.svg', name: 'ML Engineer', desc: 'Train models on on-chain data patterns' },
+  { id: 'governance-agent', icon: 'public/icons/governance-agent.svg', name: 'Governance Agent', desc: 'Participate in DAO governance and voting' },
 let currentGrantInftId = null;
 
 // Memory backup types for demo generation
