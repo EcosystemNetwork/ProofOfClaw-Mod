@@ -154,30 +154,29 @@ Response:
 
 ```
 proof-of-claw/
-├── agent/                      # Rust agent runtime
+├── agent/                      # Rust agent runtime (IronClaw workspace)
+│   ├── crates/
+│   │   ├── proof_of_claw/      # Core Proof of Claw agent crate
+│   │   ├── ironclaw_engine/    # Agent reasoning loop, capabilities, memory
+│   │   ├── ironclaw_safety/    # Safety layer (injection detection, leak detection, fuzzing)
+│   │   ├── ironclaw_skills/    # Extensible skills system
+│   │   └── ironclaw_common/    # Shared types and utilities
 │   └── src/
-│       ├── main.rs             # Entry point — API server + agent loop
-│       ├── api.rs              # REST API (status, chat, proofs, messages, activity)
-│       ├── proof_agent.rs      # IronClaw-based agent with shared state
-│       ├── proof_generator.rs  # ZK proof generation (Boundless / mock)
-│       ├── ironclaw_adapter.rs # IronClaw trace conversion
-│       ├── core/
-│       │   ├── config.rs       # Environment-based configuration
-│       │   ├── intent_router.rs # Action classification (swap, transfer, query)
-│       │   ├── job_scheduler.rs # Async task management
-│       │   └── types.rs        # Core data structures
-│       ├── tools/
-│       │   ├── registry.rs     # Tool registration with SHA256 capability hashes
-│       │   └── sandbox.rs      # Wasmtime WASM execution sandbox
-│       ├── safety/
-│       │   ├── policy_engine.rs     # Tool allowlist, value threshold enforcement
-│       │   └── injection_detector.rs # Prompt injection detection
-│       └── integrations/
-│           ├── zero_g.rs       # 0G Compute (inference) + 0G Storage (traces)
-│           ├── ens_dm3.rs      # ENS resolution + DM3 encrypted messaging
-│           ├── ledger.rs       # Ledger hardware approval gate (stub)
-│           ├── eip8004.rs      # EIP-8004 identity, reputation, validation
-│           └── inft.rs         # iNFT (ERC-7857) agent identity minting
+│       ├── main.rs             # Entry point + CLI
+│       ├── app.rs              # App startup orchestration
+│       ├── agent/              # Core agent loop, dispatcher, sessions
+│       ├── channels/           # Multi-channel input (HTTP, CLI, REPL, WebSocket, WASM)
+│       ├── tools/              # Extensible tool system with WASM sandbox + MCP
+│       ├── llm/                # Multi-provider LLM abstraction
+│       ├── db/                 # Dual-backend persistence (PostgreSQL + libSQL)
+│       ├── workspace/          # Persistent memory (hybrid FTS + vector search)
+│       ├── safety/             # Prompt injection detection (re-exports ironclaw_safety)
+│       ├── sandbox/            # Docker execution isolation + network proxy
+│       ├── skills/             # SKILL.md prompt extension system
+│       ├── hooks/              # Lifecycle hooks (6 hook points)
+│       ├── tunnel/             # Public exposure (Cloudflare, ngrok, Tailscale)
+│       ├── secrets/            # AES-256-GCM secrets management
+│       └── integrations/       # 0G, ENS, DM3, Ledger, EIP-8004, iNFT
 │
 ├── zkvm/                       # RISC Zero zkVM programs
 │   ├── guest/src/main.rs       # Policy verification guest program
@@ -198,18 +197,25 @@ proof-of-claw/
 │       └── Deploy0G.s.sol           # 0G Chain deployment
 │
 ├── frontend/                   # Web UI (vanilla HTML/CSS/JS)
-│   ├── index.html              # Landing page
+│   ├── index.html              # Landing page + architecture overview
 │   ├── agents.html             # Agent registry, wizard, inline chat, profile editor
 │   ├── dashboard.html          # Live monitoring (polls API every 3s when connected)
 │   ├── messages.html           # DM3 message threads
 │   ├── proofs.html             # ZK proof explorer
+│   ├── soul-vault.html         # Agent deployment interface
+│   ├── docs.html               # Interactive technical documentation
+│   ├── deploy.html             # Redirect → agents.html
 │   ├── poc-api.js              # API client (connect, fetch, send)
-│   └── ens-resolver.js         # On-chain ENS resolution (keccak256 + namehash)
+│   ├── ens-resolver.js         # On-chain ENS resolution (keccak256 + namehash)
+│   ├── shared.css              # Unified design system
+│   ├── shared.js               # Shared UI utilities
+│   └── public/                 # Favicons, logos, sponsor assets
 │
 ├── spec.md                     # Full technical specification
 ├── ARCHITECTURE.md             # System architecture docs
 ├── IRONCLAW_INTEGRATION.md     # IronClaw integration guide
 ├── Makefile                    # Build/test/deploy targets
+├── vercel.json                 # Vercel deployment config (serves frontend/)
 └── .env.example                # Configuration reference
 ```
 
@@ -217,7 +223,7 @@ proof-of-claw/
 
 ### Prerequisites
 
-- Rust 1.75+
+- Rust 1.92+
 - Foundry (`curl -L https://foundry.paradigm.xyz | bash && foundryup`)
 - RISC Zero toolchain (`curl -L https://risczero.com/install | bash && rzup install`)
 
@@ -313,6 +319,7 @@ forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --private-key $P
 
 ## Documentation
 
+- [docs.html](frontend/docs.html) — Interactive technical documentation (served at `/docs.html`)
 - [spec.md](spec.md) — Full technical specification
 - [ARCHITECTURE.md](ARCHITECTURE.md) — System architecture
 - [IRONCLAW_INTEGRATION.md](IRONCLAW_INTEGRATION.md) — IronClaw integration guide
