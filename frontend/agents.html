@@ -310,6 +310,77 @@
   background: rgba(0,229,255,0.08);
 }
 
+/* ─── AGENT URL ROW ─── */
+.agent-url-row {
+  padding: 10px 16px;
+  margin: 8px 0;
+  background: rgba(0,229,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.agent-url-row .url-label {
+  font-size: 9px;
+  color: var(--cyan-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: 4px;
+}
+
+.agent-url-row .url-box {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.agent-url-row input {
+  flex: 1;
+  padding: 6px 10px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  outline: none;
+}
+
+.agent-url-row button,
+.agent-url-row a {
+  padding: 6px 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.agent-url-row button:hover,
+.agent-url-row a:hover {
+  border-color: var(--border-cyan);
+  color: var(--cyan);
+  background: rgba(0,229,255,0.08);
+}
+
+.agent-url-row a {
+  background: linear-gradient(135deg, var(--cyan), #00b8d4);
+  color: #000;
+  border: none;
+  font-weight: 700;
+}
+
+.agent-url-row a:hover {
+  background: linear-gradient(135deg, #00b8d4, var(--cyan));
+  color: #000;
+  box-shadow: 0 4px 12px rgba(0,229,255,0.3);
+}
+
 /* ─── EMPTY STATE ─── */
 .empty-state {
   text-align: center;
@@ -1809,6 +1880,16 @@ function renderAgents() {
           <div class="stat-label">Uptime</div>
         </div>
       </div>
+      ${a.endpoints ? `
+      <div class="agent-url-row" onclick="event.stopPropagation();">
+        <div class="url-label">Message URL</div>
+        <div class="url-box">
+          <input type="text" value="${esc(a.endpoints)}" readonly id="url-${a.id}">
+          <button onclick="copyAgentUrl('${a.id}')" title="Copy URL">&#x2398;</button>
+          <a href="messages.html?agent=${a.id}&url=${encodeURIComponent(a.endpoints)}" title="Message this agent">&#x2709;</a>
+        </div>
+      </div>
+      ` : ''}
       ${a.address ? `<div style="font-size:10px;color:var(--text-dim);padding:0 16px;margin-top:-4px;margin-bottom:4px;font-family:var(--font-mono);word-break:break-all;">${esc(a.address)}</div>` : ''}
       ${a.inftTokenId ? `<div style="font-size:10px;padding:0 16px;margin-bottom:4px;"><span style="color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:0.5px;">iNFT #${esc(String(a.inftTokenId))}</span></div>` : ''}
       <div class="agent-actions" onclick="event.stopPropagation();">
@@ -1824,6 +1905,32 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = s;
   return d.innerHTML;
+}
+
+function copyAgentUrl(agentId) {
+  const input = document.getElementById('url-' + agentId);
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    if (btn) {
+      btn.innerHTML = '&#x2713;';
+      setTimeout(() => btn.innerHTML = '&#x2398;', 1500);
+    }
+  });
+}
+
+function copyProfileUrl(agentId) {
+  const input = document.getElementById('profile-url-' + agentId);
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    if (btn) {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    }
+  });
 }
 
 // ═══════════════════════════════════════
@@ -1867,6 +1974,22 @@ function openProfile(agentId) {
       </div>
     </div>
     ${a.description ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">${esc(a.description)}</p>` : ''}
+    ${a.endpoints ? `
+    <div style="margin-bottom:16px;padding:12px;background:rgba(0,229,255,0.04);border:1px solid var(--border-cyan);border-radius:8px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+        <span style="font-size:10px;color:var(--cyan-dim);text-transform:uppercase;letter-spacing:0.6px;">Agent Messaging URL</span>
+        <span style="font-size:10px;color:var(--green);">&#x2713; Connect to message</span>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <input type="text" value="${esc(a.endpoints)}" readonly id="profile-url-${a.id}" style="flex:1;padding:8px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;outline:none;">
+        <button onclick="copyProfileUrl('${a.id}')" style="padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;cursor:pointer;font-family:var(--font-mono);">Copy</button>
+        <a href="messages.html?agent=${a.id}&url=${encodeURIComponent(a.endpoints)}" style="padding:8px 12px;background:linear-gradient(135deg,var(--cyan),#00b8d4);border:none;border-radius:6px;color:#000;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer;font-family:var(--font-mono);">Message</a>
+      </div>
+      <div style="margin-top:8px;font-size:10px;color:var(--text-dim);line-height:1.5;">
+        Share this URL to allow others to message your agent via DM3 encrypted messaging.
+      </div>
+    </div>
+    ` : ''}
     ${a.address ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Address:</span> ${esc(a.address)}</div>` : ''}
     ${a.policyHash ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Policy:</span> ${esc(a.policyHash.slice(0, 18))}...</div>` : ''}
     ${a.inftTokenId ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;">iNFT Token #${esc(String(a.inftTokenId))} on 0G Chain (ERC-7857)</div>` : ''}

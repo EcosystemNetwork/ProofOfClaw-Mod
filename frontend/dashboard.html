@@ -574,6 +574,13 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
         <span class="metric-label">Policy Hash</span>
         <span class="metric-value hash" id="metric-policy-hash">---</span>
       </div>
+      <div id="agent-url-metric" style="display:none;margin-top:12px;padding:10px;background:rgba(0,229,255,0.04);border:1px solid var(--border-cyan);border-radius:6px;">
+        <div style="font-size:9px;color:var(--cyan-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Messaging URL</div>
+        <div style="display:flex;gap:6px;">
+          <input type="text" id="dash-agent-url" readonly style="flex:1;padding:6px 8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-family:var(--font-mono);font-size:10px;outline:none;">
+          <button onclick="copyDashUrl()" style="padding:6px 10px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;color:var(--text-secondary);font-size:10px;cursor:pointer;font-family:var(--font-mono);">Copy</button>
+        </div>
+      </div>
     </div>
 
     <!-- Execution Stats Card -->
@@ -659,6 +666,7 @@ const DEFAULT_AGENTS = [
     icon: '\u26A1',
     status: 'online',
     ens: 'alpha.proofclaw.eth',
+    endpoints: 'http://localhost:8420',
     policyHash: '0x9f3a...c4e1',
     desc: 'Primary fleet coordinator for multi-agent orchestration',
     skills: ['multi-agent','delegation','task-routing','typescript'],
@@ -674,6 +682,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCCA',
     status: 'online',
     ens: 'defi-scout.proofclaw.eth',
+    endpoints: 'http://localhost:8421',
     policyHash: '0x7b2e...a8d3',
     desc: 'DeFi market scanner and yield optimizer',
     skills: ['defi-protocols','uniswap','aave','data-analysis'],
@@ -689,6 +698,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDD12',
     status: 'busy',
     ens: 'sec-auditor.proofclaw.eth',
+    endpoints: 'http://localhost:8422',
     policyHash: '0x3d71...f5b9',
     desc: 'Smart contract security auditor',
     skills: ['solidity','security-audit','smart-contracts','slither'],
@@ -704,6 +714,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83C\uDF0F',
     status: 'online',
     ens: 'gov-delegate.proofclaw.eth',
+    endpoints: 'http://localhost:8423',
     policyHash: '0xa4f8...2c67',
     desc: 'DAO governance participation agent',
     skills: ['governance','dao-voting','proposals','snapshot'],
@@ -719,6 +730,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCB0',
     status: 'offline',
     ens: 'yield-hunter.proofclaw.eth',
+    endpoints: 'http://localhost:8424',
     policyHash: '0x61c3...9ae4',
     desc: 'Cross-chain yield farming specialist',
     skills: ['yield-farming','liquidity','cross-chain','bridges'],
@@ -734,6 +746,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCC8',
     status: 'online',
     ens: 'data-oracle.proofclaw.eth',
+    endpoints: 'http://localhost:8425',
     policyHash: '0x2e89...b7f0',
     desc: 'On-chain data aggregation and analytics',
     skills: ['data-analysis','chainlink','the-graph','sql'],
@@ -1105,6 +1118,16 @@ function renderAgent() {
   document.getElementById('btn-proofs').href = 'proofs.html?agent=' + encodeURIComponent(a.id);
   document.getElementById('btn-messages').href = 'messages.html?agent=' + encodeURIComponent(a.id);
 
+  // Show agent URL if available
+  const urlMetric = document.getElementById('agent-url-metric');
+  const urlInput = document.getElementById('dash-agent-url');
+  if (a.endpoints) {
+    urlMetric.style.display = 'block';
+    urlInput.value = a.endpoints;
+  } else {
+    urlMetric.style.display = 'none';
+  }
+
   // Update sidebar nav links with agent param
   document.querySelectorAll('.sidebar-nav a').forEach(link => {
     const href = link.getAttribute('href');
@@ -1124,6 +1147,19 @@ function updateStats() {
   document.getElementById('stat-violations').textContent = stats.violations;
   document.getElementById('stat-proofs').textContent = stats.proofs;
   document.getElementById('stat-verified').textContent = stats.verified;
+}
+
+function copyDashUrl() {
+  const input = document.getElementById('dash-agent-url');
+  if (!input) return;
+  input.select();
+  navigator.clipboard.writeText(input.value).then(() => {
+    const btn = input.nextElementSibling;
+    if (btn) {
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1500);
+    }
+  });
 }
 
 // =====================================================

@@ -587,6 +587,33 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
 
   // No hardcoded agents — load from localStorage (deployed via wizard or discovered via ENS)
 
+  // ── Auto-connect to URL from parameter ──
+  async function autoConnectToUrl(url, agentId) {
+    // Show connecting state
+    chatHeader.style.display = 'flex';
+    composeArea.style.display = 'none';
+    messagesList.innerHTML = `
+      <div class="empty-chat">
+        <div class="empty-chat-icon">&#x27C1;</div>
+        <div class="empty-chat-text">Connecting to ${esc(agentId)}...</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-top:8px;">${esc(url)}</div>
+      </div>`;
+    
+    try {
+      const conn = await PocAPI.connect(url);
+      // Reload page to show connected state
+      window.location.href = 'messages.html';
+    } catch (e) {
+      messagesList.innerHTML = `
+        <div class="empty-chat">
+          <div class="empty-chat-icon" style="color:var(--red);">&#x26A0;</div>
+          <div class="empty-chat-text">Connection failed</div>
+          <div style="font-size:12px;color:var(--text-dim);margin-top:8px;">${esc(e.message)}</div>
+          <button onclick="PocAPI.showConnectModal()" style="margin-top:16px;padding:8px 16px;background:var(--cyan);color:#000;border:none;border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-weight:700;">Connect Manually</button>
+        </div>`;
+    }
+  }
+
   // ── Load agents ──
   function loadAgents() {
     let agents = [];
@@ -613,9 +640,24 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
     return params.get('agent') || null;
   }
 
+  function getUrlFromURL() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('url') || null;
+  }
+
   // ── Initialize ──
   function init() {
     const agents = loadAgents();
+
+    // Check for URL parameter to auto-connect
+    const urlAgentParam = getAgentFromURL();
+    const urlParam = getUrlFromURL();
+    
+    if (urlParam && urlAgentParam) {
+      // Auto-connect to the provided URL
+      autoConnectToUrl(urlParam, urlAgentParam);
+      return;
+    }
 
     // Populate agent selector
     agentSelector.innerHTML = '<option value="">Select agent...</option>';
