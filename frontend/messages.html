@@ -445,20 +445,25 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
   .sidebar { transform: translateX(-100%); z-index: 300; }
   .sidebar.mobile-open { transform: translateX(0); }
   .main-area { margin-left: 0 !important; }
+  .topbar { padding: 0.5rem 1rem; }
   .chat-layout { flex-direction: column; }
   .contacts-panel {
-    width: 100%; min-width: 100%; max-height: 35vh;
+    width: 100%; min-width: 100%; max-height: 30vh;
     border-right: none; border-bottom: 1px solid var(--border);
   }
-  .chat-panel { min-height: 60vh; }
+  .chat-panel { min-height: 65vh; }
   .message { max-width: 85%; }
 }
 
 @media (max-width: 480px) {
-  .topbar { padding: 0.5rem 1rem; }
-  .topbar-title { font-size: 0.95rem; }
-  .compose-area { padding: 0.75rem; }
+  .topbar { padding: 0.5rem 0.75rem; height: 52px; }
+  .topbar-title { font-size: 0.9rem; }
+  .agent-selector { font-size: 0.7rem; max-width: 130px; }
+  .compose-area { padding: 0.5rem; }
+  .compose-area input { font-size: 13px; }
   .message { max-width: 92%; }
+  .contacts-panel { max-height: 25vh; }
+  .contact-item { padding: 0.5rem 0.75rem; }
 }
 </style>
 </head>
@@ -477,18 +482,17 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
   </a>
 
   <nav class="sidebar-nav" aria-label="App navigation">
-    <a href="agents.html"><span class="nav-icon">&#x2B21;</span> Agents</a>
+    <a href="agents.html"><span class="nav-icon">&#x2726;</span> Agents</a>
     <a href="dashboard.html"><span class="nav-icon">&#x25A3;</span> Dashboard</a>
-    <a href="auth-modules.html"><span class="nav-icon">&#x1F512;</span> Auth Modules</a>
     <a href="messages.html" class="active" aria-current="page"><span class="nav-icon">&#x2709;</span> Messages</a>
-    <a href="proofs.html"><span class="nav-icon">&#x2B22;</span> Proofs</a>
-    <a href="kanban.html"><span class="nav-icon">&#x25A0;</span> Kanban</a>
+    <a href="proofs.html"><span class="nav-icon">&#x2731;</span> Proofs</a>
     <a href="soul-vault.html"><span class="nav-icon">&#x2B23;</span> Soul Vault</a>
+    <a href="approve.html"><span class="nav-icon">&#x2714;</span> Approve</a>
   </nav>
 
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
-    <a href="soul-vault.html" class="btn-new-agent">+ New Agent</a>
+    <a href="agents.html" class="btn-new-agent">+ New Agent</a>
     <a href="index.html" class="btn-home">&#x2190; Back to Home</a>
   </div>
 </aside>
@@ -498,20 +502,18 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
      ═══════════════════════════════════════════ -->
 <div class="main-area" role="main">
 
+  <div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
   <!-- Top Bar -->
   <div class="topbar">
     <div class="topbar-left">
+      <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
       <div class="topbar-title">DM3 Messages</div>
       <select class="agent-selector" id="agent-selector" aria-label="Select active agent">
         <option value="">Select agent...</option>
       </select>
     </div>
     <div class="topbar-badges">
-      <button id="wallet-connect-btn" class="badge" style="background:rgba(0,229,255,0.1);border:1px solid var(--border-cyan);color:var(--cyan);cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
-      <div id="wallet-display" style="display:none;align-items:center;gap:6px;margin-right:8px;">
-        <span id="wallet-address" style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);"></span>
-        <span style="width:6px;height:6px;background:var(--green);border-radius:50%;"></span>
-      </div>
       <span class="badge badge-encrypted">&#x1F512; E2E Encrypted</span>
 
     </div>
@@ -552,8 +554,6 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
   </div>
 </div>
 
-<script type="module" src="viem-client.js"></script>
-<script src="wallet.js"></script>
 <script src="shared.js"></script>
 <script src="poc-api.js"></script>
 <script>
@@ -587,33 +587,6 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
 
   // No hardcoded agents — load from localStorage (deployed via wizard or discovered via ENS)
 
-  // ── Auto-connect to URL from parameter ──
-  async function autoConnectToUrl(url, agentId) {
-    // Show connecting state
-    chatHeader.style.display = 'flex';
-    composeArea.style.display = 'none';
-    messagesList.innerHTML = `
-      <div class="empty-chat">
-        <div class="empty-chat-icon">&#x27C1;</div>
-        <div class="empty-chat-text">Connecting to ${esc(agentId)}...</div>
-        <div style="font-size:12px;color:var(--text-dim);margin-top:8px;">${esc(url)}</div>
-      </div>`;
-    
-    try {
-      const conn = await PocAPI.connect(url);
-      // Reload page to show connected state
-      window.location.href = 'messages.html';
-    } catch (e) {
-      messagesList.innerHTML = `
-        <div class="empty-chat">
-          <div class="empty-chat-icon" style="color:var(--red);">&#x26A0;</div>
-          <div class="empty-chat-text">Connection failed</div>
-          <div style="font-size:12px;color:var(--text-dim);margin-top:8px;">${esc(e.message)}</div>
-          <button onclick="PocAPI.showConnectModal()" style="margin-top:16px;padding:8px 16px;background:var(--cyan);color:#000;border:none;border-radius:6px;cursor:pointer;font-family:var(--font-mono);font-weight:700;">Connect Manually</button>
-        </div>`;
-    }
-  }
-
   // ── Load agents ──
   function loadAgents() {
     let agents = [];
@@ -624,7 +597,7 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
         if (Array.isArray(parsed) && parsed.length > 0) {
           agents = parsed.map(a => ({
             name: a.name || a.agentName || 'unnamed',
-            ensName: a.ensName || a.ens || ((a.name || a.agentName || 'unnamed') + '.proofclaw.eth'),
+            ensName: a.ensName || a.ens || ((a.name || a.agentName || 'unnamed') + '.proofofclaw.eth'),
             status: a.status || 'active',
             live: !!a.live
           }));
@@ -640,24 +613,9 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
     return params.get('agent') || null;
   }
 
-  function getUrlFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('url') || null;
-  }
-
   // ── Initialize ──
   function init() {
     const agents = loadAgents();
-
-    // Check for URL parameter to auto-connect
-    const urlAgentParam = getAgentFromURL();
-    const urlParam = getUrlFromURL();
-    
-    if (urlParam && urlAgentParam) {
-      // Auto-connect to the provided URL
-      autoConnectToUrl(urlParam, urlAgentParam);
-      return;
-    }
 
     // Populate agent selector
     agentSelector.innerHTML = '<option value="">Select agent...</option>';
@@ -671,7 +629,7 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
     // If connected via PocAPI, prefer the connected agent
     const conn = isLive() ? PocAPI.getConnection() : null;
     if (conn) {
-      const connEns = conn.ens || (conn.agentId + '.proofclaw.eth');
+      const connEns = conn.ens || (conn.agentId + '.proofofclaw.eth');
       const found = agents.find(a => a.ensName === connEns || a.name === conn.agentId);
       currentAgent = found ? found.ensName : connEns;
     } else {
@@ -825,7 +783,12 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
       const proofId = m.proof.proof_id ? m.proof.proof_id.substring(0, 12) + '...' : 'n/a';
       const status = m.proof.status || 'verified';
       const approvalType = m.proof.approval_type || m.proof.policy_result?.approval_type || 'autonomous';
-      proofHtml = `<div class="message-proof">&#x2713; Proof ${esc(status)} | ${esc(approvalType)} | proof_id: ${esc(proofId)}</div>`;
+      const isLedger = approvalType === 'ledger' || approvalType === 'eip712' || approvalType === 'hardware';
+      const proofIcon = isLedger ? '&#x1F511;' : '&#x2713;';
+      const proofStyle = isLedger
+        ? 'color:var(--green);background:rgba(0,230,118,0.06);border-color:rgba(0,230,118,0.25);'
+        : '';
+      proofHtml = `<div class="message-proof" style="${proofStyle}">${proofIcon} Proof ${esc(status)} | ${esc(approvalType)} | proof_id: ${esc(proofId)}</div>`;
     }
     div.innerHTML = `
       <div class="message-header">
@@ -922,10 +885,13 @@ body.sidebar-collapsed .main-area { margin-left: var(--sidebar-w-collapsed); }
 
       try {
         const baseUrl = getBaseUrl();
-        const response = await fetch(baseUrl + '/api/chat', {
+        const response = await fetch(baseUrl + '/api/chat/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: text })
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + (localStorage.getItem('poc_gateway_token') || '')
+          },
+          body: JSON.stringify({ content: text, thread_id: null })
         });
 
         if (!response.ok) {
