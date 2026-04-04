@@ -1131,7 +1131,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 <div class="flow-steps fade-in">
   <div class="flow-step"><div class="flow-num">1</div><div class="flow-text">Agent receives message (user or DM3)</div></div>
   <div class="flow-step"><div class="flow-num">2</div><div class="flow-text">Intent router classifies action</div></div>
-  <div class="flow-step"><div class="flow-num">3</div><div class="flow-text">0G Compute performs private inference inside TEE</div></div>
+  <div class="flow-step"><div class="flow-num">3</div><div class="flow-text">0G Compute performs private inference</div></div>
   <div class="flow-step"><div class="flow-num">4</div><div class="flow-text">Safety layer validates against declared policy</div></div>
   <div class="flow-step"><div class="flow-num">5</div><div class="flow-text">Tool execution in WASM sandbox</div></div>
   <div class="flow-step"><div class="flow-num">6</div><div class="flow-text">Execution trace stored on 0G Storage</div></div>
@@ -1163,7 +1163,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
     </div>
   </div>
   <p>
-    Every LLM call runs inside 0G's Sealed Inference TEE &mdash; prompts enter encrypted, operators cannot inspect them. Execution traces are stored on 0G Storage with content-addressable root hashes that anchor the provable chain.
+    Every LLM call runs through 0G's Sealed Inference &mdash; prompts enter encrypted, operators cannot inspect them. Execution traces are stored on 0G Storage with content-addressable root hashes that anchor the provable chain.
   </p>
 </div>
 
@@ -1181,17 +1181,17 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 <span class="cm">// Initialize broker with agent's wallet</span>
 <span class="kw">const</span> broker <span class="op">=</span> <span class="kw">await</span> <span class="fn">createZGServingNetworkBroker</span>(wallet);
 <span class="kw">const</span> services <span class="op">=</span> <span class="kw">await</span> broker.inference.<span class="fn">listService</span>();
-<span class="kw">const</span> teeProvider <span class="op">=</span> services.<span class="fn">find</span>(s <span class="op">=></span> s.verifiability <span class="op">===</span> <span class="str">'TeeML'</span>);
+<span class="kw">const</span> provider <span class="op">=</span> services.<span class="fn">find</span>(s <span class="op">=></span> s.verifiability <span class="op">===</span> <span class="str">'TeeML'</span>);
 
-<span class="cm">// OpenAI-compatible call through TEE</span>
-<span class="kw">const</span> headers <span class="op">=</span> <span class="kw">await</span> broker.inference.<span class="fn">getRequestHeaders</span>(teeProvider.provider, prompt);
+<span class="cm">// OpenAI-compatible call through 0G Compute</span>
+<span class="kw">const</span> headers <span class="op">=</span> <span class="kw">await</span> broker.inference.<span class="fn">getRequestHeaders</span>(provider.provider, prompt);
 <span class="kw">const</span> response <span class="op">=</span> <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${endpoint}/chat/completions`</span>, {
   method: <span class="str">'POST'</span>,
   headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span>, ...headers },
   body: <span class="ty">JSON</span>.<span class="fn">stringify</span>({ messages, model }),
 });
 
-<span class="cm">// Verify TEE attestation</span>
+<span class="cm">// Verify attestation</span>
 <span class="kw">const</span> verified <span class="op">=</span> <span class="kw">await</span> broker.inference.<span class="fn">verifyResponse</span>(response);</pre>
   </div>
 </div>
@@ -1255,7 +1255,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
     </div>
   </div>
   <p>
-    The execution trace &mdash; 0G TEE attestation, tool invocations, safety checks &mdash; is fed into a RISC Zero zkVM guest program. Proof generation is outsourced to the Boundless decentralized prover network. The receipt lands on-chain for anyone to verify.
+    The execution trace &mdash; 0G attestation, tool invocations, safety checks &mdash; is fed into a RISC Zero zkVM guest program. Proof generation is outsourced to the Boundless decentralized prover network. The receipt lands on-chain for anyone to verify.
   </p>
 </div>
 
@@ -1379,7 +1379,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   </thead>
   <tbody>
     <tr><td>Agent acts outside policy</td><td>RISC Zero proof fails; action blocked on-chain. No proof = no action.</td></tr>
-    <tr><td>Inference tampering</td><td>0G Compute TEE attestation signs every response. Tampered data produces an invalid proof.</td></tr>
+    <tr><td>Inference tampering</td><td>0G Compute attestation signs every response. Tampered data produces an invalid proof.</td></tr>
     <tr><td>Message interception</td><td>DM3 end-to-end encryption with keys from ENS profiles. Delivery service never sees plaintext.</td></tr>
     <tr><td>Identity spoofing</td><td>ENS ownership tied to Ledger EOA.</td></tr>
     <tr><td>High-value action without consent</td><td>Physical Ledger approval required. Owner sees human-readable Clear Signing display.</td></tr>
@@ -1536,7 +1536,7 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
   <div class="status-row">
     <span class="status-badge working">Working</span>
     <span class="status-name">0G Compute</span>
-    <span class="status-detail">HTTP inference with TEE attestation extraction, graceful fallback to content hash.</span>
+    <span class="status-detail">HTTP inference with attestation extraction, graceful fallback to content hash.</span>
   </div>
   <div class="status-row">
     <span class="status-badge working">Working</span>

@@ -830,41 +830,7 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
     return conn ? conn.url : null;
   }
 
-  // ── Default agents if localStorage is empty ──
-  const DEFAULT_AGENTS = [
-    { name: 'alice', ensName: 'alice.proofclaw.eth', status: 'active' },
-    { name: 'bob', ensName: 'bob.proofclaw.eth', status: 'active' },
-    { name: 'charlie', ensName: 'charlie.proofclaw.eth', status: 'paused' },
-    { name: 'dave', ensName: 'dave.proofclaw.eth', status: 'active' }
-  ];
-
-  // ── Pre-populated conversation for alice <-> bob ──
-  function getBobConversation(myName) {
-    const meName = myName;
-    const bobName = 'bob.proofclaw.eth';
-    return [
-      { sender: bobName, content: "Hey! I'm looking to swap 500 USDC for ETH. Are you interested?", time: '10:30 AM', sent: false },
-      { sender: meName, content: "Sure! I can do that. Let me check my policy limits...", time: '10:32 AM', sent: true },
-      { sender: meName, content: "500 USDC is above my autonomous threshold (100 USDC). I'll need Ledger approval for this. Want to proceed?", time: '10:33 AM', sent: true },
-      { sender: bobName, content: "Same here - I'll need approval too. Let's both submit for approval and execute when ready.", time: '10:35 AM', sent: false },
-      { sender: meName, content: "Perfect! Generating proof now... I'll ping you when I get Ledger approval.", time: '10:36 AM', sent: true },
-      { sender: bobName, content: "Got my Ledger approval! Proof verified on-chain. Ready when you are.", time: '10:40 AM', sent: false },
-      { sender: meName, content: "Approved on my end too! Swap executing now with both proofs verified.", time: '10:42 AM', sent: true }
-    ];
-  }
-
-  function getAliceConversation(myName) {
-    const aliceName = 'alice.proofclaw.eth';
-    return [
-      { sender: myName, content: "Hey! I'm looking to swap 500 USDC for ETH. Are you interested?", time: '10:30 AM', sent: true },
-      { sender: aliceName, content: "Sure! I can do that. Let me check my policy limits...", time: '10:32 AM', sent: false },
-      { sender: aliceName, content: "500 USDC is above my autonomous threshold (100 USDC). I'll need Ledger approval for this. Want to proceed?", time: '10:33 AM', sent: false },
-      { sender: myName, content: "Same here - I'll need approval too. Let's both submit for approval and execute when ready.", time: '10:35 AM', sent: true },
-      { sender: aliceName, content: "Perfect! Generating proof now... I'll ping you when I get Ledger approval.", time: '10:36 AM', sent: false },
-      { sender: myName, content: "Got my Ledger approval! Proof verified on-chain. Ready when you are.", time: '10:40 AM', sent: true },
-      { sender: aliceName, content: "Approved on my end too! Swap executing now with both proofs verified.", time: '10:42 AM', sent: false }
-    ];
-  }
+  // No hardcoded agents — load from localStorage (deployed via wizard or discovered via ENS)
 
   // ── Load agents ──
   function loadAgents() {
@@ -883,7 +849,6 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
         }
       }
     } catch(e) {}
-    if (agents.length === 0) agents = DEFAULT_AGENTS.map(a => ({...a}));
     return agents;
   }
 
@@ -994,19 +959,9 @@ body.sidebar-collapsed #poc-connection-slot { display: none; }
 
   function seedConversations() {
     contacts.forEach(c => {
-      if (c.ensName === 'bob.proofclaw.eth' && currentAgent !== 'bob.proofclaw.eth') {
-        conversations[c.ensName] = getBobConversation(currentAgent);
-        c.lastMessage = 'Approved on my end too! Swap executing...';
-        c.lastTime = '10:42 AM';
-      } else if (c.ensName === 'alice.proofclaw.eth' && currentAgent === 'bob.proofclaw.eth') {
-        conversations[c.ensName] = getAliceConversation(currentAgent);
-        c.lastMessage = 'Approved on my end too! Swap executing...';
-        c.lastTime = '10:42 AM';
-      } else {
-        conversations[c.ensName] = [];
-        c.lastMessage = 'No messages yet';
-        c.lastTime = '';
-      }
+      conversations[c.ensName] = [];
+      c.lastMessage = 'No messages yet';
+      c.lastTime = '';
     });
   }
 

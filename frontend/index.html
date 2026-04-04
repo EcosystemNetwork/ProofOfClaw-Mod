@@ -2481,7 +2481,7 @@ footer {
       <div style="margin-bottom: 1.25rem;">
         <span class="feature-tag" style="margin-bottom: 0.75rem; display: inline-block;">0G Network</span>
         <h3 style="font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;">Private Inference + Decentralized Storage</h3>
-        <p style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 300; line-height: 1.7; max-width: 700px;">Every LLM call runs inside 0G's Sealed Inference TEE — prompts enter encrypted, operators can't inspect them. Execution traces are stored on 0G Storage with content-addressable root hashes that anchor the provable chain.</p>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 300; line-height: 1.7; max-width: 700px;">Every LLM call runs through 0G's Sealed Inference — prompts enter encrypted, operators can't inspect them. Execution traces are stored on 0G Storage with content-addressable root hashes that anchor the provable chain.</p>
       </div>
       <div class="code-block">
         <div class="code-header">
@@ -2494,17 +2494,17 @@ footer {
 <span class="cm">// Initialize broker with agent's wallet</span>
 <span class="kw">const</span> broker <span class="op">=</span> <span class="kw">await</span> <span class="fn">createZGServingNetworkBroker</span>(wallet);
 <span class="kw">const</span> services <span class="op">=</span> <span class="kw">await</span> broker.inference.<span class="fn">listService</span>();
-<span class="kw">const</span> teeProvider <span class="op">=</span> services.<span class="fn">find</span>(s <span class="op">=></span> s.verifiability <span class="op">===</span> <span class="str">'TeeML'</span>);
+<span class="kw">const</span> provider <span class="op">=</span> services.<span class="fn">find</span>(s <span class="op">=></span> s.verifiability <span class="op">===</span> <span class="str">'TeeML'</span>);
 
-<span class="cm">// OpenAI-compatible call through TEE — prompts stay encrypted</span>
-<span class="kw">const</span> headers <span class="op">=</span> <span class="kw">await</span> broker.inference.<span class="fn">getRequestHeaders</span>(teeProvider.provider, prompt);
+<span class="cm">// OpenAI-compatible call through 0G Compute — prompts stay encrypted</span>
+<span class="kw">const</span> headers <span class="op">=</span> <span class="kw">await</span> broker.inference.<span class="fn">getRequestHeaders</span>(provider.provider, prompt);
 <span class="kw">const</span> response <span class="op">=</span> <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${endpoint}/chat/completions`</span>, {
   method: <span class="str">'POST'</span>,
   headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span>, ...headers },
   body: <span class="ty">JSON</span>.<span class="fn">stringify</span>({ messages, model }),
 });
 
-<span class="cm">// Verify TEE attestation — this commitment feeds into RISC Zero proof</span>
+<span class="cm">// Verify attestation — this commitment feeds into RISC Zero proof</span>
 <span class="kw">const</span> verified <span class="op">=</span> <span class="kw">await</span> broker.inference.<span class="fn">verifyResponse</span>(response);</pre>
         </div>
       </div>
@@ -2596,7 +2596,7 @@ footer {
       <div style="margin-bottom: 1.25rem;">
         <span class="feature-tag" style="margin-bottom: 0.75rem; display: inline-block; background: rgba(0, 230, 118, 0.1); color: var(--green); border-color: rgba(0, 230, 118, 0.2);">RISC Zero + Boundless</span>
         <h3 style="font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;">ZK Proof of Policy Compliance</h3>
-        <p style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 300; line-height: 1.7; max-width: 700px;">The execution trace — 0G TEE attestation, tool invocations, safety checks — is fed into a RISC Zero zkVM guest program. Proof generation is outsourced to Boundless. The receipt lands on-chain for anyone to verify.</p>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; font-weight: 300; line-height: 1.7; max-width: 700px;">The execution trace — 0G attestation, tool invocations, safety checks — is fed into a RISC Zero zkVM guest program. Proof generation is outsourced to Boundless. The receipt lands on-chain for anyone to verify.</p>
       </div>
       <div class="code-block">
         <div class="code-header">
@@ -2649,7 +2649,7 @@ footer {
       </div>
       <div class="security-row">
         <div class="security-threat">Inference or trace tampered</div>
-        <div class="security-mitigation">0G TEE attestation signs every response. Tampered data produces an invalid proof.</div>
+        <div class="security-mitigation">0G Compute attestation signs every response. Tampered data produces an invalid proof.</div>
       </div>
       <div class="security-row">
         <div class="security-threat">Messages intercepted</div>

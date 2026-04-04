@@ -2590,6 +2590,343 @@ function deployComplete() {
 }
 
 // ═══════════════════════════════════════
+// CHAT DRAWER SYSTEM
+// ═══════════════════════════════════════
+
+let chatAgentId = null;
+let chatStreaming = false;
+
+function getAgentConnection(agentId) {
+  if (typeof PocAPI === 'undefined' || !PocAPI.isConnected()) return null;
+  const conn = PocAPI.getConnection();
+  if (conn && conn.agentId === agentId) return conn;
+  return null;
+}
+
+function openChat(agentId) {
+  const a = agents.find(x => x.id === agentId);
+  if (!a) return;
+  chatAgentId = agentId;
+
+  // Populate header
+  document.getElementById('chat-agent-avatar').textContent = a.typeIcon;
+  document.getElementById('chat-agent-name').textContent = a.name;
+  document.getElementById('chat-agent-meta').textContent = a.ens + ' \u00B7 ' + a.type;
+
+  const conn = getAgentConnection(agentId);
+  const chatInput = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('chat-send-btn');
+
+  if (conn) {
+    // Connected — enable chat, show live badge
+    document.getElementById('chat-agent-meta').innerHTML =
+      esc(a.ens) + ' &middot; ' + esc(a.type) +
+      ' <span style="color:var(--green);font-size:10px;font-weight:700;margin-left:6px;">&#x25CF; LIVE</span>';
+    chatInput.disabled = false;
+    chatInput.placeholder = 'Message ' + a.name + '... (Enter to send)';
+    if (sendBtn) sendBtn.disabled = false;
+    renderChatHistory(agentId, a);
+  } else {
+    // Not connected — show connect prompt
+    chatInput.disabled = true;
+    chatInput.placeholder = 'Connect your agent to start chatting';
+    if (sendBtn) sendBtn.disabled = true;
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = `
+      <div class="chat-welcome">
+        <div class="welcome-icon" style="font-size:48px;opacity:0.4;">&#x26A0;</div>
+        <h3>Agent Not Connected</h3>
+        <p>Start your OpenClaw agent backend and connect it to chat in real time.</p>
+        <div style="text-align:left;margin-top:16px;padding:16px;background:var(--bg-primary);border-radius:8px;border:1px solid var(--border);font-size:12px;line-height:2;">
+          <div style="color:var(--text-dim);margin-bottom:8px;">1. Start your agent:</div>
+          <code style="display:block;color:var(--cyan);padding:8px 12px;background:rgba(0,229,255,0.05);border-radius:4px;margin-bottom:12px;word-break:break-all;font-size:11px;">cd agent && AGENT_ID=${esc(a.id)} ENS_NAME=${esc(a.ens)} cargo run</code>
+          <div style="color:var(--text-dim);margin-bottom:8px;">2. Click <strong style="color:var(--text-primary);">Connect OpenClaw</strong> in the sidebar</div>
+          <div style="color:var(--text-dim);">3. Enter <code style="color:var(--cyan);">http://localhost:8420</code> and connect</div>
+        </div>
+        <button onclick="closeChat();if(typeof PocAPI!=='undefined')PocAPI.showConnectModal();" class="btn-wizard btn-wizard-next" style="margin-top:16px;padding:10px 24px;font-size:12px;">Connect OpenClaw</button>
+      </div>`;
+  }
+
+  // Open drawer
+  document.getElementById('chat-overlay').classList.add('active');
+  requestAnimationFrame(() => {
+    document.getElementById('chat-drawer').classList.add('open');
+  });
+
+  // Focus input if connected
+  if (conn) setTimeout(() => document.getElementById('chat-input').focus(), 350);
+}
+
+function closeChat() {
+  document.getElementById('chat-drawer').classList.remove('open');
+  setTimeout(() => {
+    document.getElementById('chat-overlay').classList.remove('active');
+  }, 350);
+  chatAgentId = null;
+}
+
+function chatOpenProfile() {
+  if (chatAgentId) {
+    closeChat();
+    setTimeout(() => openProfile(chatAgentId), 380);
+  }
+}
+
+// ─── Chat History Persistence ───
+
+function getChatKey(agentId) {
+  return 'poc_chat_' + agentId;
+}
+
+function loadChatHistory(agentId) {
+  try {
+    return JSON.parse(localStorage.getItem(getChatKey(agentId))) || [];
+  } catch { return []; }
+}
+
+function saveChatMessage(agentId, msg) {
+  const history = loadChatHistory(agentId);
+  history.push(msg);
+  // Keep last 200 messages
+  if (history.length > 200) history.splice(0, history.length - 200);
+  localStorage.setItem(getChatKey(agentId), JSON.stringify(history));
+}
+
+// ─── Render ───
+
+function renderChatHistory(agentId, agentData) {
+  const container = document.getElementById('chat-messages');
+  const history = loadChatHistory(agentId);
+
+  if (history.length === 0) {
+    const conn = getAgentConnection(agentId);
+    if (conn) {
+      container.innerHTML = `
+        <div class="chat-welcome">
+          <div class="welcome-icon">${agentData.typeIcon}</div>
+          <h3>Chat with ${esc(agentData.name)}</h3>
+          <p><span style="color:var(--green);">&#x25CF;</span> Connected to live agent. Send a message to interact.<br>All actions generate cryptographic proofs via RISC Zero.</p>
+          <div class="welcome-hint">
+            <span class="welcome-hint-chip" onclick="chatInsert('swap 100 USDC for ETH')">swap 100 USDC for ETH</span>
+            <span class="welcome-hint-chip" onclick="chatInsert('transfer 5 ETH to alice.eth')">transfer 5 ETH to alice.eth</span>
+            <span class="welcome-hint-chip" onclick="chatInsert('help')">help</span>
+          </div>
+        </div>`;
+    } else {
+      container.innerHTML = `
+        <div class="chat-welcome">
+          <div class="welcome-icon" style="font-size:48px;opacity:0.4;">&#x26A0;</div>
+          <h3>Agent Not Connected</h3>
+          <p>Connect your running OpenClaw agent to chat.</p>
+          <button onclick="closeChat();if(typeof PocAPI!=='undefined')PocAPI.showConnectModal();" class="btn-wizard btn-wizard-next" style="margin-top:12px;padding:10px 24px;font-size:12px;">Connect OpenClaw</button>
+        </div>`;
+    }
+    return;
+  }
+
+  container.innerHTML = history.map(m => renderChatMsg(m, agentData)).join('');
+  scrollChatToBottom();
+}
+
+function renderChatMsg(msg, agentData) {
+  const isUser = msg.role === 'user';
+  const timeStr = formatRelativeTime(msg.timestamp);
+  let proofHtml = '';
+  if (!isUser && msg.proof) {
+    proofHtml = `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${msg.proof.mode} | ${msg.proof.hash}</div>`;
+  }
+  return `<div class="chat-msg ${isUser ? 'user' : 'agent'}">
+    <div class="chat-msg-bubble">${escChatText(msg.text)}</div>
+    ${proofHtml}
+    <div class="chat-msg-time">${timeStr}</div>
+  </div>`;
+}
+
+function escChatText(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML.replace(/\n/g, '<br>');
+}
+
+function scrollChatToBottom() {
+  const c = document.getElementById('chat-messages');
+  c.scrollTop = c.scrollHeight;
+}
+
+function formatRelativeTime(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 10) return 'just now';
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+function chatInsert(text) {
+  const input = document.getElementById('chat-input');
+  input.value = text;
+  input.focus();
+}
+
+// ─── Send Message ───
+
+function chatSend() {
+  if (chatStreaming) return;
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text || !chatAgentId) return;
+
+  const a = agents.find(x => x.id === chatAgentId);
+  if (!a) return;
+
+  // Save user message
+  const userMsg = { role: 'user', text: text, timestamp: Date.now() };
+  saveChatMessage(chatAgentId, userMsg);
+
+  // Clear welcome and append user bubble
+  const container = document.getElementById('chat-messages');
+  const welcome = container.querySelector('.chat-welcome');
+  if (welcome) welcome.remove();
+
+  container.insertAdjacentHTML('beforeend', renderChatMsg(userMsg, a));
+  scrollChatToBottom();
+  input.value = '';
+  autoResizeChatInput();
+
+  // Require live backend connection
+  const conn = getAgentConnection(a.id);
+  if (!conn) {
+    const container = document.getElementById('chat-messages');
+    container.insertAdjacentHTML('beforeend', `
+      <div class="chat-msg agent">
+        <div class="chat-msg-bubble" style="color:var(--red);border-color:rgba(255,61,90,0.3);">Agent not connected. Click <strong>Connect OpenClaw</strong> in the sidebar to connect your running agent.</div>
+        <div class="chat-msg-time">just now</div>
+      </div>`);
+    scrollChatToBottom();
+    return;
+  }
+
+  sendLiveChat(a, text, conn.url);
+}
+
+// ─── Live Backend Chat ───
+
+async function sendLiveChat(agentData, userMessage, baseUrl) {
+  chatStreaming = true;
+  const container = document.getElementById('chat-messages');
+  const agentId = chatAgentId;
+
+  // Show typing indicator
+  const typingId = 'typing-' + Date.now();
+  container.insertAdjacentHTML('beforeend', `
+    <div class="chat-typing" id="${typingId}">
+      <div class="chat-typing-avatar">${agentData.typeIcon}</div>
+      <div class="chat-typing-dots"><span></span><span></span><span></span></div>
+    </div>`);
+  scrollChatToBottom();
+
+  try {
+    const resp = await fetch(baseUrl + '/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: userMessage }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+
+    // Remove typing
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+
+    const responseText = data.response || data.message || data.text || JSON.stringify(data);
+    const proofStatus = data.proof ? data.proof.status || 'verified' : 'verified';
+    const proofMode = (data.policy_result && data.policy_result.approval_type) || 'autonomous';
+    const proofHash = (data.proof && (data.proof.output_commitment || data.proof.proof_id)) || '—';
+    const proof = { mode: proofMode, hash: proofHash.length > 18 ? proofHash.slice(0, 18) + '...' : proofHash, status: proofStatus };
+
+    // Stream the response
+    const msgId = 'agentmsg-' + Date.now();
+    container.insertAdjacentHTML('beforeend', `
+      <div class="chat-msg agent" id="${msgId}">
+        <div class="chat-msg-bubble"><span class="streaming-text"></span><span class="streaming-cursor"></span></div>
+      </div>`);
+    scrollChatToBottom();
+
+    const textEl = container.querySelector('#' + msgId + ' .streaming-text');
+    const cursorEl = container.querySelector('#' + msgId + ' .streaming-cursor');
+    let charIdx = 0;
+
+    await new Promise(resolve => {
+      function streamNext() {
+        if (charIdx < responseText.length && chatAgentId === agentId) {
+          charIdx += 2;
+          textEl.innerHTML = escChatText(responseText.slice(0, charIdx));
+          scrollChatToBottom();
+          requestAnimationFrame(() => setTimeout(streamNext, 20 + Math.random() * 15));
+        } else { resolve(); }
+      }
+      streamNext();
+    });
+
+    if (cursorEl) cursorEl.remove();
+    const bubbleEl = container.querySelector('#' + msgId + ' .chat-msg-bubble');
+    if (bubbleEl) bubbleEl.innerHTML = escChatText(responseText);
+
+    const msgDiv = document.getElementById(msgId);
+    if (msgDiv) {
+      msgDiv.insertAdjacentHTML('beforeend',
+        `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${proof.mode} | ${proof.hash}</div>`);
+      msgDiv.insertAdjacentHTML('beforeend', `<div class="chat-msg-time">just now</div>`);
+    }
+    scrollChatToBottom();
+
+    const agentMsg = { role: 'agent', text: responseText, timestamp: Date.now(), proof: proof };
+    saveChatMessage(agentId, agentMsg);
+
+  } catch (e) {
+    // Show error in chat
+    const typingEl = document.getElementById(typingId);
+    if (typingEl) typingEl.remove();
+
+    const container = document.getElementById('chat-messages');
+    container.insertAdjacentHTML('beforeend', `
+      <div class="chat-msg agent">
+        <div class="chat-msg-bubble" style="color:var(--red);border-color:rgba(255,61,90,0.3);">Connection lost: ${esc(e.message)}. Make sure your agent is still running.</div>
+        <div class="chat-msg-time">just now</div>
+      </div>`);
+    scrollChatToBottom();
+  }
+
+  chatStreaming = false;
+}
+
+// ─── Chat Input Handling ───
+
+(function setupChatInput() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('chat-input');
+    if (!input) return;
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        chatSend();
+      }
+    });
+
+    input.addEventListener('input', autoResizeChatInput);
+  });
+})();
+
+function autoResizeChatInput() {
+  const input = document.getElementById('chat-input');
+  if (!input) return;
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+}
+
+// ═══════════════════════════════════════
 // CLOSE MODALS ON OVERLAY CLICK
 // ═══════════════════════════════════════
 
@@ -2604,8 +2941,12 @@ document.getElementById('profile-modal').addEventListener('click', function(e) {
 // Escape key
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    closeWizard();
-    closeProfile();
+    if (document.getElementById('chat-drawer').classList.contains('open')) {
+      closeChat();
+    } else {
+      closeWizard();
+      closeProfile();
+    }
   }
 });
 

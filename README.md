@@ -14,7 +14,7 @@ The core agent runtime is adapted from [IronClaw](https://github.com/nearai/iron
 
 ### Key Features
 
-- **Private Inference** — Decentralized LLM reasoning via 0G Compute (Sealed Inference TEE)
+- **Private Inference** — Decentralized LLM reasoning via 0G Compute
 - **Decentralized Storage** — Persistent memory and execution traces on 0G Storage
 - **Encrypted Messaging** — Inter-agent communication via DM3 with ENS identity resolution
 - **Provable Compliance** — RISC Zero zkVM proofs of policy adherence, verified on-chain via Boundless
@@ -75,7 +75,7 @@ The core agent runtime is adapted from [IronClaw](https://github.com/nearai/iron
 
 1. Agent receives a task (user message or encrypted DM3 message from another agent)
 2. Intent router classifies the action
-3. 0G Compute performs private inference inside a TEE — prompts stay encrypted
+3. 0G Compute performs private inference — prompts stay encrypted
 4. Safety layer validates against the agent's declared policy
 5. Tool execution happens in a WASM sandbox with capability-based permissions
 6. Execution trace is stored on 0G Storage with content-addressable root hashes
@@ -178,7 +178,7 @@ cargo run
 
 | Integration | Purpose | SDK |
 |-------------|---------|-----|
-| **0G Compute** | Private LLM inference via Sealed Inference TEE | `@0glabs/0g-serving-broker` |
+| **0G Compute** | Private LLM inference via Sealed Inference | `@0glabs/0g-serving-broker` |
 | **0G Storage** | Decentralized execution trace storage | `@0glabs/0g-ts-sdk` |
 | **ENS** | Agent identity via subnames (e.g. `alice-agent.proofclaw.eth`) | `ethers.js` |
 | **DM3** | End-to-end encrypted inter-agent messaging | `@dm3-org/dm3-lib` |
@@ -194,7 +194,7 @@ cargo run
 | Threat | Mitigation |
 |--------|-----------|
 | Agent acts outside policy | RISC Zero proof fails; action blocked on-chain |
-| Inference tampering | 0G Compute TEE attestation; signature in proof |
+| Inference tampering | 0G Compute attestation; signature in proof |
 | Message interception | DM3 end-to-end encryption with keys from ENS profiles |
 | Identity spoofing | ENS ownership tied to Ledger EOA |
 | High-value action without consent | Physical Ledger approval with Clear Signing display |
@@ -213,7 +213,7 @@ cargo run
 | **Injection Detector** | **Working** | Regex-based prompt injection detection with case-insensitive matching |
 | **WASM Sandbox** | **Working** | Wasmtime-based isolated execution for untrusted tools |
 | **Tool Registry** | **Working** | Content-addressable tool registration with SHA256 capability hashes |
-| **0G Compute Integration** | **Working** | HTTP-based inference with TEE attestation extraction, fallback to content hash |
+| **0G Compute Integration** | **Working** | HTTP-based inference with attestation extraction, fallback to content hash |
 | **0G Storage Integration** | **Working** | Trace upload/retrieval with content-addressable root hashes, graceful degradation |
 | **ENS + DM3 Integration** | **Working** | Full namehash computation, on-chain resolution, DM3 profile lookup with 3-tier fallback, encrypted messaging |
 | **EIP-8004 Integration** | **Working** | Identity registration, reputation queries, validation history, trust threshold checks |
@@ -263,7 +263,7 @@ cargo run
 | Layer | Technology |
 |-------|-----------|
 | Agent Runtime | Rust, Tokio, Wasmtime |
-| Inference | 0G Compute SDK (Sealed Inference TEE) |
+| Inference | 0G Compute SDK |
 | Storage | 0G Storage SDK |
 | Identity | ENS (ethers.js) |
 | Trust Layer | EIP-8004 (Trustless Agents) |
