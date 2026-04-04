@@ -1372,6 +1372,13 @@
   <h1 class="topbar-title">Agent Command Center</h1>
   <div class="topbar-right">
     <span class="badge badge-count" id="agent-count-badge">0 agents</span>
+    <button id="wallet-connect-btn" class="btn-new-agent-top" style="background:transparent;border:1px solid var(--border-cyan);color:var(--cyan);margin-left:12px;" onclick="connectWalletUI()">
+      Connect Wallet
+    </button>
+    <div id="wallet-display" style="display:none;align-items:center;gap:8px;margin-left:12px;">
+      <span id="wallet-address" style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);"></span>
+      <span class="status-dot online" style="display:inline-block;"></span>
+    </div>
 
   </div>
 </header>
@@ -1572,14 +1579,14 @@
           <div class="wizard-step-title" style="margin-bottom:4px;">Deploying Agent...</div>
           <div class="wizard-step-subtitle" style="margin-bottom:16px;">This may take a moment</div>
           <div class="deploy-steps" id="deploy-steps">
-            <div class="deploy-step-item" data-deploy="encrypt"><span class="step-icon">&#x25E6;</span> Encrypting secrets with AES-256-GCM</div>
-            <div class="deploy-step-item" data-deploy="ens"><span class="step-icon">&#x25E6;</span> Registering ENS subdomain</div>
-            <div class="deploy-step-item" data-deploy="contract"><span class="step-icon">&#x25E6;</span> Deploying policy contract</div>
-            <div class="deploy-step-item" data-deploy="inft"><span class="step-icon">&#x25E6;</span> Minting agent iNFT on 0G Chain (ERC-7857)</div>
-            <div class="deploy-step-item" data-deploy="storage"><span class="step-icon">&#x25E6;</span> Uploading encrypted metadata to 0G Storage</div>
-            <div class="deploy-step-item" data-deploy="runtime"><span class="step-icon">&#x25E6;</span> Initializing agent runtime</div>
-            <div class="deploy-step-item" data-deploy="og"><span class="step-icon">&#x25E6;</span> Configuring 0G decentralized compute</div>
-            <div class="deploy-step-item" data-deploy="start"><span class="step-icon">&#x25E6;</span> Starting agent</div>
+            <div class="deploy-step-item" data-deploy="encrypt"><span class="step-icon">&#x25E6;</span> Preparing agent configuration</div>
+            <div class="deploy-step-item" data-deploy="wallet"><span class="step-icon">&#x25E6;</span> Connecting wallet</div>
+            <div class="deploy-step-item" data-deploy="network"><span class="step-icon">&#x25E6;</span> Switching to target network</div>
+            <div class="deploy-step-item" data-deploy="inft"><span class="step-icon">&#x25E6;</span> Minting agent iNFT (ERC-7857)</div>
+            <div class="deploy-step-item" data-deploy="registry"><span class="step-icon">&#x25E6;</span> Registering in identity registry</div>
+            <div class="deploy-step-item" data-deploy="storage"><span class="step-icon">&#x25E6;</span> Storing encrypted metadata</div>
+            <div class="deploy-step-item" data-deploy="finalize"><span class="step-icon">&#x25E6;</span> Finalizing deployment</div>
+            <div class="deploy-step-item" data-deploy="complete"><span class="step-icon">&#x25E6;</span> Complete!</div>
           </div>
         </div>
 
@@ -1673,6 +1680,7 @@
   </div>
 </div>
 
+<script type="module" src="viem-client.js"></script>
 <script src="shared.js"></script>
 <script>
 // ═══════════════════════════════════════
@@ -2207,7 +2215,7 @@ function buildReview() {
 
 // ─── Deploy ───
 
-function startDeploy() {
+async function startDeploy() {
   const footer = document.getElementById('wizard-footer');
   const progress = document.getElementById('deploy-progress');
   const reviewContent = document.getElementById('review-content');
@@ -2221,9 +2229,10 @@ function startDeploy() {
   document.getElementById('wizard-modal-title').textContent = 'Deploying Agent...';
 
   const steps = document.querySelectorAll('.deploy-step-item');
-  let idx = 0;
+  let currentStep = 0;
 
-  function nextDeployStep() {
+  // Update step UI
+  function setStepActive(idx) {
     if (idx > 0) {
       steps[idx - 1].classList.remove('active');
       steps[idx - 1].classList.add('done');
@@ -2232,18 +2241,78 @@ function startDeploy() {
     if (idx < steps.length) {
       steps[idx].classList.add('active');
       steps[idx].querySelector('.step-icon').innerHTML = '\u25E6';
-      idx++;
-      setTimeout(nextDeployStep, 600 + Math.random() * 400);
-    } else {
-      // Done
-      setTimeout(deployComplete, 400);
     }
   }
 
-  nextDeployStep();
+  try {
+    // Step 1: Encrypt secrets (simulate)
+    setStepActive(0);
+    await new Promise(r => setTimeout(r, 500));
+
+    // Step 2: Connect wallet if needed
+    setStepActive(1);
+    if (!window.PocViem) {
+      throw new Error('Blockchain module not loaded. Please refresh and try again.');
+    }
+    const state = window.PocViem.getWalletState();
+    if (!state.connected) {
+      await connectWalletUI();
+      if (!walletState.connected) {
+        throw new Error('Wallet connection required for deployment');
+      }
+    }
+
+    // Step 3: Switch network
+    setStepActive(2);
+    const network = wizardData.network || 'sepolia';
+    await window.PocViem.switchNetwork(network);
+    window.PocViem.init(network);
+
+    // Step 4: Execute onchain deployment
+    setStepActive(3);
+    const deployResult = await doOnchainDeploy();
+
+    // Step 5-8: Complete remaining steps
+    for (let i = 4; i < steps.length; i++) {
+      setStepActive(i);
+      await new Promise(r => setTimeout(r, 300));
+    }
+
+    // Complete deployment
+    setTimeout(() => deployComplete(deployResult), 400);
+
+  } catch (error) {
+    // Show error in deploy progress
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'warning-box';
+    errorDiv.style.marginTop = '20px';
+    errorDiv.innerHTML = `<strong>Deployment Failed:</strong> ${esc(error.message)}`;
+    progress.appendChild(errorDiv);
+
+    // Show retry button
+    const retryBtn = document.createElement('button');
+    retryBtn.className = 'btn-wizard btn-wizard-next';
+    retryBtn.textContent = 'Retry';
+    retryBtn.style.marginTop = '16px';
+    retryBtn.onclick = () => {
+      errorDiv.remove();
+      retryBtn.remove();
+      footer.style.display = 'flex';
+      reviewContent.style.display = 'block';
+      wizardProgress.style.display = 'flex';
+      progress.classList.remove('active');
+      document.querySelectorAll('.deploy-step-item').forEach(s => {
+        s.classList.remove('active', 'done');
+        s.querySelector('.step-icon').innerHTML = '\u25E6';
+      });
+    };
+    progress.appendChild(retryBtn);
+  }
 }
 
-function deployComplete() {
+function deployComplete(deployResult) {
+  deployResult = deployResult || {};
+
   document.getElementById('deploy-progress').classList.remove('active');
   document.getElementById('deploy-success').classList.add('active');
   document.getElementById('wizard-modal-title').textContent = 'Agent Deployed!';
@@ -2251,7 +2320,7 @@ function deployComplete() {
   // Create agent
   const agentId = wizardData.name.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'agent-' + Date.now();
 
-  // Generate a demo address if no private key was provided
+  // Use real onchain data if available, otherwise fall back to demo
   const pkProvided = document.getElementById('private-key').value.trim().length > 0;
   const demoAddr = '0x' + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
   const demoPolicyHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
@@ -2270,10 +2339,12 @@ function deployComplete() {
     status: 'online',
     deployedAt: new Date().toISOString(),
     description: wizardData.description || '',
-    inftTokenId: Math.floor(Math.random() * 9000) + 1000,
-    policyHash: demoPolicyHash,
-    imageId: demoImageId,
-    address: demoAddr,
+    // Use real onchain data
+    inftTokenId: deployResult.tokenId || Math.floor(Math.random() * 9000) + 1000,
+    policyHash: deployResult.policyHash || demoPolicyHash,
+    imageId: deployResult.imageId || demoImageId,
+    address: deployResult.contractAddress || demoAddr,
+    txHash: deployResult.txHash,
     stats: { actions: 0, proofs: 0, uptime: '0m' }
   };
 
@@ -2281,7 +2352,7 @@ function deployComplete() {
   saveAgents();
 
   document.getElementById('success-message').textContent =
-    `${newAgent.name} (${newAgent.ens}) registered. Start your agent to connect.`;
+    `${newAgent.name} (${newAgent.ens}) registered on-chain. Start your agent to connect.`;
 
   // Build the cargo run command with the agent's actual config
   const pk = document.getElementById('private-key').value.trim() || '0x_YOUR_PRIVATE_KEY';
@@ -2318,7 +2389,19 @@ cargo run`;
     lastUrl: 'http://localhost:8420',
   });
 
+  // Build explorer link if txHash exists
+  const explorerUrl = deployResult.txHash && window.PocViem
+    ? window.PocViem.getExplorerUrl(deployResult.txHash, wizardData.network)
+    : null;
+
   document.getElementById('success-links').innerHTML = `
+    ${deployResult.txHash ? `
+    <div style="text-align:left;width:100%;margin-bottom:16px;padding:12px;background:rgba(0,230,118,0.05);border:1px solid rgba(0,230,118,0.2);border-radius:8px;">
+      <div style="color:var(--green);font-size:11px;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px;">Onchain Registration Complete</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;">iNFT Token #${deployResult.tokenId || '—'} minted successfully</div>
+      ${explorerUrl ? `<a href="${esc(explorerUrl)}" target="_blank" style="font-size:11px;color:var(--cyan);text-decoration:none;word-break:break-all;">View Transaction: ${esc(deployResult.txHash.slice(0, 20))}... &#x2197;</a>` : ''}
+    </div>
+    ` : ''}
     <div style="text-align:left;width:100%;margin-bottom:16px;">
       <div style="color:var(--text-dim);font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Step 1 — Run your agent</div>
       <div style="position:relative;">
@@ -3136,10 +3219,111 @@ async function doConfirmConnect() {
 }
 
 // ═══════════════════════════════════════
+// VIEM WALLET INTEGRATION
+// ═══════════════════════════════════════
+
+let walletState = { connected: false, address: null };
+
+async function connectWalletUI() {
+  if (!window.PocViem) {
+    alert('Wallet module loading... Please try again in a moment.');
+    return;
+  }
+
+  const btn = document.getElementById('wallet-connect-btn');
+  btn.disabled = true;
+  btn.textContent = 'Connecting...';
+
+  try {
+    const { address } = await window.PocViem.connectWallet();
+    updateWalletUI(address);
+  } catch (e) {
+    alert('Wallet connection failed: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'Connect Wallet';
+  }
+}
+
+function updateWalletUI(address) {
+  walletState = { connected: true, address };
+  document.getElementById('wallet-connect-btn').style.display = 'none';
+  document.getElementById('wallet-display').style.display = 'flex';
+  document.getElementById('wallet-address').textContent = window.PocViem.formatAddress(address);
+}
+
+function disconnectWalletUI() {
+  walletState = { connected: false, address: null };
+  if (window.PocViem) window.PocViem.disconnectWallet();
+  document.getElementById('wallet-connect-btn').style.display = '';
+  document.getElementById('wallet-connect-btn').textContent = 'Connect Wallet';
+  document.getElementById('wallet-connect-btn').disabled = false;
+  document.getElementById('wallet-display').style.display = 'none';
+}
+
+// Check for existing connection on load
+async function checkWalletConnection() {
+  if (!window.PocViem) {
+    setTimeout(checkWalletConnection, 500);
+    return;
+  }
+  const state = window.PocViem.getWalletState();
+  if (state.connected) {
+    updateWalletUI(state.address);
+  }
+}
+
+// ═══════════════════════════════════════
+// ONCHAIN DEPLOYMENT
+// ═══════════════════════════════════════
+
+async function doOnchainDeploy() {
+  if (!window.PocViem) {
+    throw new Error('Blockchain module not loaded yet. Please wait a moment and try again.');
+  }
+
+  const state = window.PocViem.getWalletState();
+  if (!state.connected) {
+    // Try to connect first
+    await connectWalletUI();
+    if (!walletState.connected) {
+      throw new Error('Wallet connection required for onchain deployment');
+    }
+  }
+
+  // Switch to correct network
+  const network = wizardData.network || 'sepolia';
+  await window.PocViem.switchNetwork(network);
+  window.PocViem.init(network);
+
+  // Prepare agent config
+  const agentConfig = {
+    name: wizardData.name,
+    ens: wizardData.ens,
+    network: network,
+    allowedTools: wizardData.allowedTools || ['swap_tokens', 'transfer', 'query'],
+    valueLimit: wizardData.valueLimit || 100,
+    endpoints: wizardData.endpoints || '',
+    description: wizardData.description || '',
+  };
+
+  // Execute onchain registration
+  const result = await window.PocViem.registerAgentOnchain(agentConfig);
+
+  return {
+    tokenId: result.tokenId,
+    txHash: result.txHash,
+    agentId: result.agentId,
+    policyHash: result.policyHash,
+    contractAddress: result.address,
+  };
+}
+
+// ═══════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════
 
 init();
+checkWalletConnection();
 </script>
 <script src="ens-resolver.js"></script>
 <script src="poc-api.js"></script>
