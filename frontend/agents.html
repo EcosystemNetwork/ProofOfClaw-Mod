@@ -1875,11 +1875,30 @@ function agentSvg(typeId) {
   return AGENT_SVGS[typeId] || `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/></svg>`;
 }
 
-// No hardcoded agent data — agents are loaded from localStorage (persisted after
-// deployment via the wizard) or discovered dynamically via ENS resolution.
-// Connect a live agent via the "Connect OpenClaw" button, or search for ENS
-// names using the search bar.
-const DEFAULT_AGENTS = [];
+// Demo agent that connects to the running local API
+const DEFAULT_AGENTS = [
+  {
+    id: 'proof-agent',
+    name: 'Proof Agent',
+    ens: 'proof.proofclaw.eth',
+    type: 'coordinator',
+    typeIcon: '\uD83C\uDF0F',
+    network: 'og_testnet',
+    skills: ['zk-proofs', 'smart-contracts', 'security-audit'],
+    allowedTools: ['query', 'read', 'chat'],
+    valueLimit: 100,
+    endpoints: '',
+    status: 'online',
+    deployedAt: new Date().toISOString(),
+    description: 'Provable AI agent with 0G Compute inference and RISC Zero ZK verification',
+    inftTokenId: 1234,
+    policyHash: '0xec90594f438dc47ab87ab99ccbda015db056a6877da6488fe3bf6c85e72a884e',
+    imageId: '0xec90594f438dc47ab87ab99ccbda015db056a6877da6488fe3bf6c85e72a884e',
+    address: '0x116C28e6DCABCa363f83217C712d79DCE168d90e',
+    stats: { actions: 3, proofs: 3, uptime: '1h 30m' },
+    live: true
+  }
+];
 
 let agents = [];
 let currentFilter = 'all';
@@ -1893,6 +1912,36 @@ let wizardData = {};
 
 function init() {
   loadAgents();
+  
+  // Add demo agent if not present and auto-connect
+  const demoAgent = DEFAULT_AGENTS[0];
+  if (!agents.find(a => a.id === demoAgent.id)) {
+    agents.push(demoAgent);
+    saveAgents();
+    // Pre-configure connection to running agent
+    saveAgentConfig(demoAgent.id, {
+      lastUrl: 'http://localhost:8420',
+      tools: 'query,read,chat',
+      endpoints: '',
+      maxWei: 1e18,
+      network: 'og_testnet',
+      rpcUrl: 'https://evmrpc-testnet.0g.ai'
+    });
+  }
+  
+  // Auto-connect to running agent
+  const proofAgent = agents.find(a => a.id === 'proof-agent');
+  if (proofAgent && typeof PocAPI !== 'undefined') {
+    PocAPI.connect('http://localhost:8420').then(() => {
+      proofAgent.status = 'online';
+      proofAgent.live = true;
+      saveAgents();
+      renderAgents();
+    }).catch(() => {
+      // Agent not running yet, will show as offline
+    });
+  }
+  
   renderTypeGrid();
   renderAgents();
   bindSearch();
