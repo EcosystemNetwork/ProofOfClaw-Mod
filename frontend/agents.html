@@ -1784,7 +1784,74 @@ const AGENT_TYPES = [
 // deployment via the wizard) or discovered dynamically via ENS resolution.
 // Connect a live agent via the "Connect OpenClaw" button, or resolve ENS names
 // with the "Lookup ENS" button in the toolbar.
-const DEFAULT_AGENTS = [];
+const DEFAULT_AGENTS = [
+  {
+    id: 'alpha-sentinel',
+    name: 'alpha-sentinel',
+    ens: 'alpha.proofclaw.eth',
+    type: 'coordinator',
+    typeIcon: '⛭',
+    status: 'online',
+    endpoints: 'http://localhost:4443',
+    stats: { actions: 156, proofs: 156, uptime: '99.2%' },
+    skills: ['multi-agent','delegation','task-routing','typescript']
+  },
+  {
+    id: 'defi-scout',
+    name: 'defi-scout',
+    ens: 'defi-scout.proofclaw.eth',
+    type: 'defi-strategist',
+    typeIcon: '📈',
+    status: 'online',
+    endpoints: 'http://localhost:4443',
+    stats: { actions: 89, proofs: 89, uptime: '97.8%' },
+    skills: ['defi-protocols','uniswap','aave','data-analysis']
+  },
+  {
+    id: 'sec-auditor',
+    name: 'sec-auditor',
+    ens: 'sec-auditor.proofclaw.eth',
+    type: 'security-auditor',
+    typeIcon: '🔒',
+    status: 'busy',
+    endpoints: 'http://localhost:4443',
+    stats: { actions: 42, proofs: 42, uptime: '95.4%' },
+    skills: ['solidity','security-audit','smart-contracts','slither']
+  },
+  {
+    id: 'gov-delegate',
+    name: 'gov-delegate',
+    ens: 'gov-delegate.proofclaw.eth',
+    type: 'governance-agent',
+    typeIcon: '🏛️',
+    status: 'online',
+    endpoints: 'http://localhost:4443',
+    stats: { actions: 31, proofs: 31, uptime: '98.1%' },
+    skills: ['governance','dao-voting','proposals','snapshot']
+  },
+  {
+    id: 'yield-hunter',
+    name: 'yield-hunter',
+    ens: 'yield-hunter.proofclaw.eth',
+    type: 'defi-strategist',
+    typeIcon: '💰',
+    status: 'offline',
+    endpoints: 'http://localhost:4443',
+    stats: { actions: 67, proofs: 67, uptime: '88.3%' },
+    skills: ['yield-farming','liquidity','cross-chain','bridges']
+  },
+  {
+    id: 'data-oracle',
+    name: 'data-oracle',
+    ens: 'data-oracle.proofclaw.eth',
+    type: 'data-analyst',
+    typeIcon: '📊',
+    status: 'online',
+    endpoints: 'http://localhost:4443',
+    stats: { actions: 203, proofs: 203, uptime: '99.6%' },
+    skills: ['data-analysis','chainlink','the-graph','sql']
+  }
+];
 
 let agents = [];
 let currentFilter = 'all';
@@ -1805,12 +1872,28 @@ function init() {
 }
 
 function loadAgents() {
+  // Start with default agents
+  agents = DEFAULT_AGENTS.map(a => ({...a})); // Copy defaults
+  
+  // Merge stored agents (they take precedence by ID)
   const stored = localStorage.getItem('poc_agents');
   if (stored) {
-    try { agents = JSON.parse(stored); } catch(e) { agents = []; }
+    try {
+      const storedAgents = JSON.parse(stored);
+      if (Array.isArray(storedAgents)) {
+        storedAgents.forEach(sa => {
+          const idx = agents.findIndex(a => a.id === sa.id);
+          if (idx >= 0) {
+            // Replace default with stored
+            agents[idx] = sa;
+          } else {
+            // Add new stored agent
+            agents.push(sa);
+          }
+        });
+      }
+    } catch(e) { console.error('Failed to parse stored agents:', e); }
   }
-  // No default agents — deploy via the wizard or discover via ENS lookup
-  if (!agents) agents = [];
 }
 
 function saveAgents() {
