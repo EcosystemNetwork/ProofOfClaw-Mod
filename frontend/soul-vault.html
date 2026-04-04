@@ -1399,6 +1399,18 @@ function resetVault() {
 // ═══════════════════════════════════════
 
 init();
+
+// Expose functions to global scope for HTML onclick handlers
+window.setVaultMode = setVaultMode;
+window.selectType = selectType;
+window.toggleSkill = toggleSkill;
+window.addCustomSkill = addCustomSkill;
+window.wizardNext = wizardNext;
+window.wizardBack = wizardBack;
+window.startRegister = startRegister;
+window.startDeploy = startDeploy;
+window.retryRegistration = retryRegistration;
+window.resetVault = resetVault;
 </script>
 <script src="poc-api.js"></script>
 <script>

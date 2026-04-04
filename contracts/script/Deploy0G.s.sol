@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
+import "forge-std/console.sol";
 import "../src/ProofOfClawVerifier.sol";
 import "../src/ProofOfClawINFT.sol";
 
@@ -21,7 +22,7 @@ import "../src/ProofOfClawINFT.sol";
 ///   RISC_ZERO_VERIFIER_ADDRESS  — RISC Zero verifier address on 0G
 ///   RISC_ZERO_IMAGE_ID          — RISC Zero guest image ID (bytes32)
 contract Deploy0GScript is Script {
-    function run() external {
+    function run() external override {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address verifierAddress = vm.envAddress("RISC_ZERO_VERIFIER_ADDRESS");
         bytes32 imageId = vm.envBytes32("RISC_ZERO_IMAGE_ID");
@@ -44,7 +45,7 @@ contract Deploy0GScript is Script {
         console.log("Chain: 0G");
         console.log("Verifier:", address(proofOfClaw));
         console.log("iNFT:", address(inft));
-        console.log("Image ID:", vm.toString(imageId));
+        console.log("Image ID:", imageId);
         console.log("---");
         console.log("Next steps:");
         console.log("  1. Set INFT_CONTRACT in .env to the iNFT address above");
