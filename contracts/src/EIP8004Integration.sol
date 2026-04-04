@@ -17,6 +17,9 @@ contract EIP8004Integration {
     /// @notice Maps EIP-8004 token ID back to internal agent ID
     mapping(uint256 => bytes32) public tokenIdToAgent;
 
+    /// @notice Maps agent ID to the address that registered it
+    mapping(bytes32 => address) public agentRegistrant;
+
     /// @notice Authorized verifier contract (ProofOfClawVerifier) that can record validations
     address public verifier;
 
@@ -28,6 +31,7 @@ contract EIP8004Integration {
     error AgentNotRegistered();
     error OnlyVerifier();
     error OnlyAgentOwner();
+    error OnlyVerifierOrRegistrant();
 
     constructor(
         address _identityRegistry,
@@ -72,6 +76,7 @@ contract EIP8004Integration {
 
         agentToTokenId[agentId] = tokenId;
         tokenIdToAgent[tokenId] = agentId;
+        agentRegistrant[agentId] = msg.sender;
 
         emit AgentIdentityRegistered(agentId, tokenId, agentURI);
     }
@@ -109,7 +114,7 @@ contract EIP8004Integration {
     }
 
     /// @notice Submit a validation request before proving
-    /// @dev Called by agent owner to register intent to prove
+    /// @dev Only callable by the verifier or the agent's registrant
     /// @param agentId Internal agent ID
     /// @param traceStorageURI URI of the execution trace on 0G Storage
     /// @param requestHash Hash commitment to the trace data
@@ -118,6 +123,9 @@ contract EIP8004Integration {
         string calldata traceStorageURI,
         bytes32 requestHash
     ) external {
+        if (msg.sender != verifier && msg.sender != agentRegistrant[agentId])
+            revert OnlyVerifierOrRegistrant();
+
         uint256 tokenId = agentToTokenId[agentId];
         if (tokenId == 0) revert AgentNotRegistered();
 
@@ -130,6 +138,9 @@ contract EIP8004Integration {
     }
 
     /// @notice Submit reputation feedback for an agent after a proven interaction
+    /// @dev Open to any caller per EIP-8004 open reputation model, but callers
+    ///      must not be the agent's own registrant (no self-review). Consumers of
+    ///      reputation data should filter by trusted reviewer sets.
     /// @param agentId Internal agent ID of the agent being reviewed
     /// @param value Feedback score (e.g., 0-100)
     /// @param valueDecimals Decimal precision of the value
@@ -148,6 +159,9 @@ contract EIP8004Integration {
         string calldata feedbackURI,
         bytes32 feedbackHash
     ) external {
+        // Prevent self-review: agent registrant cannot rate their own agent
+        if (msg.sender == agentRegistrant[agentId]) revert OnlyAgentOwner();
+
         uint256 tokenId = agentToTokenId[agentId];
         if (tokenId == 0) revert AgentNotRegistered();
 

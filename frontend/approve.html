@@ -1442,6 +1442,7 @@ function rejectAction(actionId) {
   // Fire-and-forget to backend
   postRejection(actionId).catch(() => {/* backend optional */});
 
+
   approvalHistory.unshift({
     time: 'Just now',
     agent: action.agentName,
@@ -1471,6 +1472,7 @@ function closeModalOutside(e) {
     closeModal();
   }
 }
+
 
 
 
@@ -1551,7 +1553,6 @@ function showLedgerWaiting(transport, Eth, reason) {
     try {
       const eth = new Eth(transport);
       const { address } = await eth.getAddress(DERIVE_PATH, false, false);
-      // ✅ Device ready
       clearInterval(_pollTimer);
       overlay.style.display = 'none';
       _ethApp = eth;

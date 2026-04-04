@@ -1,7 +1,3 @@
 [submodule "contracts/lib/forge-std"]
 	path = contracts/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
-[submodule "agent"]
-	path = agent
-	url = https://github.com/Proof-of-Claw/ironclaw.git
-	branch = claudeSlop

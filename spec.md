@@ -199,8 +199,8 @@ The 0G Storage root hash of each trace becomes the input to the RISC Zero prover
 Each agent registers as a subname under the project's ENS name:
 
 ```
-alice-agent.proofclaw.eth
-bob-agent.proofclaw.eth
+alice-agent.proofofclaw.eth
+bob-agent.proofofclaw.eth
 ```
 
 ENS text records store agent metadata:
@@ -217,7 +217,7 @@ ENS text records store agent metadata:
 
 Agent discovery flow:
 
-1. Resolve `bob-agent.proofclaw.eth` via ENS
+1. Resolve `bob-agent.proofofclaw.eth` via ENS
 2. Read `proofclaw.imageId` to verify the agent runs a known policy program
 3. Read `eth.dm3.profile` to get Bob's encryption public key and delivery service URL
 4. Read `proofclaw.policyHash` to check the agent's declared capabilities match expectations
@@ -238,12 +238,12 @@ import { createDeliveryServiceProfile, createEnvelop } from '@dm3-org/dm3-lib';
 
 // Agent initialization — generate DM3 keys and profile
 const { deliveryServiceProfile, keys } = await createDeliveryServiceProfile(
-  'https://ds.proofclaw.eth' // Our delivery service endpoint
+  'https://ds.proofofclaw.eth' // Our delivery service endpoint
 );
 
 // Publish profile to ENS text record
 await ensContract.setText(
-  namehash('alice-agent.proofclaw.eth'),
+  namehash('alice-agent.proofofclaw.eth'),
   'eth.dm3.profile',
   toDataURI(deliveryServiceProfile)
 );
@@ -540,7 +540,7 @@ EIP-8004 (Trustless Agents) provides three standardized on-chain registries that
 
 #### 4.6.1 Identity Registry — Standardized Agent Cards
 
-While ENS provides human-readable names (`alice-agent.proofclaw.eth`), the EIP-8004 Identity Registry provides a standardized, machine-readable agent identity layer built on ERC-721. Each Proof of Claw agent mints an ERC-721 identity token and publishes a structured registration file containing its capabilities, endpoints, and trust metadata.
+While ENS provides human-readable names (`alice-agent.proofofclaw.eth`), the EIP-8004 Identity Registry provides a standardized, machine-readable agent identity layer built on ERC-721. Each Proof of Claw agent mints an ERC-721 identity token and publishes a structured registration file containing its capabilities, endpoints, and trust metadata.
 
 ```typescript
 import { ethers } from 'ethers';
@@ -550,7 +550,7 @@ const identityRegistry = new ethers.Contract(IDENTITY_REGISTRY_ADDRESS, IDENTITY
 // Register agent with URI pointing to registration file
 const agentURI = 'ipfs://Qm.../alice-agent-registration.json';
 const tx = await identityRegistry.register(agentURI, [
-  { metadataKey: 'ensName', metadataValue: ethers.toUtf8Bytes('alice-agent.proofclaw.eth') },
+  { metadataKey: 'ensName', metadataValue: ethers.toUtf8Bytes('alice-agent.proofofclaw.eth') },
   { metadataKey: 'policyHash', metadataValue: policyHash },
   { metadataKey: 'riscZeroImageId', metadataValue: imageId },
 ]);
@@ -563,22 +563,22 @@ const agentId = receipt.logs[0].args.agentId; // ERC-721 tokenId
 ```json
 {
   "type": "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
-  "name": "alice-agent.proofclaw.eth",
+  "name": "alice-agent.proofofclaw.eth",
   "description": "Autonomous trading agent with Ledger-gated high-value approvals. Policy-compliant execution proven via RISC Zero.",
   "image": "ipfs://Qm.../alice-agent-avatar.png",
   "services": [
     {
       "name": "ENS",
-      "endpoint": "alice-agent.proofclaw.eth"
+      "endpoint": "alice-agent.proofofclaw.eth"
     },
     {
       "name": "DM3",
-      "endpoint": "wss://ds.proofclaw.eth/alice-agent",
+      "endpoint": "wss://ds.proofofclaw.eth/alice-agent",
       "version": "1.0"
     },
     {
       "name": "MCP",
-      "endpoint": "https://alice-agent.proofclaw.eth/mcp",
+      "endpoint": "https://alice-agent.proofofclaw.eth/mcp",
       "version": "2025-03-26",
       "skills": ["swap_tokens", "query_price", "manage_portfolio"]
     }
@@ -597,13 +597,13 @@ const agentId = receipt.logs[0].args.agentId; // ERC-721 tokenId
 
 **Agent Discovery Flow (EIP-8004 enhanced):**
 
-1. Querying agent discovers `bob-agent.proofclaw.eth` via ENS *or* browses the EIP-8004 Identity Registry for agents with specific capabilities
+1. Querying agent discovers `bob-agent.proofofclaw.eth` via ENS *or* browses the EIP-8004 Identity Registry for agents with specific capabilities
 2. Reads the agent's `agentURI` registration file to learn its services, skills, and supported trust models
 3. Checks the Reputation Registry for Bob's on-chain trust score
 4. Checks the Validation Registry for Bob's RISC Zero proof history
 5. If trust thresholds are met, initiates DM3 encrypted communication
 
-This enables agents from *different* organizations to discover and evaluate each other — not just agents within the `proofclaw.eth` namespace.
+This enables agents from *different* organizations to discover and evaluate each other — not just agents within the `proofofclaw.eth` namespace.
 
 #### 4.6.2 Reputation Registry — On-Chain Trust Signals
 
@@ -619,7 +619,7 @@ await reputationRegistry.giveFeedback(
   0,                    // valueDecimals
   'policyCompliance',   // tag1: domain-specific tag
   'swap',               // tag2: action type
-  'wss://ds.proofclaw.eth/bob-agent',  // endpoint evaluated
+  'wss://ds.proofofclaw.eth/bob-agent',  // endpoint evaluated
   'ipfs://Qm.../feedback-detail.json', // feedbackURI with proof receipt
   feedbackHash          // keccak256 commitment
 );
@@ -655,7 +655,7 @@ const [count, summaryValue, decimals] = await reputationRegistry.getSummary(
   "valueDecimals": 0,
   "tag1": "policyCompliance",
   "tag2": "swap",
-  "endpoint": "wss://ds.proofclaw.eth/bob-agent",
+  "endpoint": "wss://ds.proofofclaw.eth/bob-agent",
   "proofOfPayment": {
     "fromAddress": "0x...",
     "toAddress": "0x...",
@@ -723,7 +723,7 @@ ENS and EIP-8004 are complementary, not competing:
 
 | Concern | ENS | EIP-8004 |
 |---------|-----|----------|
-| Human-readable name | `alice-agent.proofclaw.eth` | — |
+| Human-readable name | `alice-agent.proofofclaw.eth` | — |
 | Machine-readable identity | ENS text records | Registration file + on-chain metadata |
 | Cross-org discovery | Limited to ENS namespace | Global registry, any agent can register |
 | Reputation | — | Structured feedback with tags |
@@ -737,7 +737,7 @@ ENS text record:
   proofclaw.eip8004AgentId → "eip155:11155111:0x<REGISTRY>:42"
 
 EIP-8004 registration file:
-  services: [{ name: "ENS", endpoint: "alice-agent.proofclaw.eth" }]
+  services: [{ name: "ENS", endpoint: "alice-agent.proofofclaw.eth" }]
 ```
 
 ---
@@ -795,7 +795,7 @@ async function requestLedgerApproval(
   };
 
   // Sign with Ledger — Clear Signing displays human-readable info:
-  //   "Approve agent action: alice-agent.proofclaw.eth
+  //   "Approve agent action: alice-agent.proofofclaw.eth
   //    Action: Swap 500 USDC → ETH on Uniswap
   //    Policy proof: Verified ✓
   //    Value: 500.00 USDC"
@@ -824,7 +824,7 @@ We create a Clear Signing JSON metadata file for the `ProofOfClawVerifier` contr
   "metadata": {
     "owner": "Proof of Claw",
     "info": {
-      "url": "https://proofclaw.eth",
+      "url": "https://proofofclaw.eth",
       "legalName": "Proof of Claw"
     }
   },
@@ -880,7 +880,7 @@ This metadata file is submitted to the Clear Signing Registry via pull request s
 ### 5.1 Agent Setup
 
 1. Owner connects Ledger to Proof of Claw web UI
-2. Owner deploys an agent: picks an ENS subname (`my-agent.proofclaw.eth`), sets policy parameters (allowed tools, spending limits, autonomous threshold)
+2. Owner deploys an agent: picks an ENS subname (`my-agent.proofofclaw.eth`), sets policy parameters (allowed tools, spending limits, autonomous threshold)
 3. `registerAgent()` is called from the Ledger (owner = Ledger EOA)
 4. Agent mints an EIP-8004 identity token and publishes its registration file (capabilities, endpoints, trust models) to IPFS/0G Storage
 5. Agent's DM3 profile, RISC Zero image ID, policy hash, and EIP-8004 agent ID are published as ENS text records
@@ -1007,8 +1007,8 @@ proof-of-claw/
 
 Two agents negotiate and execute a token swap:
 
-1. **Alice** deploys `alice.proofclaw.eth` with a policy: allowed to swap up to 100 USDC autonomously, anything above requires Ledger approval. Mints EIP-8004 identity token with registration file.
-2. **Bob** deploys `bob.proofclaw.eth` with similar policy. Mints EIP-8004 identity token.
+1. **Alice** deploys `alice.proofofclaw.eth` with a policy: allowed to swap up to 100 USDC autonomously, anything above requires Ledger approval. Mints EIP-8004 identity token with registration file.
+2. **Bob** deploys `bob.proofofclaw.eth` with similar policy. Mints EIP-8004 identity token.
 3. Alice's agent discovers Bob via ENS or EIP-8004 Identity Registry, checks Bob's reputation score and validation history
 4. Alice initiates DM3 encrypted negotiation
 5. They agree on a 500 USDC swap (above both thresholds)

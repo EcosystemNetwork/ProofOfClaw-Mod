@@ -457,12 +457,20 @@
 }
 
 @media (max-width: 768px) {
-  .sidebar { display: none; }
-  .main-content { margin-left: 0; }
+  .main-content { margin-left: 0; padding: 1.25rem 1rem; }
   .stats-bar { grid-template-columns: 1fr 1fr; }
   .proof-details-grid { grid-template-columns: 1fr 1fr; }
   .chain-details { grid-template-columns: 1fr; }
-  .filter-bar { flex-direction: column; align-items: flex-start; }
+  .filter-bar { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+  .top-bar { padding: 0.75rem 1rem; flex-wrap: wrap; gap: 0.5rem; }
+}
+
+@media (max-width: 480px) {
+  .main-content { padding: 1rem 0.75rem; }
+  .stats-bar { grid-template-columns: 1fr; }
+  .proof-details-grid { grid-template-columns: 1fr; }
+  .top-bar-title { font-size: 1rem; }
+  .proof-card { padding: 1rem; }
 }
 </style>
 </head>
@@ -479,18 +487,19 @@
   </a>
 
   <nav class="sidebar-nav" aria-label="App navigation">
-    <a href="agents.html"><span class="nav-icon">&#x2B21;</span> Agents</a>
+    <a href="agents.html"><span class="nav-icon">&#x2726;</span> Agents</a>
     <a href="dashboard.html"><span class="nav-icon">&#x25A3;</span> Dashboard</a>
     <a href="auth-modules.html"><span class="nav-icon">&#x1F512;</span> Auth Modules</a>
     <a href="messages.html"><span class="nav-icon">&#x2709;</span> Messages</a>
-    <a href="proofs.html" class="active" aria-current="page"><span class="nav-icon">&#x2713;</span> Proofs</a>
+    <a href="proofs.html" class="active" aria-current="page"><span class="nav-icon">&#x2731;</span> Proofs</a>
     <a href="kanban.html"><span class="nav-icon">&#x25A0;</span> Kanban</a>
     <a href="soul-vault.html"><span class="nav-icon">&#x2B23;</span> Soul Vault</a>
+    <a href="approve.html"><span class="nav-icon">&#x2714;</span> Approve</a>
   </nav>
 
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
-    <a href="soul-vault.html" class="btn-new-agent">+ New Agent</a>
+    <a href="agents.html" class="btn-new-agent">+ New Agent</a>
     <a href="index.html" class="btn-home">&larr; Back to Home</a>
   </div>
 </aside>
@@ -498,9 +507,12 @@
 <!-- ==================== MAIN ==================== -->
 <main class="main-content" role="main">
 
+  <div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
   <!-- TOP BAR -->
   <header class="top-bar" role="banner">
     <div class="top-bar-left">
+      <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
       <div class="top-bar-title">Proof Verification</div>
       <div class="top-bar-agent-filter">
         <select id="agentFilter" aria-label="Filter by agent">

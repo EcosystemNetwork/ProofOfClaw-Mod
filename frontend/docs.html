@@ -773,7 +773,11 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 
 @media (max-width: 600px) {
   .docs-hero h1 { font-size: 1.6rem; }
+  .docs-hero { padding: 6rem 1rem 1.5rem; }
+  .docs-content { padding: 0 1rem 3rem; }
   .flow-step { gap: 0.6rem; }
+  .landing-nav { padding: 0.75rem 1rem; }
+  .nav-title { font-size: 0.9rem; }
 }
 </style>
 </head>
@@ -816,7 +820,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
     <span class="tag tag-green">DM3</span>
     <span class="tag tag-green">RISC Zero</span>
     <span class="tag tag-amber">Ledger</span>
-    <span class="tag tag-amber">Swarm</span>
+
   </div>
 </div>
 
@@ -845,7 +849,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
     <a href="#ens-dm3" class="sidebar-link">ENS + DM3</a>
     <a href="#risc-zero" class="sidebar-link">RISC Zero</a>
     <a href="#ledger" class="sidebar-link">Ledger DMK</a>
-    <a href="#swarm" class="sidebar-link">Swarm Protocol</a>
+
   </div>
   <div class="sidebar-divider"></div>
   <div class="sidebar-section">
@@ -899,7 +903,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 </p>
 
 <div class="info-box fade-in">
-  <p><strong>Tech Stack:</strong> Rust &middot; Tokio &middot; Wasmtime &middot; 0G Compute &middot; 0G Storage &middot; ENS &middot; DM3 &middot; RISC Zero &middot; Boundless &middot; Ledger DMK/DSK &middot; Solidity (Foundry) &middot; Swarm Protocol</p>
+  <p><strong>Tech Stack:</strong> Rust &middot; Tokio &middot; Wasmtime &middot; 0G Compute &middot; 0G Storage &middot; ENS &middot; DM3 &middot; RISC Zero &middot; Boundless &middot; Ledger DMK/DSK &middot; Solidity (Foundry)</p>
 </div>
 
 <!-- QUICK START -->
@@ -1107,7 +1111,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
     </div>
   </div>
   <p>
-    Agents register as ENS subnames (e.g. <code>alice-agent.proofclaw.eth</code>) with text records storing DM3 profiles, policy hashes, and RISC Zero image IDs. Inter-agent communication is end-to-end encrypted via the DM3 protocol.
+    Agents register as ENS subnames (e.g. <code>alice-agent.proofofclaw.eth</code>) with text records storing DM3 profiles, policy hashes, and RISC Zero image IDs. Inter-agent communication is end-to-end encrypted via the DM3 protocol.
   </p>
 </div>
 
@@ -1124,7 +1128,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 
 <span class="cm">// Publish DM3 profile to ENS text record</span>
 <span class="kw">await</span> ensContract.<span class="fn">setText</span>(
-  <span class="fn">namehash</span>(<span class="str">'alice-agent.proofclaw.eth'</span>),
+  <span class="fn">namehash</span>(<span class="str">'alice-agent.proofofclaw.eth'</span>),
   <span class="str">'eth.dm3.profile'</span>,
   <span class="fn">toDataURI</span>(deliveryServiceProfile)
 );
@@ -1239,21 +1243,28 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   </div>
 </div>
 
-<h2 id="swarm" class="section-anchor fade-in"><span class="section-icon icon-green">&#x2B2F;</span> Swarm Protocol</h2>
-<div class="integration-card card-green fade-in">
-  <div class="card-header">
-    <div class="card-icon icon-green">&#x2B2F;</div>
-    <div>
-      <span class="tag tag-green">Swarm</span>
-    </div>
-  </div>
-  <p>
-    Proof of Claw agents can register with the Swarm Protocol network for multi-agent coordination. Agents advertise their capabilities (zk-verify, policy-check, swap, transfer) and can be discovered and orchestrated by other Swarm-connected agents.
-  </p>
-</div>
 
 <!-- SMART CONTRACTS -->
 <h2 id="contracts" class="section-anchor fade-in"><span class="section-icon icon-amber">&#x2B22;</span> Smart Contracts</h2>
+
+<div class="info-box fade-in">
+  <strong>Deployed on 0G Galileo Testnet</strong> (Chain ID: 16602) &mdash; All contracts verified on <a href="https://chainscan-galileo.0g.ai/" target="_blank">chainscan-galileo.0g.ai</a>
+</div>
+
+<div class="table-wrap fade-in">
+<table>
+  <thead>
+    <tr><th>Contract</th><th>Address</th><th>Role</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>SoulVaultSwarm</strong></td><td><code>0xa70EB0DF1563708F28285C2DeA2BF31aadFB544D</code></td><td>Epoch-based swarm coordination</td></tr>
+    <tr><td><strong>ERC8004RegistryAdapter</strong></td><td><code>0x9De4F1b14660B5f8145a78Cfc0312B1BFb812C46</code></td><td>Self-sovereign agent identity</td></tr>
+    <tr><td><strong>RiscZeroMockVerifier</strong></td><td><code>0x93e985aCA4112771c0B05114Ad99677DB85a6A9e</code></td><td>Testnet proof verifier (mock)</td></tr>
+    <tr><td><strong>ProofOfClawVerifier</strong></td><td><code>0xa2Df3F3998FdF9Fb7E11e43d10d6B3C62264e3A4</code></td><td>RISC Zero proof verification + routing</td></tr>
+    <tr><td><strong>ProofOfClawINFT</strong></td><td><code>0xDe61e80Cdc7ba0000d9eB9040e59f98A3C9991a3</code></td><td>ERC-7857 agent identity NFT</td></tr>
+  </tbody>
+</table>
+</div>
 
 <h3 class="fade-in">ProofOfClawVerifier</h3>
 <p class="fade-in">The on-chain verifier contract handles:</p>
@@ -1262,6 +1273,23 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   <li>RISC Zero proof verification via the on-chain verifier</li>
   <li>Autonomous vs Ledger-gated execution routing</li>
   <li>Action execution with on-chain enforcement</li>
+</ul>
+
+<h3 class="fade-in">SoulVaultSwarm</h3>
+<p class="fade-in">Epoch-based coordination for AI agent swarms:</p>
+<ul class="fade-in">
+  <li>Swarm membership with join request/approval flow</li>
+  <li>Epoch-based key rotation with optimistic concurrency</li>
+  <li>On-chain agent file mappings and manifests</li>
+  <li>Inter-agent messaging with sequence numbers</li>
+</ul>
+
+<h3 class="fade-in">SoulVaultERC8004RegistryAdapter</h3>
+<p class="fade-in">Self-sovereign agent identity registry:</p>
+<ul class="fade-in">
+  <li>Self-registration (no admin gating) &mdash; agents register themselves</li>
+  <li>Maps agent IDs to wallet addresses and metadata</li>
+  <li>Reverse lookup: wallet to list of owned agents</li>
 </ul>
 
 <h3 id="clear-signing" class="section-anchor fade-in">Clear Signing (ERC-7730)</h3>
@@ -1321,7 +1349,7 @@ curl http://localhost:8420/health
 // Response shape:
 {
   "agent_id": "my-agent",
-  "ens_name": "my-agent.proofclaw.eth",
+  "ens_name": "my-agent.proofofclaw.eth",
   "status": "online",
   "network": "sepolia",
   "allowed_tools": ["swap_tokens", "transfer", "query"],
@@ -1411,7 +1439,7 @@ curl http://localhost:8420/health
   {
     "id": "msg-001",
     "from": "my-agent",
-    "to": "other-agent.proofclaw.eth",
+    "to": "other-agent.proofofclaw.eth",
     "content": "Hello, want to collaborate?",
     "timestamp": 1712234567,
     "direction": "outbound"
@@ -1419,7 +1447,7 @@ curl http://localhost:8420/health
 ]
 
 // POST /api/messages/send
-// Request: { "to": "bob.proofclaw.eth", "content": "Hello!" }
+// Request: { "to": "bob.proofofclaw.eth", "content": "Hello!" }
 // Response: { "success": true, "message_id": "msg-002", "timestamp": 1712234567 }</code></pre>
 </div>
 
@@ -1450,7 +1478,7 @@ def health():
 def status():
     return jsonify({
         'agent_id': 'my-python-agent',
-        'ens_name': 'my-agent.proofclaw.eth',
+        'ens_name': 'my-agent.proofofclaw.eth',
         'status': 'online',
         'network': 'sepolia',
         'allowed_tools': ['query'],
@@ -1485,7 +1513,7 @@ app.get('/health', (req, res) =&gt; res.send('ok'));
 
 app.get('/api/status', (req, res) =&gt; res.json({
   agent_id: 'my-node-agent',
-  ens_name: 'my-agent.proofclaw.eth',
+  ens_name: 'my-agent.proofofclaw.eth',
   status: 'online',
   network: 'sepolia',
   allowed_tools: ['query'],
@@ -1524,7 +1552,7 @@ app.listen(8420);</code></pre>
   </div>
   <div class="code-body">
 <pre>AGENT_ID=alice-agent
-ENS_NAME=alice.proofclaw.eth
+ENS_NAME=alice.proofofclaw.eth
 PRIVATE_KEY=0x...
 RPC_URL=https://eth-sepolia.g.alchemy.com/v2/...
 ZERO_G_INDEXER_RPC=https://indexer-storage-testnet.0g.ai
@@ -1618,6 +1646,10 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
 </div>
 
 <!-- STATUS -->
+<p class="fade-in" style="padding:1rem 1.25rem;border:1px solid rgba(255,183,77,0.3);border-radius:8px;background:rgba(255,183,77,0.06);color:var(--text-secondary);font-size:0.85rem;margin-bottom:1.5rem;">
+  <strong style="color:#ffb74d;">Prototype Notice</strong> &mdash; Proof of Claw is under active development. Core security modules (ZK proofs, Ledger approval) use mock/stub implementations. Contracts are deployed to 0G Galileo Testnet (chain 16602) and verified but unaudited. Do not use with real funds.
+</p>
+
 <h2 id="status" class="section-anchor fade-in"><span class="section-icon icon-green">&#x2714;</span> What's Working</h2>
 
 <div class="status-grid fade-in">
@@ -1632,9 +1664,9 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
     <span class="status-detail">Tool allowlist enforcement, value threshold checks, severity levels (Block/Warn/Sanitize/Pass).</span>
   </div>
   <div class="status-row">
-    <span class="status-badge working">Working</span>
+    <span class="status-badge working">Basic</span>
     <span class="status-name">Injection Detector</span>
-    <span class="status-detail">Regex-based prompt injection detection with case-insensitive matching.</span>
+    <span class="status-detail">12 regex patterns with case-insensitive matching. Catches obvious attacks; not robust against paraphrasing, encoding, or multi-turn evasion.</span>
   </div>
   <div class="status-row">
     <span class="status-badge working">Working</span>
@@ -1672,14 +1704,14 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
     <span class="status-detail">Agent minting with encrypted metadata on 0G Storage.</span>
   </div>
   <div class="status-row">
-    <span class="status-badge working">Working</span>
+    <span class="status-badge partial">Mock</span>
     <span class="status-name">Proof Generator</span>
-    <span class="status-detail">Supports Boundless (remote), local RISC Zero, and mock (dev) backends.</span>
+    <span class="status-detail">Currently produces SHA-256 mock receipts. Boundless and local RISC Zero backends exist but are not wired end-to-end.</span>
   </div>
   <div class="status-row">
-    <span class="status-badge working">Working</span>
+    <span class="status-badge partial">Compiles</span>
     <span class="status-name">Smart Contracts</span>
-    <span class="status-detail">ProofOfClawVerifier, EIP8004Integration, ProofOfClawINFT &mdash; all compile with Foundry.</span>
+    <span class="status-detail">ProofOfClawVerifier, EIP8004Integration, ProofOfClawINFT &mdash; compile with Foundry. No test suite yet. Unaudited.</span>
   </div>
   <div class="status-row">
     <span class="status-badge working">Working</span>
@@ -1689,7 +1721,7 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
   <div class="status-row">
     <span class="status-badge working">Working</span>
     <span class="status-name">Frontend UI</span>
-    <span class="status-detail">All 7 pages functional. Live API mode + mock fallback. Search, copy, responsive design.</span>
+    <span class="status-detail">All 7 pages functional. Live API mode + mock fallback. Contract addresses populated from 0G testnet deployment. Search, copy, responsive design.</span>
   </div>
   <div class="status-row">
     <span class="status-badge working">Working</span>
@@ -1714,12 +1746,12 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
   <div class="status-row">
     <span class="status-badge missing">Missing</span>
     <span class="status-name">Contract Tests</span>
-    <span class="status-detail">Zero Foundry test files. No <code>test/</code> directory in contracts.</span>
+    <span class="status-detail">Basic Foundry test file exists. 5 contracts deployed + verified on 0G Galileo Testnet.</span>
   </div>
   <div class="status-row">
     <span class="status-badge partial">Partial</span>
     <span class="status-name">ERC-7730 Metadata</span>
-    <span class="status-detail">Contract address is <code>0x000...000</code> (needs post-deployment update). Missing some method display formats.</span>
+    <span class="status-detail">Contract addresses populated from 0G testnet deployment. Missing some method display formats.</span>
   </div>
   <div class="status-row">
     <span class="status-badge partial">Partial</span>
@@ -1740,7 +1772,9 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
   <li><span class="todo-priority high">High</span> Implement Ledger DMK/DSK approval flow (replace stub in <code>agent/src/integrations/ledger.rs</code>)</li>
   <li><span class="todo-priority high">High</span> Write Foundry contract tests (<code>contracts/test/</code>)</li>
   <li><span class="todo-priority high">High</span> Wire RISC Zero host to accept real execution traces from the agent</li>
-  <li><span class="todo-priority high">High</span> Deploy contracts to testnet and update ERC-7730 metadata with real addresses</li>
+  <li><del><span class="todo-priority high">High</span> Deploy contracts to testnet and update ERC-7730 metadata with real addresses</del> Done &mdash; 5 contracts on 0G Galileo</li>
+  <li><span class="todo-priority high">High</span> Production RISC Zero proof generation via Boundless (replace mock SHA-256 receipts)</li>
+  <li><span class="todo-priority high">High</span> Remove hardcoded demo private key fallback in server &mdash; refuse startup when <code>PRIVATE_KEY</code> is missing in non-mock mode</li>
 </ul>
 
 <h3 class="fade-in">Medium Priority</h3>
@@ -1754,7 +1788,6 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
 
 <h3 class="fade-in">Nice to Have</h3>
 <ul class="todo-list fade-in">
-  <li><span class="todo-priority nice">Nice</span> Production RISC Zero proof generation via Boundless (currently mock in dev)</li>
   <li><span class="todo-priority nice">Nice</span> Multi-chain deployment scripts and ERC-7730 metadata</li>
   <li><span class="todo-priority nice">Nice</span> Agent dashboard real-time WebSocket updates (currently polling)</li>
   <li><span class="todo-priority nice">Nice</span> DM3 delivery service node setup and documentation</li>
@@ -1772,7 +1805,7 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
     <span>DM3</span>
     <span>RISC Zero</span>
     <span>Ledger</span>
-    <span>Swarm</span>
+
   </div>
 </div>
 

@@ -143,7 +143,6 @@ const PocAPI = (() => {
       name: status.agent_id,
       ens: status.ens_name,
       type: 'openclaw-agent',
-      typeIcon: '\u27C1',
       network: status.network,
       skills: status.allowed_tools || [],
       allowedTools: status.allowed_tools || [],
@@ -230,7 +229,7 @@ const PocAPI = (() => {
         <div class="poc-modal-footer">
           <div class="poc-help-text">
             <strong>How to start your agent:</strong><br>
-            <code>cd agent && AGENT_ID=my-agent ENS_NAME=my.proofclaw.eth PRIVATE_KEY=0x... cargo run</code>
+            <code>cd agent && AGENT_ID=my-agent ENS_NAME=my.proofofclaw.eth PRIVATE_KEY=0x... cargo run</code>
           </div>
         </div>
       </div>`;

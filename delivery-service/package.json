@@ -1,0 +1,15 @@
+{
+  "name": "proofclaw-dm3-delivery-service",
+  "version": "0.1.0",
+  "description": "Minimal DM3-compatible delivery service for Proof of Claw inter-agent messaging",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "uuid": "^9.0.0",
+    "ws": "^8.16.0"
+  }
+}

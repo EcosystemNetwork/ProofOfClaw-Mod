@@ -396,12 +396,18 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 /* ======================================== */
 @media (max-width: 768px) {
   :root { --sidebar-w: 0px; }
-  .sidebar { display: none; }
-  .topbar { left: 0; }
-  .main-content { margin-left: 0; }
+  .topbar { left: 0; padding: 0 1rem; }
+  .main-content { margin-left: 0; padding: 1.25rem 1rem; }
   .metrics-grid { grid-template-columns: 1fr; }
   .agent-header { flex-direction: column; }
   .agent-header-right { align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .topbar { height: 52px; }
+  .main-content { margin-top: 52px; padding: 1rem 0.75rem; }
+  .topbar-title { font-size: 0.9rem; }
+  .agent-selector { font-size: 0.7rem; padding: 0.3rem 0.5rem; min-width: 140px; max-width: 180px; }
 }
 
 /* ======================================== */
@@ -481,7 +487,7 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
       <span class="nav-icon">&#x2709;</span> Messages
     </a>
     <a href="proofs.html">
-      <span class="nav-icon">&#x27C1;</span> Proofs
+      <span class="nav-icon">&#x2731;</span> Proofs
     </a>
     <a href="kanban.html">
       <span class="nav-icon">&#x25A0;</span> Kanban
@@ -489,11 +495,14 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
     <a href="soul-vault.html">
       <span class="nav-icon">&#x2B23;</span> Soul Vault
     </a>
+    <a href="approve.html">
+      <span class="nav-icon">&#x2714;</span> Approve
+    </a>
   </nav>
 
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
-    <a href="soul-vault.html" class="sidebar-btn primary">+ New Agent</a>
+    <a href="agents.html" class="sidebar-btn primary">+ New Agent</a>
     <a href="index.html" class="sidebar-btn ghost">Back to Home</a>
   </div>
 </aside>
@@ -501,12 +510,15 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 <!-- ======================================== -->
 <!-- TOPBAR                                   -->
 <!-- ======================================== -->
+<div class="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
 <header class="topbar" role="banner">
   <div class="topbar-left">
+    <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="Open menu">&#9776;</button>
     <span class="topbar-title">Agent Dashboard</span>
-    <select id="agent-selector" class="agent-selector" aria-label="Select agent" onchange="switchAgent(this.value)">
-      <option value="">Loading...</option>
-    </select>
+    <div class="agent-search-wrap">
+      <input type="text" id="agent-selector" class="agent-selector" placeholder="Search ENS or agent name..." aria-label="Search agent by ENS name" autocomplete="off">
+    </div>
   </div>
   <div class="topbar-right">
     <button id="wallet-connect-btn" class="eth-badge" style="background:transparent;cursor:pointer;" onclick="connectWalletUI()">Connect Wallet</button>
@@ -530,6 +542,15 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 <!-- MAIN CONTENT                             -->
 <!-- ======================================== -->
 <main class="main-content" id="main-content" role="main">
+
+  <!-- Setup Checklist (hidden once complete) -->
+  <div id="setup-checklist" class="card" style="display:none; margin-bottom:1.75rem; border:1px solid rgba(0,229,255,0.2); background:linear-gradient(135deg, rgba(0,229,255,0.04), rgba(179,136,255,0.04));">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <div class="card-title" style="color:var(--cyan); margin-bottom:0;">Setup Checklist</div>
+      <span id="setup-progress" style="font-size:0.7rem; color:var(--text-dim);">0 / 5</span>
+    </div>
+    <div id="setup-items" style="display:flex; flex-direction:column; gap:0.5rem; font-size:0.82rem;"></div>
+  </div>
 
   <!-- Agent Header -->
   <div class="agent-header" id="agent-header">
@@ -666,7 +687,7 @@ const DEFAULT_AGENTS = [
     icon: '\u26A1',
     status: 'online',
     ens: 'alpha.proofclaw.eth',
-    endpoints: 'http://localhost:8420',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x9f3a...c4e1',
     desc: 'Primary fleet coordinator for multi-agent orchestration',
     skills: ['multi-agent','delegation','task-routing','typescript'],
@@ -682,7 +703,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCCA',
     status: 'online',
     ens: 'defi-scout.proofclaw.eth',
-    endpoints: 'http://localhost:8421',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x7b2e...a8d3',
     desc: 'DeFi market scanner and yield optimizer',
     skills: ['defi-protocols','uniswap','aave','data-analysis'],
@@ -698,7 +719,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDD12',
     status: 'busy',
     ens: 'sec-auditor.proofclaw.eth',
-    endpoints: 'http://localhost:8422',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x3d71...f5b9',
     desc: 'Smart contract security auditor',
     skills: ['solidity','security-audit','smart-contracts','slither'],
@@ -714,7 +735,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83C\uDF0F',
     status: 'online',
     ens: 'gov-delegate.proofclaw.eth',
-    endpoints: 'http://localhost:8423',
+    endpoints: 'http://localhost:4443',
     policyHash: '0xa4f8...2c67',
     desc: 'DAO governance participation agent',
     skills: ['governance','dao-voting','proposals','snapshot'],
@@ -730,7 +751,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCB0',
     status: 'offline',
     ens: 'yield-hunter.proofclaw.eth',
-    endpoints: 'http://localhost:8424',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x61c3...9ae4',
     desc: 'Cross-chain yield farming specialist',
     skills: ['yield-farming','liquidity','cross-chain','bridges'],
@@ -746,7 +767,7 @@ const DEFAULT_AGENTS = [
     icon: '\uD83D\uDCC8',
     status: 'online',
     ens: 'data-oracle.proofclaw.eth',
-    endpoints: 'http://localhost:8425',
+    endpoints: 'http://localhost:4443',
     policyHash: '0x2e89...b7f0',
     desc: 'On-chain data aggregation and analytics',
     skills: ['data-analysis','chainlink','the-graph','sql'],
@@ -1064,14 +1085,65 @@ function loadAgents() {
 }
 
 function populateSelector() {
-  const sel = document.getElementById('agent-selector');
-  sel.innerHTML = '';
-  agents.forEach(a => {
-    const opt = document.createElement('option');
-    opt.value = a.id;
-    opt.textContent = a.icon ? a.icon + ' ' + a.name : a.name;
-    if (currentAgent && a.id === currentAgent.id) opt.selected = true;
-    sel.appendChild(opt);
+  const input = document.getElementById('agent-selector');
+  const wrap = input.closest('.agent-search-wrap');
+
+  // Create dropdown
+  let dropdown = wrap.querySelector('.agent-search-dropdown');
+  if (!dropdown) {
+    dropdown = document.createElement('div');
+    dropdown.className = 'agent-search-dropdown';
+    wrap.appendChild(dropdown);
+  }
+
+  // Show current agent name in input
+  if (currentAgent) {
+    input.value = currentAgent.ens || currentAgent.name + '.proofofclaw.eth';
+  }
+
+  function renderDropdown(filter) {
+    const q = (filter || '').toLowerCase();
+    const matches = agents.filter(a => {
+      const ens = (a.ens || a.name + '.proofofclaw.eth').toLowerCase();
+      return !q || a.name.toLowerCase().includes(q) || ens.includes(q) || a.id.toLowerCase().includes(q);
+    });
+    dropdown.innerHTML = '';
+    matches.forEach(a => {
+      const item = document.createElement('div');
+      item.className = 'agent-search-item';
+      const ens = a.ens || a.name + '.proofofclaw.eth';
+      item.innerHTML = '<span>' + (a.icon ? a.icon + ' ' : '') + a.name + '</span><span class="ens-hint">' + ens + '</span>';
+      item.addEventListener('mousedown', function(e) {
+        e.preventDefault();
+        window.location.href = 'dashboard.html?agent=' + encodeURIComponent(a.id);
+      });
+      dropdown.appendChild(item);
+    });
+    dropdown.classList.toggle('open', matches.length > 0);
+  }
+
+  input.addEventListener('focus', function() {
+    input.select();
+    renderDropdown(input.value);
+  });
+
+  input.addEventListener('input', function() {
+    renderDropdown(input.value);
+  });
+
+  input.addEventListener('blur', function() {
+    dropdown.classList.remove('open');
+  });
+
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      const first = dropdown.querySelector('.agent-search-item');
+      if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+    }
+    if (e.key === 'Escape') {
+      dropdown.classList.remove('open');
+      input.blur();
+    }
   });
 }
 
@@ -1090,7 +1162,7 @@ function renderAgent() {
   // Header
   document.getElementById('agent-avatar').textContent = a.icon || '\u27C1';
   document.getElementById('agent-name').textContent = a.name;
-  document.getElementById('agent-ens').textContent = a.ens || a.name + '.proofclaw.eth';
+  document.getElementById('agent-ens').textContent = a.ens || a.name + '.proofofclaw.eth';
   document.getElementById('agent-type-badge').textContent = a.type || 'agent';
   document.getElementById('header-dot').className = 'status-dot' + (statusClass ? ' ' + statusClass : '');
   document.getElementById('header-status-text').textContent = statusLabel;
@@ -1102,7 +1174,7 @@ function renderAgent() {
 
   // Metrics - Agent Status card
   document.getElementById('metric-agent-id').textContent = a.id;
-  document.getElementById('metric-ens').textContent = a.ens || a.name + '.proofclaw.eth';
+  document.getElementById('metric-ens').textContent = a.ens || a.name + '.proofofclaw.eth';
   document.getElementById('metric-policy-hash').textContent = a.policyHash || '0x' + a.id.slice(0, 4) + '...' + a.id.slice(-4);
 
   // Set initial stats from agent data
@@ -1202,9 +1274,9 @@ function addActivity(type, title, description) {
 
 function seedActivity() {
   const a = currentAgent;
-  const ens = a.ens || a.name + '.proofclaw.eth';
+  const ens = a.ens || a.name + '.proofofclaw.eth';
   addActivity('proof', 'Proof Generated', 'Swap 100 USDC \u2192 ETH \u2022 Autonomous \u2022 2 min ago');
-  addActivity('message', 'DM3 Message Received', 'From bob.proofclaw.eth \u2022 5 min ago');
+  addActivity('message', 'DM3 Message Received', 'From bob.proofofclaw.eth \u2022 5 min ago');
   addActivity('approval', 'Ledger Approval Granted', 'Transfer 500 USDC \u2022 10 min ago');
   addActivity('proof', 'Proof Verified On-Chain', 'Query balance \u2022 Autonomous \u2022 18 min ago');
   addActivity('message', 'DM3 Message Sent', 'To ' + ens + ' \u2022 25 min ago');
@@ -1231,7 +1303,7 @@ function scheduleSimulations() {
 
   // Add message activity after 15 seconds
   activityTimers.push(setTimeout(function() {
-    addActivity('message', 'DM3 Message Received', 'From alpha.proofclaw.eth \u2022 Just now');
+    addActivity('message', 'DM3 Message Received', 'From alpha.proofofclaw.eth \u2022 Just now');
   }, 15000));
 
   // Add another proof after 22 seconds
@@ -1298,6 +1370,128 @@ function showEmptyState() {
       '<a href="agents.html" class="btn btn-primary" style="margin-top: 1rem;">Go to Agents</a>' +
     '</div>';
 }
+
+// =====================================================
+// SETUP CHECKLIST
+// =====================================================
+function runSetupChecklist() {
+  var BRIDGE_URL = window.POC_BRIDGE_URL || 'http://localhost:3002';
+  var RPC_URL = 'https://eth-sepolia.g.alchemy.com/v2/';
+  var WALLET_ADDR = '0x04E20e5AfC08759930846d72272b0d7d7D0d7C4b';
+
+  var checks = [
+    {
+      id: 'org',
+      label: 'Register organization',
+      test: function() { return !!getOrg(); },
+      action: 'showOrgRegistration()',
+      actionLabel: 'Register'
+    },
+    {
+      id: 'rpc',
+      label: 'Configure RPC endpoint',
+      test: function() {
+        // Check if agent API is reachable (implies RPC is set)
+        return PocAPI.isConnected();
+      },
+      action: 'PocAPI.showConnectModal()',
+      actionLabel: 'Connect Agent'
+    },
+    {
+      id: 'wallet',
+      label: 'Fund agent wallet',
+      sublabel: '<span style="font-family:var(--font-mono);font-size:10px;color:var(--cyan);user-select:all;">' + esc(WALLET_ADDR) + '</span> \u2014 send Sepolia ETH from a <a href="https://sepoliafaucet.com" target="_blank" rel="noopener" style="color:var(--cyan);">faucet</a>',
+      test: function() { return false; }, // async check below
+      asyncTest: function() {
+        var conn = PocAPI.getConnection();
+        if (!conn) return Promise.resolve(false);
+        return PocAPI.fetchStatus(conn.url)
+          .then(function(s) { return s && s.wallet_balance_wei && s.wallet_balance_wei !== '0'; })
+          .catch(function() { return false; });
+      },
+      actionLabel: 'Copy Address',
+      action: 'navigator.clipboard.writeText("' + WALLET_ADDR + '")'
+    },
+    {
+      id: 'bridge',
+      label: 'Swarm bridge running',
+      test: function() { return false; },
+      asyncTest: function() {
+        return fetch(BRIDGE_URL + '/health', { signal: AbortSignal.timeout(2000) })
+          .then(function(r) { return r.ok; })
+          .catch(function() { return false; });
+      },
+      actionLabel: 'Start Bridge',
+      action: 'alert("Run: make run-swarm-bridge")'
+    },
+    {
+      id: 'dm3',
+      label: 'DM3 delivery service running',
+      test: function() { return false; },
+      asyncTest: function() {
+        return fetch('http://localhost:3001/health', { signal: AbortSignal.timeout(2000) })
+          .then(function(r) { return r.ok; })
+          .catch(function() { return false; });
+      },
+      actionLabel: 'Start DM3',
+      action: 'alert("Run: make run-delivery-service")'
+    }
+  ];
+
+  var container = document.getElementById('setup-items');
+  var progressEl = document.getElementById('setup-progress');
+  var wrapper = document.getElementById('setup-checklist');
+  if (!container || !wrapper) return;
+
+  var completed = 0;
+  var total = checks.length;
+
+  function render() {
+    var html = '';
+    checks.forEach(function(c) {
+      var done = c._passed;
+      var icon = done
+        ? '<span style="color:var(--green);margin-right:8px;">&#x2713;</span>'
+        : '<span style="color:var(--text-dim);margin-right:8px;">&#x25CB;</span>';
+      var label = done
+        ? '<span style="color:var(--text-dim);text-decoration:line-through;">' + esc(c.label) + '</span>'
+        : '<span style="color:var(--text-primary);">' + esc(c.label) + '</span>';
+      var sub = c.sublabel && !done ? '<div style="margin-left:22px;margin-top:2px;font-size:11px;color:var(--text-secondary);">' + c.sublabel + '</div>' : '';
+      var btn = !done && c.action
+        ? ' <button onclick="' + c.action + '" style="margin-left:auto;padding:3px 10px;font-size:11px;background:var(--bg-card);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;">' + esc(c.actionLabel) + '</button>'
+        : '';
+      html += '<div style="display:flex;align-items:center;padding:6px 0;">' + icon + label + btn + '</div>' + sub;
+    });
+    container.innerHTML = html;
+    progressEl.textContent = completed + ' / ' + total;
+
+    if (completed >= total) {
+      wrapper.style.display = 'none';
+    } else {
+      wrapper.style.display = 'block';
+    }
+  }
+
+  // Run sync checks first
+  checks.forEach(function(c) {
+    c._passed = c.test();
+    if (c._passed) completed++;
+  });
+  render();
+
+  // Run async checks
+  var asyncChecks = checks.filter(function(c) { return c.asyncTest && !c._passed; });
+  if (asyncChecks.length === 0) return;
+
+  Promise.all(asyncChecks.map(function(c) {
+    return c.asyncTest().then(function(ok) {
+      if (ok) { c._passed = true; completed++; }
+    });
+  })).then(render);
+}
+
+// Run checklist after short delay to let other init run first
+setTimeout(runSetupChecklist, 500);
 
 // =====================================================
 // BOOT

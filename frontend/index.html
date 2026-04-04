@@ -22,7 +22,7 @@
 /* ========== NAVIGATION ========== */
 nav {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: 1.75rem; left: 0; right: 0;
   z-index: 100;
   padding: 1rem 2rem;
   display: flex;
@@ -2075,9 +2075,9 @@ footer {
   .nav-links { display: none; }
   .nav-actions .nav-badge:not(:first-child) { display: none; }
   .hamburger { display: flex; }
-  section { padding: 4rem 1.25rem; }
+  section { padding: 3rem 1.25rem; }
   .hero { padding: 7rem 1.25rem 3rem; }
-  .hero-stats { gap: 1.5rem; }
+  .hero-stats { gap: 1.5rem; flex-wrap: wrap; justify-content: center; }
   .hero-stat-value { font-size: 1.5rem; }
   .features-grid { grid-template-columns: 1fr; }
   .bounties-grid { grid-template-columns: 1fr; }
@@ -2087,12 +2087,22 @@ footer {
   .security-row { grid-template-columns: 1fr; }
   .security-threat { border-right: none; border-bottom: 1px solid var(--border); }
   .arch-modules { flex-direction: column; }
-  .sponsor-logos { gap: 1.5rem; }
+  .sponsor-logos { gap: 1.5rem; flex-wrap: wrap; }
   .team-grid { grid-template-columns: repeat(2, 1fr); }
+  .stack-grid { grid-template-columns: 1fr 1fr; }
+  .checklist { grid-template-columns: 1fr; }
+  .feature-card { padding: 1.5rem 1.25rem; }
+  .section-title { font-size: 1.5rem; }
 }
 
 @media (max-width: 480px) {
+  section { padding: 2.5rem 1rem; }
+  .hero { padding: 6rem 1rem 2.5rem; min-height: auto; }
+  .hero-solution { font-size: 1rem; }
   .team-grid { grid-template-columns: 1fr; }
+  .stack-grid { grid-template-columns: 1fr; }
+  .hero-actions { flex-direction: column; gap: 0.75rem; align-items: stretch; }
+  .nav-badge { font-size: 0.6rem; padding: 0.3rem 0.7rem; }
 }
 </style>
 </head>
@@ -2125,6 +2135,11 @@ footer {
 <div class="mobile-menu">
   <a href="agents.html">Launch App →</a>
   <a href="docs.html">Docs</a>
+</div>
+
+<!-- ========== PROTOTYPE BANNER ========== -->
+<div style="position:fixed;top:0;left:0;right:0;z-index:200;background:rgba(255,183,77,0.12);border-bottom:1px solid rgba(255,183,77,0.3);padding:0.5rem 1rem;text-align:center;font-size:0.75rem;color:#ffb74d;font-family:var(--font-mono);letter-spacing:0.04em;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">
+  Prototype / Testnet Only — Core security modules use mock implementations. Contracts unaudited. Not for production use.
 </div>
 
 <!-- ========== HERO ========== -->

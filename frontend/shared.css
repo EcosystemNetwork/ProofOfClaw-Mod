@@ -333,7 +333,11 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
   gap: 1rem;
 }
 
-/* ── Agent Selector ── */
+/* ── Agent Search ── */
+.agent-search-wrap {
+  position: relative;
+}
+
 .agent-selector {
   background: var(--bg-card);
   border: 1px solid var(--border);
@@ -342,24 +346,57 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
   color: var(--text-primary);
   font-family: var(--font-mono);
   font-size: 0.8rem;
-  cursor: pointer;
   outline: none;
   transition: border-color 0.2s;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238892a4'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.6rem center;
-  padding-right: 2rem;
+  min-width: 220px;
+}
+
+.agent-selector::placeholder {
+  color: var(--text-dim);
 }
 
 .agent-selector:focus {
   border-color: var(--cyan);
 }
 
-.agent-selector option {
+.agent-search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 200;
+  display: none;
+}
+
+.agent-search-dropdown.open {
+  display: block;
+}
+
+.agent-search-item {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
   color: var(--text-primary);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.agent-search-item:hover,
+.agent-search-item.active {
+  background: var(--cyan-glow);
+}
+
+.agent-search-item .ens-hint {
+  color: var(--text-dim);
+  font-size: 0.7rem;
 }
 
 /* ================================================================
@@ -710,6 +747,43 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
   padding: 24px;
 }
 
+/* ── Organization Badge ── */
+.org-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.08), rgba(179, 136, 255, 0.08));
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  border-radius: 100px;
+  cursor: default;
+  transition: all 0.2s;
+}
+
+.org-badge:hover {
+  border-color: rgba(0, 229, 255, 0.4);
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.1);
+}
+
+.org-badge-icon {
+  font-size: 14px;
+  color: var(--cyan);
+}
+
+.org-badge-name {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.org-badge-ens {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--cyan);
+  opacity: 0.7;
+}
+
 /* ── Pulse Animation ── */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
@@ -723,9 +797,64 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 }
 
 /* ================================================================
+   MOBILE HAMBURGER BUTTON (sidebar pages)
+   ================================================================ */
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.mobile-menu-btn:hover {
+  color: var(--cyan);
+  border-color: var(--border-cyan);
+}
+
+/* Mobile sidebar overlay */
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 299;
+}
+
+.sidebar-overlay.active {
+  display: block;
+}
+
+/* ================================================================
+   LANDING NAV — MOBILE
+   ================================================================ */
+@media (max-width: 768px) {
+  .landing-nav {
+    padding: 0.75rem 1rem;
+  }
+  .landing-nav .nav-links {
+    display: none;
+  }
+  .landing-nav .nav-actions .nav-badge:not(:first-child) {
+    display: none;
+  }
+}
+
+/* ================================================================
    RESPONSIVE - MOBILE SIDEBAR
    ================================================================ */
 @media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: flex;
+  }
   .sidebar {
     transform: translateX(-100%);
     z-index: 300;
@@ -738,8 +867,48 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
   }
   .topbar {
     left: 0 !important;
+    padding: 0 1rem;
   }
   .sidebar-toggle {
     display: none;
+  }
+  /* Cards */
+  .card {
+    padding: 1rem;
+  }
+  /* Modals */
+  .modal-overlay {
+    padding: 20px 12px;
+  }
+  .modal {
+    max-width: 100%;
+    border-radius: 12px;
+  }
+  .modal-header {
+    padding: 16px 18px;
+  }
+  .modal-body {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar {
+    padding: 0 0.75rem;
+    height: 52px;
+  }
+  .topbar-title {
+    font-size: 0.95rem;
+  }
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.75rem;
+  }
+  .badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.6rem;
+  }
+  .modal-header h2 {
+    font-size: 16px;
   }
 }

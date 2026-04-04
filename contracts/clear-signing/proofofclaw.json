@@ -4,6 +4,10 @@
     "eip155": {
       "deployments": [
         {
+          "chainId": 16602,
+          "address": "0xa2Df3F3998FdF9Fb7E11e43d10d6B3C62264e3A4"
+        },
+        {
           "chainId": 11155111,
           "address": "0x0000000000000000000000000000000000000000"
         }
@@ -13,7 +17,7 @@
   "metadata": {
     "owner": "Proof of Claw",
     "info": {
-      "url": "https://proofclaw.eth",
+      "url": "https://proofofclaw.eth",
       "legalName": "Proof of Claw"
     }
   },

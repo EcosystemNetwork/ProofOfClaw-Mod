@@ -89,7 +89,7 @@ contract ProofOfClawINFT {
     /// @param riscZeroImageId RISC Zero guest image ID commitment
     /// @param encryptedURI 0G Storage URI containing encrypted agent metadata
     /// @param metadataHash keccak256 of the plaintext metadata for integrity
-    /// @param ensName Agent's ENS subname (e.g., "alice.proofclaw.eth")
+    /// @param ensName Agent's ENS subname (e.g., "alice.proofofclaw.eth")
     /// @return tokenId The minted token ID
     function mint(
         bytes32 agentId,
