@@ -1684,9 +1684,14 @@
 </div>
 
 <script type="module" src="viem-client.js"></script>
+<script type="module" src="config-validator.js"></script>
+<script type="module" src="0g-registration.js"></script>
 <script src="wallet.js"></script>
 <script src="shared.js"></script>
-<script>
+<script type="module">
+import { configValidator, generateENS } from './config-validator.js';
+import { agentRegistration, ZERO_G_CONFIG } from './0g-registration.js';
+
 // ═══════════════════════════════════════
 // DATA & STATE
 // ═══════════════════════════════════════
@@ -3241,31 +3246,100 @@ async function doOnchainDeploy() {
   }
 
   // Switch to correct network
-  const network = wizardData.network || 'sepolia';
+  const network = wizardData.network || 'og_testnet';
   await window.PocViem.switchNetwork(network);
   window.PocViem.init(network);
 
-  // Prepare agent config
+  // Prepare agent config for robust registration
   const agentConfig = {
-    name: wizardData.name,
-    ens: wizardData.ens,
+    agentName: wizardData.name,
+    ensName: wizardData.ens,
     network: network,
     allowedTools: wizardData.allowedTools || ['swap_tokens', 'transfer', 'query'],
     valueLimit: wizardData.valueLimit || 100,
     endpoints: wizardData.endpoints || '',
     description: wizardData.description || '',
+    skills: wizardData.skills || [],
+    maxTasks: wizardData.maxTasks || 5,
+    soulPersona: wizardData.soulPersona || ''
   };
 
-  // Execute onchain registration
-  const result = await window.PocViem.registerAgentOnchain(agentConfig);
+  // Create registration session
+  const sessionId = agentRegistration.createSession(agentConfig);
+  
+  // Subscribe to progress updates
+  agentRegistration.onStatusChange(sessionId, (session) => {
+    updateDeployProgressUI(session);
+  });
+
+  // Prepare metadata
+  const metadata = {
+    ...agentConfig,
+    createdAt: new Date().toISOString(),
+    version: '1.0'
+  };
+
+  // Execute registration
+  const result = await agentRegistration.executeFullRegistration(
+    sessionId,
+    null, // wallet client - handled by viem
+    null, // public client - handled by viem
+    metadata
+  );
+
+  if (!result.success) {
+    throw new Error(result.error || 'Registration failed');
+  }
 
   return {
-    tokenId: result.tokenId,
-    txHash: result.txHash,
-    agentId: result.agentId,
-    policyHash: result.policyHash,
-    contractAddress: result.address,
+    tokenId: result.results.onchain?.tokenId,
+    txHash: result.results.onchain?.txHash,
+    agentId: result.results.onchain?.agentId,
+    policyHash: result.results.onchain?.policyHash,
+    contractAddress: result.results.onchain?.contractAddress,
+    storageRoot: result.results.storage?.rootHash,
+    dm3Profile: result.results.dm3
   };
+}
+
+// Update deploy progress UI based on session status
+function updateDeployProgressUI(session) {
+  const steps = document.querySelectorAll('.deploy-step-item');
+  
+  switch (session.status) {
+    case 'validating':
+      updateStepStatus(steps, 0, 'active');
+      break;
+    case 'uploading':
+      updateStepStatus(steps, 0, 'done');
+      updateStepStatus(steps, 1, 'active');
+      break;
+    case 'registering':
+      updateStepStatus(steps, 1, 'done');
+      updateStepStatus(steps, 2, 'active');
+      break;
+    case 'confirming':
+      updateStepStatus(steps, 2, 'done');
+      updateStepStatus(steps, 3, 'active');
+      break;
+    case 'completed':
+      steps.forEach(s => {
+        s.classList.remove('active');
+        s.classList.add('done');
+        s.querySelector('.step-icon').innerHTML = '\u2713';
+      });
+      break;
+  }
+}
+
+function updateStepStatus(steps, idx, status) {
+  if (status === 'active') {
+    steps[idx]?.classList.add('active');
+  } else if (status === 'done') {
+    steps[idx]?.classList.remove('active');
+    steps[idx]?.classList.add('done');
+    if (steps[idx]) steps[idx].querySelector('.step-icon').innerHTML = '\u2713';
+  }
 }
 
 // ═══════════════════════════════════════

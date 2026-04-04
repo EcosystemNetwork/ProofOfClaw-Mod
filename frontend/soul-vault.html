@@ -523,9 +523,14 @@ body.sidebar-collapsed .main-content { margin-left: 60px; }
 </main>
 
 <script type="module" src="viem-client.js"></script>
+<script type="module" src="config-validator.js"></script>
+<script type="module" src="0g-registration.js"></script>
 <script src="wallet.js"></script>
 <script src="shared.js"></script>
-<script>
+<script type="module">
+import { configValidator, generateENS } from './config-validator.js';
+import { agentRegistration, ZERO_G_CONFIG } from './0g-registration.js';
+
 // ═══════════════════════════════════════
 // DATA & STATE
 // ═══════════════════════════════════════
@@ -571,10 +576,98 @@ function init() {
   renderTypeGrid();
   renderSkillTags();
   bindNameField();
+  bindValidationEvents();
+  
   // Check URL param for mode
   const params = new URLSearchParams(window.location.search);
   if (params.get('mode') === 'deploy') setVaultMode('deploy');
+  
+  // Default to 0G Testnet
+  document.getElementById('agent-network').value = 'og_testnet';
+  
   updateWizardUI();
+}
+
+// Bind real-time validation events
+function bindValidationEvents() {
+  // Agent name validation
+  const nameEl = document.getElementById('agent-name');
+  nameEl?.addEventListener('blur', () => {
+    const result = configValidator.validateField('agentName', nameEl.value.trim());
+    showFieldValidation('agent-name', result);
+  });
+  nameEl?.addEventListener('input', () => {
+    validateStep(); // Live validation for next button
+  });
+
+  // ENS validation
+  const ensEl = document.getElementById('agent-ens');
+  ensEl?.addEventListener('blur', () => {
+    const val = ensEl.value.trim() || generateENS(nameEl?.value || '');
+    const result = configValidator.validateField('ensName', val);
+    showFieldValidation('agent-ens', result);
+  });
+
+  // Private key validation (step 5)
+  const pkEl = document.getElementById('private-key');
+  pkEl?.addEventListener('blur', () => {
+    const val = pkEl.value.trim();
+    if (val) {
+      const result = configValidator.validateField('privateKey', val);
+      showFieldValidation('private-key', result, true);
+    }
+  });
+
+  // Value limit validation
+  const limitEl = document.getElementById('value-limit');
+  limitEl?.addEventListener('blur', () => {
+    const result = configValidator.validateField('valueLimit', limitEl.value);
+    showFieldValidation('value-limit', result);
+  });
+
+  // Endpoints validation
+  const endpointsEl = document.getElementById('endpoints');
+  endpointsEl?.addEventListener('blur', () => {
+    const result = configValidator.validateField('endpoints', endpointsEl.value.trim());
+    showFieldValidation('endpoints', result);
+  });
+
+  // Network selection - show contract info
+  const networkEl = document.getElementById('agent-network');
+  networkEl?.addEventListener('change', () => {
+    const network = networkEl.value;
+    const is0G = network.includes('og_');
+    
+    // Update UI to indicate 0G network
+    if (is0G) {
+      showNetworkInfo(network);
+    }
+  });
+}
+
+// Show network-specific information
+function showNetworkInfo(networkId) {
+  const network = ZERO_G_CONFIG[networkId.includes('mainnet') ? 'mainnet' : 'testnet'];
+  if (!network) return;
+
+  // Remove old info
+  document.querySelectorAll('.network-info').forEach(el => el.remove());
+
+  const infoEl = document.createElement('div');
+  infoEl.className = 'network-info info-box';
+  infoEl.innerHTML = `
+    <strong>0G Network Selected:</strong> ${network.name}<br>
+    <span style="font-size:11px;">
+      Chain ID: ${network.chainId} | 
+      Currency: ${network.nativeCurrency.symbol} |
+      RPC: ${network.rpcUrl}
+    </span>
+  `;
+
+  const networkParent = document.getElementById('agent-network')?.closest('.form-group');
+  if (networkParent) {
+    networkParent.appendChild(infoEl);
+  }
 }
 
 function setVaultMode(mode) {
@@ -685,12 +778,63 @@ function validateStep() {
   const stepNum = getStepNumber();
 
   switch(stepNum) {
-    case 1: valid = wizardData.type !== null; break;
-    case 2: valid = document.getElementById('agent-name').value.trim().length > 0; break;
-    case 5: valid = true; break;
+    case 1: 
+      valid = wizardData.type !== null; 
+      break;
+    case 2: 
+      const nameVal = document.getElementById('agent-name').value.trim();
+      const ensVal = document.getElementById('agent-ens').value.trim();
+      const nameValid = configValidator.validateField('agentName', nameVal);
+      const ensValid = configValidator.validateField('ensName', ensVal || generateENS(nameVal));
+      valid = nameValid.valid && (ensVal ? ensValid.valid : true);
+      showFieldValidation('agent-name', nameValid);
+      if (ensVal) showFieldValidation('agent-ens', ensValid);
+      break;
+    case 4:
+      const limitVal = document.getElementById('value-limit').value;
+      const limitValid = configValidator.validateField('valueLimit', limitVal);
+      valid = limitValid.valid;
+      break;
+    case 5: 
+      const pkVal = document.getElementById('private-key').value.trim();
+      const pkValid = configValidator.validateField('privateKey', pkVal || null);
+      valid = pkVal === '' || pkValid.valid; // Private key is optional
+      showFieldValidation('private-key', pkValid, true); // Show warnings but allow
+      break;
   }
 
   btnNext.disabled = !valid;
+}
+
+// Show validation feedback on form fields
+function showFieldValidation(fieldId, validation, allowWarnings = false) {
+  const field = document.getElementById(fieldId);
+  if (!field) return;
+  
+  const parent = field.closest('.form-group');
+  if (!parent) return;
+  
+  // Remove old validation messages
+  parent.querySelectorAll('.validation-msg').forEach(el => el.remove());
+  parent.classList.remove('valid', 'invalid', 'warning');
+  
+  if (!validation.valid) {
+    parent.classList.add('invalid');
+    const msg = document.createElement('div');
+    msg.className = 'validation-msg error';
+    msg.style.cssText = 'font-size:11px;color:var(--red);margin-top:4px;';
+    msg.textContent = validation.errors?.[0] || 'Invalid input';
+    parent.appendChild(msg);
+  } else if (validation.warnings?.length && !allowWarnings) {
+    parent.classList.add('warning');
+    const msg = document.createElement('div');
+    msg.className = 'validation-msg warning';
+    msg.style.cssText = 'font-size:11px;color:var(--amber);margin-top:4px;';
+    msg.textContent = validation.warnings[0];
+    parent.appendChild(msg);
+  } else if (validation.valid) {
+    parent.classList.add('valid');
+  }
 }
 
 function wizardNext() {
@@ -964,9 +1108,9 @@ function deployComplete() {
   `;
 }
 
-// ─── Register (identity only, no deploy) ───
+// ─── Register (identity only, with 0G chain integration) ───
 
-function startRegister() {
+async function startRegister() {
   gatherStepData();
 
   const footer = document.getElementById('vault-footer');
@@ -974,64 +1118,187 @@ function startRegister() {
   footer.style.display = 'none';
   wizardProgress.style.display = 'none';
 
-  // Hide current step, show register success
+  // Hide current step
   for (let i = 1; i <= 6; i++) {
     document.getElementById('step-' + i).classList.remove('active');
   }
 
-  const agentId = wizardData.name.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'agent-' + Date.now();
-  const demoPolicyHash = '0x' + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join('');
+  // Show registration progress
+  const successEl = document.getElementById('deploy-success');
+  successEl.classList.add('active');
+  successEl.querySelector('.success-icon').innerHTML = '<div style="animation:spin 1s linear infinite;">&#x2699;</div>';
+  successEl.querySelector('h3').textContent = 'Registering on 0G Chain...';
+  document.getElementById('success-message').textContent = 'Validating configuration and preparing on-chain registration...';
 
+  try {
+    // Check wallet connection
+    if (!window.PocViem) {
+      throw new Error('Blockchain module not loaded. Please refresh and try again.');
+    }
+
+    const walletState = window.PocViem.getWalletState();
+    if (!walletState.connected) {
+      await connectWalletUI();
+      if (!window.PocViem.getWalletState().connected) {
+        throw new Error('Wallet connection required for registration');
+      }
+    }
+
+    // Switch to target network
+    const network = wizardData.network || 'og_testnet';
+    await window.PocViem.switchNetwork(network);
+    window.PocViem.init(network);
+
+    // Prepare agent configuration
+    const agentConfig = {
+      agentName: wizardData.name,
+      ensName: wizardData.ens,
+      network: network,
+      description: wizardData.description,
+      skills: wizardData.skills,
+      maxTasks: wizardData.maxTasks,
+      soulPersona: wizardData.soulPersona,
+      allowedTools: wizardData.allowedTools,
+      valueLimit: wizardData.valueLimit,
+      endpoints: wizardData.endpoints
+    };
+
+    // Create registration session
+    const sessionId = agentRegistration.createSession(agentConfig);
+    
+    // Subscribe to progress updates
+    agentRegistration.onStatusChange(sessionId, (session) => {
+      updateRegistrationUI(session);
+    });
+
+    // Execute registration
+    const metadata = {
+      ...agentConfig,
+      createdAt: new Date().toISOString(),
+      version: '1.0'
+    };
+
+    const result = await agentRegistration.executeFullRegistration(
+      sessionId,
+      null, // wallet client - handled by viem
+      null, // public client - handled by viem
+      metadata
+    );
+
+    if (result.success) {
+      completeRegistration(result, agentConfig);
+    } else {
+      handleRegistrationError(result);
+    }
+
+  } catch (error) {
+    handleRegistrationError({ error: error.message });
+  }
+}
+
+// Update UI during registration progress
+function updateRegistrationUI(session) {
+  const msgEl = document.getElementById('success-message');
+  const h3El = document.querySelector('#deploy-success h3');
+  
+  switch (session.status) {
+    case 'validating':
+      h3El.textContent = 'Validating Configuration...';
+      msgEl.textContent = `Validation: ${session.progress.validation}% complete`;
+      break;
+    case 'uploading':
+      h3El.textContent = 'Uploading to 0G Storage...';
+      msgEl.textContent = `Storage upload: ${session.progress.upload}% complete`;
+      break;
+    case 'registering':
+      h3El.textContent = 'Registering on 0G Chain...';
+      msgEl.textContent = `On-chain registration: ${session.progress.registration}% complete`;
+      break;
+    case 'confirming':
+      h3El.textContent = 'Waiting for Confirmation...';
+      msgEl.textContent = `Transaction confirmation: ${session.progress.confirmation}% complete`;
+      break;
+    case 'completed':
+      h3El.textContent = 'Registration Complete!';
+      msgEl.textContent = 'Your agent identity is now registered on 0G Chain.';
+      break;
+    case 'failed':
+      h3El.textContent = 'Registration Failed';
+      msgEl.textContent = session.errors.join(', ');
+      break;
+  }
+}
+
+// Complete successful registration
+function completeRegistration(result, config) {
+  const { results } = result;
+  
+  const agentId = config.agentName.toLowerCase().replace(/[^a-z0-9-]/g, '') || 'agent-' + Date.now();
+  
   const newAgent = {
     id: agentId,
-    name: wizardData.name,
-    ens: wizardData.ens,
+    name: config.agentName,
+    ens: config.ensName,
     type: wizardData.type,
     typeIcon: wizardData.typeIcon,
-    network: wizardData.network,
-    skills: wizardData.skills,
-    allowedTools: wizardData.allowedTools,
-    valueLimit: wizardData.valueLimit,
-    endpoints: wizardData.endpoints,
+    typeName: wizardData.typeName,
+    network: config.network,
+    skills: config.skills,
+    allowedTools: config.allowedTools,
+    valueLimit: config.valueLimit,
+    endpoints: config.endpoints,
     status: 'registered',
     origin: 'registered',
     deployedAt: new Date().toISOString(),
-    description: wizardData.description || '',
-    policyHash: demoPolicyHash,
+    description: config.description || '',
+    // On-chain data
+    policyHash: results.onchain?.policyHash,
+    agentId: results.onchain?.agentId,
+    txHash: results.onchain?.txHash,
+    tokenId: results.onchain?.tokenId,
+    // 0G Storage
+    storageRoot: results.storage?.rootHash,
+    // DM3
+    dm3Profile: results.dm3,
     stats: { actions: 0, proofs: 0, uptime: '-' }
   };
 
+  // Save to localStorage
   let agents = [];
   try { agents = JSON.parse(localStorage.getItem('poc_agents')) || []; } catch(e) { agents = []; }
   agents.push(newAgent);
   localStorage.setItem('poc_agents', JSON.stringify(agents));
 
-  document.getElementById('vault-title').textContent = 'Agent Registered!';
-
-  // Show success in the deploy-success container (reuse the UI)
+  // Update UI
   const successEl = document.getElementById('deploy-success');
-  successEl.classList.add('active');
   successEl.querySelector('.success-icon').innerHTML = '&#x2705;';
-  successEl.querySelector('h3').textContent = 'Identity Registered';
-  document.getElementById('success-message').textContent =
-    `${newAgent.name} (${newAgent.ens}) is registered on-chain with policy hash committed.`;
+  successEl.querySelector('h3').textContent = 'Identity Registered on 0G Chain!';
+  document.getElementById('success-message').textContent = 
+    `${newAgent.name} is now registered with on-chain identity.`;
+
+  // Build explorer link
+  const network = config.network.includes('mainnet') ? 'mainnet' : 'testnet';
+  const explorerBase = network === 'mainnet' ? 'https://chainscan.0g.ai' : 'https://chainscan-dev.0g.ai';
+  const txUrl = results.onchain?.txHash ? `${explorerBase}/tx/${results.onchain.txHash}` : null;
 
   document.getElementById('success-links').innerHTML = `
     <div style="text-align:left;width:100%;margin-bottom:16px;">
       <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px;">
-        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Registration Summary</div>
+        <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">0G Chain Registration</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
           <div><span style="color:var(--text-dim);">Agent ID:</span> <strong style="color:var(--text-primary);">${esc(agentId)}</strong></div>
           <div><span style="color:var(--text-dim);">ENS:</span> <strong style="color:var(--cyan);">${esc(newAgent.ens)}</strong></div>
-          <div><span style="color:var(--text-dim);">Type:</span> ${esc(wizardData.typeName || wizardData.type)}</div>
-          <div><span style="color:var(--text-dim);">Network:</span> ${esc(newAgent.network)}</div>
-          <div style="grid-column:1/-1;"><span style="color:var(--text-dim);">Policy Hash:</span> <span style="font-family:var(--font-mono);font-size:10px;color:var(--cyan);">${esc(demoPolicyHash.slice(0,18))}...</span></div>
+          <div><span style="color:var(--text-dim);">Network:</span> ${esc(config.network)}</div>
+          <div><span style="color:var(--text-dim);">Token ID:</span> <span style="color:var(--amber);">#${esc(String(results.onchain?.tokenId || '—'))}</span></div>
+          ${results.onchain?.txHash ? `<div style="grid-column:1/-1;"><span style="color:var(--text-dim);">Transaction:</span> <a href="${esc(txUrl)}" target="_blank" style="color:var(--cyan);font-family:var(--font-mono);font-size:10px;">${esc(results.onchain.txHash.slice(0,20))}... &#x2197;</a></div>` : ''}
+          ${results.dm3?.setup ? `<div style="grid-column:1/-1;"><span style="color:var(--green);">&#x2713;</span> <span style="color:var(--text-secondary);">DM3 messaging profile configured</span></div>` : ''}
         </div>
       </div>
 
       <div style="background:rgba(187,134,252,0.08);border:1px solid rgba(187,134,252,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
         <div style="font-size:13px;font-weight:600;color:#bb86fc;margin-bottom:8px;">Next Steps</div>
         <ol style="font-size:12px;color:var(--text-secondary);line-height:1.8;padding-left:20px;margin:0;">
+          <li>Your agent identity is committed on 0G Chain with policy hash</li>
           <li>Build your agent using any framework (Python, Node, Go, Rust...)</li>
           <li>Implement the <a href="docs.html#agent-api-spec" style="color:var(--cyan);">Agent API Spec</a> endpoints</li>
           <li>Go to <a href="agents.html" style="color:var(--cyan);">Agents</a> and click <strong>Connect Agent</strong> to link your running agent</li>
@@ -1045,6 +1312,44 @@ function startRegister() {
     </div>
   `;
 }
+
+// Handle registration errors
+function handleRegistrationError(result) {
+  const successEl = document.getElementById('deploy-success');
+  successEl.querySelector('.success-icon').innerHTML = '&#x26A0;';
+  successEl.querySelector('h3').textContent = 'Registration Failed';
+  
+  const errorMsg = result.error || result.errors?.join(', ') || 'Unknown error';
+  document.getElementById('success-message').textContent = errorMsg;
+
+  document.getElementById('success-links').innerHTML = `
+    <div style="text-align:left;width:100%;margin-bottom:16px;">
+      <div style="background:rgba(255,61,90,0.08);border:1px solid rgba(255,61,90,0.3);border-radius:8px;padding:16px;margin-bottom:16px;">
+        <div style="font-size:11px;color:var(--red);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Error Details</div>
+        <div style="font-size:12px;color:var(--text-secondary);line-height:1.6;">${esc(errorMsg)}</div>
+        ${result.warnings?.length ? `
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--amber);margin-bottom:6px;">Warnings:</div>
+          ${result.warnings.map(w => `<div style="font-size:11px;color:var(--text-dim);">&#x26A0; ${esc(w)}</div>`).join('')}
+        </div>
+        ` : ''}
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;width:100%;flex-wrap:wrap;">
+      <button class="btn-wizard btn-wizard-next" style="flex:1;" onclick="retryRegistration()">Retry</button>
+      <button class="btn-wizard btn-wizard-back" style="flex:1;" onclick="resetVault()">Start Over</button>
+    </div>
+  `;
+}
+
+// Retry registration
+function retryRegistration() {
+  document.getElementById('deploy-success').classList.remove('active');
+  document.getElementById('wizard-progress').style.display = 'flex';
+  document.getElementById('vault-footer').style.display = 'flex';
+  updateWizardUI();
+}
+
 
 function resetVault() {
   wizardStep = 1;
