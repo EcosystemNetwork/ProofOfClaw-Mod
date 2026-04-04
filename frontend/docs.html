@@ -1610,6 +1610,10 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
 </div>
 
 <!-- STATUS -->
+<p class="fade-in" style="padding:1rem 1.25rem;border:1px solid rgba(255,183,77,0.3);border-radius:8px;background:rgba(255,183,77,0.06);color:var(--text-secondary);font-size:0.85rem;margin-bottom:1.5rem;">
+  <strong style="color:#ffb74d;">Prototype Notice</strong> &mdash; Proof of Claw is under active development. Core security modules (ZK proofs, Ledger approval) use mock/stub implementations. Contracts are unaudited and not deployed to mainnet. Do not use with real funds.
+</p>
+
 <h2 id="status" class="section-anchor fade-in"><span class="section-icon icon-green">&#x2714;</span> What's Working</h2>
 
 <div class="status-grid fade-in">
@@ -1624,9 +1628,9 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
     <span class="status-detail">Tool allowlist enforcement, value threshold checks, severity levels (Block/Warn/Sanitize/Pass).</span>
   </div>
   <div class="status-row">
-    <span class="status-badge working">Working</span>
+    <span class="status-badge working">Basic</span>
     <span class="status-name">Injection Detector</span>
-    <span class="status-detail">Regex-based prompt injection detection with case-insensitive matching.</span>
+    <span class="status-detail">12 regex patterns with case-insensitive matching. Catches obvious attacks; not robust against paraphrasing, encoding, or multi-turn evasion.</span>
   </div>
   <div class="status-row">
     <span class="status-badge working">Working</span>
@@ -1664,14 +1668,14 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
     <span class="status-detail">Agent minting with encrypted metadata on 0G Storage.</span>
   </div>
   <div class="status-row">
-    <span class="status-badge working">Working</span>
+    <span class="status-badge partial">Mock</span>
     <span class="status-name">Proof Generator</span>
-    <span class="status-detail">Supports Boundless (remote), local RISC Zero, and mock (dev) backends.</span>
+    <span class="status-detail">Currently produces SHA-256 mock receipts. Boundless and local RISC Zero backends exist but are not wired end-to-end.</span>
   </div>
   <div class="status-row">
-    <span class="status-badge working">Working</span>
+    <span class="status-badge partial">Compiles</span>
     <span class="status-name">Smart Contracts</span>
-    <span class="status-detail">ProofOfClawVerifier, EIP8004Integration, ProofOfClawINFT &mdash; all compile with Foundry.</span>
+    <span class="status-detail">ProofOfClawVerifier, EIP8004Integration, ProofOfClawINFT &mdash; compile with Foundry. No test suite yet. Unaudited.</span>
   </div>
   <div class="status-row">
     <span class="status-badge working">Working</span>
@@ -1681,7 +1685,7 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
   <div class="status-row">
     <span class="status-badge working">Working</span>
     <span class="status-name">Frontend UI</span>
-    <span class="status-detail">All 7 pages functional. Live API mode + mock fallback. Search, copy, responsive design.</span>
+    <span class="status-detail">All 7 pages functional. Live API mode + mock fallback. Contract addresses are zeroed (not yet deployed). Search, copy, responsive design.</span>
   </div>
   <div class="status-row">
     <span class="status-badge working">Working</span>
@@ -1733,6 +1737,8 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
   <li><span class="todo-priority high">High</span> Write Foundry contract tests (<code>contracts/test/</code>)</li>
   <li><span class="todo-priority high">High</span> Wire RISC Zero host to accept real execution traces from the agent</li>
   <li><span class="todo-priority high">High</span> Deploy contracts to testnet and update ERC-7730 metadata with real addresses</li>
+  <li><span class="todo-priority high">High</span> Production RISC Zero proof generation via Boundless (replace mock SHA-256 receipts)</li>
+  <li><span class="todo-priority high">High</span> Remove hardcoded demo private key fallback in server &mdash; refuse startup when <code>PRIVATE_KEY</code> is missing in non-mock mode</li>
 </ul>
 
 <h3 class="fade-in">Medium Priority</h3>
@@ -1746,7 +1752,6 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
 
 <h3 class="fade-in">Nice to Have</h3>
 <ul class="todo-list fade-in">
-  <li><span class="todo-priority nice">Nice</span> Production RISC Zero proof generation via Boundless (currently mock in dev)</li>
   <li><span class="todo-priority nice">Nice</span> Multi-chain deployment scripts and ERC-7730 metadata</li>
   <li><span class="todo-priority nice">Nice</span> Agent dashboard real-time WebSocket updates (currently polling)</li>
   <li><span class="todo-priority nice">Nice</span> DM3 delivery service node setup and documentation</li>

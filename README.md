@@ -4,6 +4,8 @@
 
 > Autonomous AI agents with cryptographically provable behavior, end-to-end encrypted communication, and hardware-signed human approval.
 
+> **⚠ Prototype / Testnet Only** — This project is under active development. Core security modules (ZK proof generation, Ledger approval, on-chain verification) currently use mock or stub implementations. Contracts are unaudited and not deployed to mainnet. Do not use with real funds or in production environments.
+
 ---
 
 ## Overview
@@ -242,6 +244,8 @@ cd zkvm && cargo build --release
 
 ### Run
 
+> **Warning:** The private key below is a well-known Hardhat/Anvil test key. Never use it on mainnet or with real funds. If `PRIVATE_KEY` is omitted, the server falls back to a hardcoded demo key — this is only safe for local development.
+
 ```bash
 # Terminal 1: Start the agent
 cd agent && AGENT_ID=my-agent ENS_NAME=my-agent.proofofclaw.eth \
@@ -273,34 +277,36 @@ forge script script/Deploy.s.sol --rpc-url $RPC_URL --broadcast --private-key $P
 | Integration | Purpose | Status |
 |-------------|---------|--------|
 | **0G Compute** | Private LLM inference with attestation | Working — real HTTP + attestation extraction |
-| **0G Storage** | Decentralized execution trace storage | Working — upload/retrieve with content hashing |
+| **0G Storage** | Decentralized execution trace storage | Working — upload/retrieve with content hashing (local fallback when offline) |
 | **ENS** | Agent identity via subnames | Working — on-chain namehash + text records |
 | **DM3** | End-to-end encrypted messaging | Working — 3-tier resolution (ENS → HTTP → fallback) |
-| **RISC Zero** | ZK proofs of policy compliance | Working — guest/host programs + Boundless |
-| **Ledger** | Hardware-gated human approval | Stub — needs real DMK/DSK integration |
-| **EIP-8004** | Trustless agent discovery & reputation | Working — identity, reputation, validation queries |
-| **iNFT (ERC-7857)** | Agent identity NFT on 0G Chain | Working — minting, metadata, proof recording |
+| **RISC Zero** | ZK proofs of policy compliance | **Mock** — guest/host programs exist but agent uses SHA-256 mock receipts in dev; Boundless not yet wired end-to-end |
+| **Ledger** | Hardware-gated human approval | **Stub** — always returns `Ok(true)`; no real device communication |
+| **EIP-8004** | Trustless agent discovery & reputation | Working — identity, reputation, validation queries (contracts unaudited) |
+| **iNFT (ERC-7857)** | Agent identity NFT on 0G Chain | Working — minting, metadata, proof recording (custom ERC-721, not OZ-based) |
 
 ## Security Model
 
+> **Note:** The mitigations below describe the intended design. Items marked *(planned)* are not yet fully implemented — see the Integrations table above for current status.
+
 | Threat | Mitigation |
 |--------|-----------|
-| Agent acts outside policy | RISC Zero proof fails; action blocked on-chain |
+| Agent acts outside policy | RISC Zero proof fails; action blocked on-chain *(planned — currently mock proofs)* |
 | Inference tampering | 0G Compute attestation; signature in proof |
 | Message interception | DM3 end-to-end encryption with keys from ENS profiles |
-| Identity spoofing | ENS ownership tied to Ledger EOA |
-| High-value action without consent | Physical Ledger approval with Clear Signing display |
-| Prompt injection | Safety layer (injection detector) in proven execution trace |
+| Identity spoofing | ENS ownership tied to Ledger EOA *(planned — Ledger integration is stub)* |
+| High-value action without consent | Physical Ledger approval with Clear Signing display *(planned — Ledger integration is stub)* |
+| Prompt injection | Regex-based injection detector in execution trace *(basic — not adversarially robust)* |
 | Sybil agents / fake reputation | EIP-8004 Reputation Registry filtering by trusted reviewers |
 
 ## Build Status
 
 | Component | Status |
 |-----------|--------|
-| Rust Agent | 0 warnings, 35/35 tests pass |
-| Smart Contracts | `forge build` compiles clean |
-| RISC Zero | Toolchain installed (cargo-risczero 3.0.5) |
-| Frontend | All pages functional, no external dependencies |
+| Rust Agent | 0 warnings, 35/35 tests pass (tests use mock proof generation) |
+| Smart Contracts | `forge build` compiles clean (no Foundry test suite yet) |
+| RISC Zero | Toolchain installed; guest program compiles; host uses hardcoded test traces |
+| Frontend | All pages functional; UI ahead of deployed backend (contract addresses zeroed) |
 
 ## Tech Stack
 
