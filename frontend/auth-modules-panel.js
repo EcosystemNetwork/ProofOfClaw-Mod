@@ -529,6 +529,7 @@ const PocAuthModules = (function() {
         <div class="storage-status">${storageStatus}</div>
         <div class="actions">
           <button onclick="PocAuthModules.toggleConnection()">${isConnected ? 'Disconnect' : 'Connect Google'}</button>
+          <button onclick="window.location.href='custom-auth.html'">Custom Auth</button>
           ${isConnected ? `<button onclick="PocAuthModules.storeCredentialPackageOnOneClaw()">Store on 1claw</button>` : ''}
           ${isConnected ? `<button onclick="PocAuthModules.retrieveCredentialPackageFromOneClaw()">Retrieve from 1claw</button>` : ''}
           ${tier.agentPrioritization && isConnected ? `<button onclick="PocAuthModules.syncTasksToOneClaw()">Sync Tasks to 1claw</button>` : ''}
@@ -542,6 +543,78 @@ const PocAuthModules = (function() {
     t.style.cssText = `position:fixed;bottom:20px;right:20px;padding:12px 20px;background:${type === 'success' ? '#0e6' : '#f36'};color:#000;border-radius:8px;z-index:10000;`;
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 3000);
+  }
+
+  function showCustomAuthForm() {
+    const form = document.getElementById('custom-auth-form');
+    if (form) form.style.display = 'block';
+  }
+
+  function hideCustomAuthForm() {
+    const form = document.getElementById('custom-auth-form');
+    if (form) {
+      form.style.display = 'none';
+      // Clear inputs
+      const nameInput = document.getElementById('custom-secret-name');
+      const valueInput = document.getElementById('custom-secret-value');
+      const tagInput = document.getElementById('custom-secret-tag');
+      if (nameInput) nameInput.value = '';
+      if (valueInput) valueInput.value = '';
+      if (tagInput) tagInput.value = '';
+    }
+  }
+
+  async function saveCustomSecret() {
+    const nameInput = document.getElementById('custom-secret-name');
+    const valueInput = document.getElementById('custom-secret-value');
+    const tagInput = document.getElementById('custom-secret-tag');
+    
+    const name = nameInput?.value?.trim();
+    const value = valueInput?.value?.trim();
+    const tag = tagInput?.value?.trim() || 'custom';
+    
+    if (!name || !value) {
+      showToast('Name and value are required', 'error');
+      return;
+    }
+
+    // Store in localStorage for now (will sync to 1claw if available)
+    const customSecrets = JSON.parse(localStorage.getItem('poc_custom_secrets') || '{}');
+    customSecrets[name] = { value, tag, createdAt: Date.now() };
+    localStorage.setItem('poc_custom_secrets', JSON.stringify(customSecrets));
+    
+    // Try to store on 1claw if connected
+    if (config.storageEnabled && oneClawToken) {
+      try {
+        const response = await fetch(
+          `${config.oneclawEndpoint}/vaults/${config.vaultId}/secrets`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${oneClawToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: `custom-${name}`,
+              value: value,
+              tags: { type: 'custom-auth', tag: tag, source: 'poc-auth-modules' }
+            })
+          }
+        );
+        
+        if (response.ok) {
+          showToast(`Secret '${name}' saved to 1claw vault!`, 'success');
+        } else {
+          showToast(`Secret '${name}' saved locally`, 'success');
+        }
+      } catch (e) {
+        showToast(`Secret '${name}' saved locally`, 'success');
+      }
+    } else {
+      showToast(`Secret '${name}' saved locally`, 'success');
+    }
+    
+    hideCustomAuthForm();
   }
 
   return {
@@ -559,7 +632,10 @@ const PocAuthModules = (function() {
     storeOnOneClaw,
     retrieveFromOneClaw,
     getConnections: getStoredConnections,
-    testConnection: testOneClawConnection
+    testConnection: testOneClawConnection,
+    showCustomAuthForm,
+    hideCustomAuthForm,
+    saveCustomSecret
   };
 })();
 
