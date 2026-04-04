@@ -152,19 +152,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const USER_AUTH_KEY = 'ce87c003337354d7e906d4dbd30d133affce711449801f16b58ff1c6b2ddf327';
   const OPERATOR_AUTH_KEY = 'ce87c003337354d7e906d4dbd30d133affce711449801f16b58ff1c6b2ddf327';
   
-  // 1clawAI Configuration (for monetization)
-  // Get API key at: https://1claw.ai/dashboard
-  const ONECLAW_API_KEY = null; // Replace with your 1clawAI API key
-  const AGENT_ID = 'poc-agent-001'; // Your agent identifier
-  const PRICING_TIER = 'free'; // free, basic, pro, enterprise
+  // 1clawAI Configuration - REAL API CREDENTIALS
+  // From https://docs.1claw.xyz dashboard
+  const ONECLAW_API_KEY = 'ocv_XsJpRrM_b5aB7dcd-tzzg6yUzZSIuz2dlLs431DBs4U';
+  const ONECLAW_ENDPOINT = 'https://api.1claw.xyz/v1';
+  const AGENT_ID = '61a7016a-b417-4f49-87f1-ade2ed1cf99b';
+  const VAULT_ID = '358ff77c-4c0d-4d1a-85a1-b25bde541cd8'; // Your first vault
   
   PocAuthModules.mount('auth-modules-root', {
     googleClientId: GOOGLE_CLIENT_ID,
     userAuthKey: USER_AUTH_KEY,
     operatorAuthKey: OPERATOR_AUTH_KEY,
     oneclawApiKey: ONECLAW_API_KEY,
+    oneclawEndpoint: ONECLAW_ENDPOINT,
     agentId: AGENT_ID,
-    pricingTier: PRICING_TIER,
+    vaultId: VAULT_ID,
     onConnect: function(moduleId) {
       console.log('Connected to:', moduleId);
     },

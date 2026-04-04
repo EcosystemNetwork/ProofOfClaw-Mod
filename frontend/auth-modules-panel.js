@@ -15,11 +15,12 @@ const PocAuthModules = (function() {
     userAuthKey: null,
     operatorAuthKey: null,
     apiEndpoint: null,
-    // 1clawAI Configuration
+    // 1clawAI Configuration - REAL API
     oneclawApiKey: null,
-    oneclawEndpoint: 'http://localhost:3456/v1', // Local 1claw server
-    pricingTier: 'free',
+    oneclawEndpoint: 'https://api.1claw.xyz/v1',
     agentId: null,
+    vaultId: 'default',
+    oneclawToken: null,
     storageEnabled: false
   };
 
@@ -31,6 +32,190 @@ const PocAuthModules = (function() {
   };
 
   let googleClient = null;
+  let oneClawToken = null;
+
+  // ==================== REAL 1claw API AUTH ====================
+  
+  async function authenticateWithOneClaw() {
+    if (!config.oneclawApiKey || !config.agentId) {
+      console.log('1claw: No API key configured');
+      return false;
+    }
+
+    try {
+      const response = await fetch(`${config.oneclawEndpoint}/auth/agent-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agent_id: config.agentId,
+          api_key: config.oneclawApiKey
+        })
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      const data = await response.json();
+      oneClawToken = data.access_token;
+      config.oneclawToken = oneClawToken;
+      config.storageEnabled = true;
+      
+      console.log('✅ 1claw authenticated');
+      return true;
+      
+    } catch (error) {
+      console.error('1claw auth failed:', error);
+      config.storageEnabled = false;
+      return false;
+    }
+  }
+
+  async function fetchBotFatherKeyFromVault() {
+    if (!oneClawToken) {
+      const authed = await authenticateWithOneClaw();
+      if (!authed) return null;
+    }
+
+    try {
+      const response = await fetch(
+        `${config.oneclawEndpoint}/vaults/${config.vaultId}/secrets/api-keys/botfather`,
+        {
+          headers: {
+            'Authorization': `Bearer ${oneClawToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('BotFather key not found in vault');
+          return null;
+        }
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ BotFather key retrieved from 1claw vault');
+      return data.value || data.secret || data;
+      
+    } catch (error) {
+      console.error('Failed to fetch from vault:', error);
+      return null;
+    }
+  }
+
+  async function storeGoogleCredentialsOnOneClaw() {
+    if (!oneClawToken) {
+      const authed = await authenticateWithOneClaw();
+      if (!authed) {
+        showToast('1claw authentication failed', 'error');
+        return null;
+      }
+    }
+
+    const connections = getStoredConnections();
+    if (!connections.google?.connected) {
+      showToast('No Google Calendar connected', 'error');
+      return null;
+    }
+
+    const credentialPackage = {
+      version: '1.0',
+      type: 'google-calendar-oauth',
+      agentId: config.agentId,
+      credentials: {
+        accessToken: connections.google.accessToken,
+        scope: connections.google.scope,
+        tokenType: connections.google.tokenType,
+        connected: connections.google.connected
+      },
+      storedAt: new Date().toISOString()
+    };
+
+    try {
+      const response = await fetch(
+        `${config.oneclawEndpoint}/vaults/${config.vaultId}/secrets`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${oneClawToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: 'google-calendar-credentials',
+            value: JSON.stringify(credentialPackage),
+            tags: { type: 'oauth', service: 'google-calendar', source: 'poc-auth-modules' }
+          })
+        }
+      );
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      
+      showToast('Google credentials stored in 1claw vault!', 'success');
+      localStorage.setItem('gcal_oneclaw_reference', JSON.stringify({
+        secretName: 'google-calendar-credentials',
+        storedAt: Date.now()
+      }));
+      
+      return { success: true };
+      
+    } catch (error) {
+      console.error('Failed to store:', error);
+      showToast('Failed to store: ' + error.message, 'error');
+      return { success: false, error: error.message };
+    }
+  }
+
+  async function retrieveGoogleCredentialsFromOneClaw() {
+    if (!oneClawToken) {
+      const authed = await authenticateWithOneClaw();
+      if (!authed) {
+        showToast('1claw authentication failed', 'error');
+        return null;
+      }
+    }
+
+    try {
+      const response = await fetch(
+        `${config.oneclawEndpoint}/vaults/${config.vaultId}/secrets/google-calendar-credentials`,
+        {
+          headers: {
+            'Authorization': `Bearer ${oneClawToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          showToast('No Google credentials found in vault', 'info');
+          return null;
+        }
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+      const pkg = JSON.parse(data.value || data.secret || '{}');
+      
+      // Restore credentials
+      const connections = getStoredConnections();
+      connections.google = {
+        ...connections.google,
+        ...pkg.credentials,
+        connected: true
+      };
+      setStoredConnections(connections);
+      
+      showToast('Google credentials restored from 1claw!', 'success');
+      render();
+      return pkg;
+      
+    } catch (error) {
+      console.error('Failed to retrieve:', error);
+      showToast('Failed to retrieve: ' + error.message, 'error');
+      return null;
+    }
+  }
 
   async function verifyLicenseWithOneClaw() {
     if (!config.oneclawApiKey) return { valid: true, tier: config.pricingTier };
