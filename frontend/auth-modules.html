@@ -144,7 +144,27 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 <script src="auth-modules-panel.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  // Configure your Google OAuth Client ID here
+  // Get one at: https://console.cloud.google.com/apis/credentials
+  const GOOGLE_CLIENT_ID = null; // Replace with: 'YOUR_CLIENT_ID.apps.googleusercontent.com'
+  
+  // Backend API auth keys (for proxy/calendar API)
+  const USER_AUTH_KEY = 'ce87c003337354d7e906d4dbd30d133affce711449801f16b58ff1c6b2ddf327';
+  const OPERATOR_AUTH_KEY = 'ce87c003337354d7e906d4dbd30d133affce711449801f16b58ff1c6b2ddf327';
+  
+  // 1clawAI Configuration (for monetization)
+  // Get API key at: https://1claw.ai/dashboard
+  const ONECLAW_API_KEY = null; // Replace with your 1clawAI API key
+  const AGENT_ID = 'poc-agent-001'; // Your agent identifier
+  const PRICING_TIER = 'free'; // free, basic, pro, enterprise
+  
   PocAuthModules.mount('auth-modules-root', {
+    googleClientId: GOOGLE_CLIENT_ID,
+    userAuthKey: USER_AUTH_KEY,
+    operatorAuthKey: OPERATOR_AUTH_KEY,
+    oneclawApiKey: ONECLAW_API_KEY,
+    agentId: AGENT_ID,
+    pricingTier: PRICING_TIER,
     onConnect: function(moduleId) {
       console.log('Connected to:', moduleId);
     },
