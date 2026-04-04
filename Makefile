@@ -47,6 +47,27 @@ run-agent:
 run-poc-server:
 	cd agent && RUST_LOG=proof_of_claw=info cargo run -p proof_of_claw --bin poc-server
 
+run-delivery-service:
+	cd delivery-service && npm start
+
+run-swarm-bridge:
+	cd swarm-bridge && npm start
+
+install-bridge:
+	cd swarm-bridge && npm install
+
+register-swarm:
+	cd swarm-bridge && node bridge.mjs --register-only
+
+run-all-services:
+	@echo "Starting DM3 delivery service..."
+	cd delivery-service && npm start &
+	@sleep 2
+	@echo "Starting Swarm bridge..."
+	cd swarm-bridge && npm start &
+	@echo "Starting POC agent server..."
+	cd agent && RUST_LOG=proof_of_claw=info cargo run -p proof_of_claw --bin poc-server
+
 clean:
 	cd agent && cargo clean
 	cd zkvm && cargo clean

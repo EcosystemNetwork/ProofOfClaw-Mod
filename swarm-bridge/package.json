@@ -1,0 +1,14 @@
+{
+  "name": "proofclaw-swarm-bridge",
+  "version": "0.1.0",
+  "description": "Bidirectional bridge between ProofOfClaw DM3 agents and Swarm Protocol hub",
+  "type": "module",
+  "main": "bridge.mjs",
+  "scripts": {
+    "start": "node bridge.mjs",
+    "register": "node bridge.mjs --register-only"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
