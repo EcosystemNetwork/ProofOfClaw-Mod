@@ -4,59 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Proof of Claw — Provable Private Agent Framework</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <meta name="description" content="Autonomous AI agents with cryptographically provable behavior, end-to-end encrypted communication, and hardware-signed human approval.">
+<meta property="og:title" content="Proof of Claw — Provable Private Agent Framework">
+<meta property="og:description" content="Autonomous AI agents with cryptographically provable behavior, end-to-end encrypted communication, and hardware-signed human approval.">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="shared.css">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg-primary: #06080d;
-  --bg-secondary: #0c1018;
-  --bg-card: #0f1520;
-  --bg-card-hover: #141c2a;
-  --cyan: #00e5ff;
-  --cyan-dim: #00a3b5;
-  --cyan-glow: rgba(0, 229, 255, 0.15);
-  --amber: #ffb300;
-  --amber-dim: #c68a00;
-  --amber-glow: rgba(255, 179, 0, 0.12);
-  --red: #ff3d5a;
-  --green: #00e676;
-  --text-primary: #e8ecf4;
-  --text-secondary: #8892a4;
-  --text-dim: #4a5568;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-cyan: rgba(0, 229, 255, 0.2);
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: var(--font-mono);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.7;
-  overflow-x: hidden;
-  font-size: 14px;
-}
-
-/* Scanline overlay — GPU-promoted, reduced z-index */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
-  pointer-events: none;
-  z-index: 9999;
-  will-change: transform;
-  transform: translateZ(0);
-}
-
 /* ========== NAVIGATION ========== */
 nav {
   position: fixed;
@@ -83,13 +44,7 @@ nav {
 
 .nav-logo .claw-icon {
   width: 32px; height: 32px;
-  position: relative;
-}
-
-.nav-logo .claw-icon::before {
-  content: '\29C1';
-  font-size: 28px;
-  color: var(--cyan);
+  object-fit: contain;
   filter: drop-shadow(0 0 8px var(--cyan));
 }
 
@@ -2139,11 +2094,12 @@ footer {
 </style>
 </head>
 <body>
+<a href="#features" class="skip-link">Skip to content</a>
 
 <!-- NAVIGATION -->
-<nav>
-  <a href="#" class="nav-logo">
-    <span class="claw-icon"></span>
+<nav role="navigation" aria-label="Main navigation" class="landing-nav">
+  <a href="index.html" class="nav-logo">
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon">
     <span class="nav-title">Proof of Claw</span>
   </a>
   <ul class="nav-links">
@@ -2152,7 +2108,7 @@ footer {
     <a href="agents.html" class="nav-badge green">Launch App →</a>
     <a href="docs.html" class="nav-badge">Docs</a>
   </div>
-  <button class="hamburger" onclick="this.classList.toggle('active'); document.querySelector('.mobile-menu').classList.toggle('active');">
+  <button class="hamburger" aria-label="Toggle menu" aria-expanded="false" onclick="this.classList.toggle('active'); document.querySelector('.mobile-menu').classList.toggle('active'); this.setAttribute('aria-expanded', this.classList.contains('active'));">
     <span></span><span></span><span></span>
   </button>
 </nav>
@@ -2176,8 +2132,8 @@ footer {
     </div>
     <h1>Proof of <span class="highlight">Claw</span></h1>
     <div class="hero-actions">
-      <a href="agents.html" class="btn-primary">Launch App →</a>
-      <a href="docs.html" class="btn-secondary">Docs</a>
+      <a href="agents.html" class="btn-primary" aria-label="Launch application">Launch App →</a>
+      <a href="docs.html" class="btn-secondary" aria-label="View documentation">Docs</a>
     </div>
     <p class="hero-solution">
       Cryptographic proof that your AI agent did exactly what it promised — nothing more, nothing less.
@@ -2193,23 +2149,23 @@ footer {
   <div class="sponsor-bar-inner">
     <div class="sponsor-bar-label">Built with</div>
     <div class="sponsor-logos">
-      <a href="#" class="sponsor-logo">
+      <a href="https://0g.ai" class="sponsor-logo">
         <span class="sp-icon">0</span>
         0G Network
       </a>
-      <a href="#" class="sponsor-logo">
+      <a href="https://ens.domains" class="sponsor-logo">
         <span class="sp-icon">E</span>
         ENS
       </a>
-      <a href="#" class="sponsor-logo">
+      <a href="https://dm3.network" class="sponsor-logo">
         <span class="sp-icon">D</span>
         DM3
       </a>
-      <a href="#" class="sponsor-logo">
+      <a href="https://risczero.com" class="sponsor-logo">
         <span class="sp-icon">R</span>
         RISC Zero
       </a>
-      <a href="#" class="sponsor-logo">
+      <a href="https://developers.ledger.com" class="sponsor-logo">
         <span class="sp-icon">L</span>
         Ledger
       </a>
@@ -2222,10 +2178,10 @@ footer {
 </div>
 
 <!-- ========== FEATURES ========== -->
-<section id="features">
+<section id="features" role="region" aria-labelledby="features-title">
   <div class="section-inner fade-in">
     <div class="section-label">Capabilities</div>
-    <h2 class="section-title">What makes agents trustworthy</h2>
+    <h2 id="features-title" class="section-title">What makes agents trustworthy</h2>
     <p class="section-desc">
       Six layers of defense turning opaque AI agents into provably compliant, privacy-preserving autonomous systems.
     </p>
@@ -2271,11 +2227,11 @@ footer {
 </section>
 
 <!-- ========== FOOTER ========== -->
-<footer>
-  <div class="footer-logo">Proof of <span class="highlight">Claw</span></div>
+<footer role="contentinfo">
+  <div class="footer-logo"><img src="public/logoproofofclaw.png" alt="Proof of Claw" style="height:40px;vertical-align:middle;margin-right:8px;">Proof of <span class="highlight">Claw</span></div>
   <p class="footer-sub">Provable Private Agent Framework</p>
   <div class="footer-links">
-    <a href="#">GitHub</a>
+    <a href="https://github.com/EcosystemNetwork/ProofOfClaw">GitHub</a>
     <a href="docs.html">Documentation</a>
     <a href="dashboard.html">Dashboard</a>
     <a href="deploy.html">Deploy</a>
@@ -2450,5 +2406,6 @@ document.querySelectorAll('.fade-in').forEach(function(el) { fadeObserver.observ
 
 </script>
 
+<script src="shared.js"></script>
 </body>
 </html>

@@ -4,122 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Documentation — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <meta name="description" content="Technical documentation for Proof of Claw — Provable Private Agent Framework. Architecture, integration guides, API reference, and deployment.">
+<meta property="og:title" content="Documentation — Proof of Claw">
+<meta property="og:description" content="Technical documentation for Proof of Claw — Provable Private Agent Framework.">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"></noscript>
+<link rel="stylesheet" href="shared.css">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg-primary: #06080d;
-  --bg-secondary: #0c1018;
-  --bg-card: #0f1520;
-  --bg-card-hover: #141c2a;
-  --cyan: #00e5ff;
-  --cyan-dim: #00a3b5;
-  --cyan-glow: rgba(0, 229, 255, 0.15);
-  --amber: #ffb300;
-  --amber-dim: #c68a00;
-  --amber-glow: rgba(255, 179, 0, 0.12);
-  --red: #ff3d5a;
-  --green: #00e676;
-  --text-primary: #e8ecf4;
-  --text-secondary: #8892a4;
-  --text-dim: #4a5568;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-cyan: rgba(0, 229, 255, 0.2);
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: var(--font-mono);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.7;
-  font-size: 14px;
-  overflow-x: hidden;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events: none;
-  z-index: 9999;
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-/* ========== NAVIGATION ========== */
-nav {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  z-index: 100;
-  padding: 1rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: rgba(6, 8, 13, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  will-change: transform;
-  contain: layout style;
-}
-
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  text-decoration: none;
-}
-
-.nav-logo .claw-icon { width: 32px; height: 32px; position: relative; }
-.nav-logo .claw-icon::before { content: '\29C1'; font-size: 28px; color: var(--cyan); filter: drop-shadow(0 0 8px var(--cyan)); }
-
-.nav-title {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.1rem;
-  letter-spacing: -0.02em;
-  color: var(--text-primary);
-}
-
-.nav-links { display: flex; gap: 2rem; list-style: none; }
-.nav-links a {
-  text-decoration: none;
-  color: var(--text-secondary);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  transition: color 0.3s;
-  font-weight: 500;
-}
-.nav-links a:hover, .nav-links a.active { color: var(--cyan); }
-
-.nav-actions { display: flex; gap: 0.75rem; align-items: center; }
-
-.nav-badge {
-  padding: 0.35rem 0.9rem;
-  border: 1px solid var(--border-cyan);
-  border-radius: 100px;
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  color: var(--cyan);
-  background: var(--cyan-glow);
-  text-decoration: none;
-  transition: all 0.3s;
-}
-.nav-badge:hover { background: rgba(0, 229, 255, 0.25); box-shadow: 0 0 20px rgba(0, 229, 255, 0.15); }
-
-/* Mobile menu toggle */
+/* Mobile menu toggle (docs-specific, supplements shared.css) */
 .nav-hamburger {
   display: none;
   background: none;
@@ -302,7 +201,6 @@ nav {
 
 /* ========== MAIN CONTENT ========== */
 .docs-content {
-  margin-left: 280px;
   padding: 0 4rem 6rem;
   max-width: 920px;
 }
@@ -880,11 +778,12 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 </style>
 </head>
 <body>
+<a href="#overview" class="skip-link">Skip to documentation</a>
 
 <!-- NAV -->
-<nav>
+<nav class="landing-nav" role="navigation" aria-label="Main navigation">
   <a href="index.html" class="nav-logo">
-    <span class="claw-icon"></span>
+    <img src="public/logoproofofclaw.png" alt="Proof of Claw" class="claw-icon" style="width:32px;height:32px;object-fit:contain;filter:drop-shadow(0 0 8px var(--cyan));">
     <span class="nav-title">Proof of Claw</span>
   </a>
   <ul class="nav-links">
@@ -898,7 +797,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   <div class="nav-actions">
     <a href="agents.html" class="nav-badge">Launch App</a>
   </div>
-  <button class="nav-hamburger" onclick="toggleMobileMenu()" aria-label="Menu">&#9776;</button>
+  <button class="nav-hamburger" onclick="toggleMobileMenu()" aria-label="Menu" aria-expanded="false">&#9776;</button>
 </nav>
 
 <!-- HERO -->
@@ -907,7 +806,8 @@ tr:hover td { background: rgba(255,255,255,0.015); }
   <p class="subtitle">Architecture, integration guides, API reference, and deployment for the Provable Private Agent Framework.</p>
   <div class="docs-search-wrap">
     <span class="docs-search-icon">&#x2315;</span>
-    <input type="text" class="docs-search" placeholder="Search documentation..." id="docsSearch">
+    <label for="docsSearch" class="sr-only">Search documentation</label>
+    <input type="text" class="docs-search" placeholder="Search documentation..." id="docsSearch" aria-label="Documentation search">
   </div>
   <div class="hero-tags">
     <span class="tag tag-cyan">Rust</span>
@@ -923,7 +823,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 <div class="docs-wrapper">
 
 <!-- SIDEBAR -->
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar" role="navigation" aria-label="Documentation sections">
   <div class="sidebar-section">
     <div class="sidebar-label">Getting Started</div>
     <a href="#overview" class="sidebar-link active">Overview</a>
@@ -978,7 +878,7 @@ tr:hover td { background: rgba(255,255,255,0.015); }
 <div class="mobile-nav-overlay" id="mobileOverlay" onclick="toggleMobileMenu()"></div>
 
 <!-- MAIN CONTENT -->
-<main class="docs-content">
+<main class="docs-content" role="main">
 
 <!-- OVERVIEW -->
 <h2 id="overview" class="section-anchor fade-in"><span class="section-icon icon-cyan">&#x2726;</span> Overview</h2>
@@ -1650,7 +1550,7 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
 
 <!-- FOOTER -->
 <div class="docs-footer">
-  <div class="footer-logo">Proof of Claw</div>
+  <div class="footer-logo"><img src="public/logoproofofclaw.png" alt="Proof of Claw" style="height:40px;vertical-align:middle;margin-right:8px;">Proof of Claw</div>
   <div class="footer-text">Provable Private Agent Framework</div>
   <div class="footer-stack">
     <span>IronClaw</span>
@@ -1666,6 +1566,7 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
 </main>
 </div>
 
+<script src="shared.js"></script>
 <script>
 // Copy button
 function copyCode(btn) {
@@ -1734,6 +1635,9 @@ document.getElementById('docsSearch').addEventListener('input', function(e) {
 function toggleMobileMenu() {
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('mobileOverlay').classList.toggle('open');
+  var btn = document.querySelector('.nav-hamburger');
+  var expanded = btn.getAttribute('aria-expanded') === 'true';
+  btn.setAttribute('aria-expanded', String(!expanded));
 }
 
 // Close mobile menu on link click

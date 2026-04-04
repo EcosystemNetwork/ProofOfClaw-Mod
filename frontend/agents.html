@@ -4,230 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agents — Proof of Claw</title>
+<link rel="icon" type="image/x-icon" href="public/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="public/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="public/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="public/apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared.css">
+<meta name="description" content="Manage and deploy autonomous AI agents with cryptographic proof of behavior.">
 <style>
-*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-:root {
-  --bg-primary: #06080d;
-  --bg-secondary: #0c1018;
-  --bg-card: #0f1520;
-  --bg-card-hover: #141c2a;
-  --cyan: #00e5ff;
-  --cyan-dim: #00a3b5;
-  --cyan-glow: rgba(0, 229, 255, 0.15);
-  --amber: #ffb300;
-  --amber-dim: #c68a00;
-  --amber-glow: rgba(255, 179, 0, 0.12);
-  --red: #ff3d5a;
-  --green: #00e676;
-  --purple: #b388ff;
-  --purple-glow: rgba(179, 136, 255, 0.15);
-  --text-primary: #e8ecf4;
-  --text-secondary: #8892a4;
-  --text-dim: #4a5568;
-  --border: rgba(255, 255, 255, 0.06);
-  --border-cyan: rgba(0, 229, 255, 0.2);
-  --font-display: 'Syne', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
-}
-
-body {
-  font-family: var(--font-mono);
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  line-height: 1.6;
-  font-size: 14px;
-  overflow-x: hidden;
-}
-
-/* Scanline overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
-  pointer-events: none;
-  z-index: 9999;
-}
-
-/* Grid background */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ─── SIDEBAR ─── */
-.sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 240px;
-  height: 100vh;
-  background: var(--bg-secondary);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  z-index: 100;
-  padding: 0;
-}
-
-.sidebar-logo {
-  padding: 24px 20px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-}
-
-.sidebar-logo .claw-icon {
-  font-size: 28px;
-  color: var(--cyan);
-  text-shadow: 0 0 20px var(--cyan-glow);
-}
-
-.sidebar-logo .logo-text {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 16px;
-  color: var(--text-primary);
-  letter-spacing: -0.5px;
-}
-
-.sidebar-nav {
-  flex: 1;
-  padding: 16px 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.sidebar-nav a {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 20px;
-  color: var(--text-secondary);
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 500;
-  transition: all 0.2s;
-  border-left: 3px solid transparent;
-}
-
-.sidebar-nav a:hover {
-  color: var(--text-primary);
-  background: rgba(0,229,255,0.04);
-}
-
-.sidebar-nav a.active {
-  color: var(--cyan);
-  background: rgba(0,229,255,0.06);
-  border-left-color: var(--cyan);
-}
-
-.sidebar-nav a .nav-icon {
-  font-size: 18px;
-  width: 22px;
-  text-align: center;
-}
-
-.sidebar-bottom {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.btn-new-agent-sidebar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 12px;
-  background: linear-gradient(135deg, var(--cyan), #00b8d4);
-  color: #000;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  text-decoration: none;
-}
-
-.btn-new-agent-sidebar:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(0,229,255,0.3);
-}
-
-.sidebar-bottom .back-link {
-  text-align: center;
-  color: var(--text-dim);
-  font-size: 12px;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.sidebar-bottom .back-link:hover {
-  color: var(--text-secondary);
-}
-
-/* Sidebar collapse */
-.sidebar-toggle {
-  position: absolute;
-  top: 12px;
-  right: -14px;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  z-index: 201;
-  transition: all 0.2s;
-}
-.sidebar-toggle:hover {
-  color: var(--cyan);
-  border-color: var(--border-cyan);
-  background: var(--bg-card);
-}
-
-.sidebar { transition: width 0.25s ease; }
-.topbar { transition: left 0.25s ease; }
-.main-content { transition: margin-left 0.25s ease; }
-
-body.sidebar-collapsed .sidebar { width: 60px; }
-body.sidebar-collapsed .sidebar .logo-text { display: none; }
-body.sidebar-collapsed .sidebar-logo { justify-content: center; padding: 24px 0; }
-body.sidebar-collapsed .sidebar-nav a { justify-content: center; padding: 12px 0; }
-body.sidebar-collapsed .sidebar-nav a .nav-icon { width: auto; font-size: 1.1rem; }
-body.sidebar-collapsed .sidebar-bottom { padding: 16px 8px; }
-body.sidebar-collapsed .btn-new-agent-sidebar { font-size: 0; padding: 12px; }
-body.sidebar-collapsed .btn-new-agent-sidebar::after { content: '+'; font-size: 1.2rem; font-weight: 700; }
-body.sidebar-collapsed .sidebar-bottom .back-link { display: none; }
-body.sidebar-collapsed .topbar { left: 60px; }
-body.sidebar-collapsed .main-content { margin-left: 60px; }
-body.sidebar-collapsed .sidebar-toggle { transform: rotate(180deg); }
-body.sidebar-collapsed #poc-connection-slot { display: none; }
-body.sidebar-collapsed .sidebar-nav a { font-size: 0; gap: 0; }
-body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
-
 /* ─── TOPBAR ─── */
 .topbar {
   position: fixed;
@@ -256,26 +40,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.badge {
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-
-.badge-count {
-  background: rgba(0,229,255,0.1);
-  color: var(--cyan);
-  border: 1px solid var(--border-cyan);
-}
-
-.badge-event {
-  background: rgba(179,136,255,0.1);
-  color: var(--purple);
-  border: 1px solid rgba(179,136,255,0.2);
 }
 
 /* ─── MAIN CONTENT ─── */
@@ -455,32 +219,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   letter-spacing: 0.5px;
 }
 
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-dot.online {
-  background: var(--green);
-  box-shadow: 0 0 8px rgba(0,230,118,0.5);
-}
-
-.status-dot.busy {
-  background: var(--amber);
-  box-shadow: 0 0 8px rgba(255,179,0,0.5);
-}
-
-.status-dot.offline {
-  background: var(--text-dim);
-}
-
-.status-dot.discovered {
-  background: var(--purple);
-  box-shadow: 0 0 8px var(--purple-glow);
-}
-
 .status-label {
   font-size: 11px;
   color: var(--text-secondary);
@@ -585,77 +323,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   box-shadow: 0 6px 30px rgba(0,229,255,0.35);
 }
 
-/* ─── MODAL OVERLAY ─── */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(8px);
-  z-index: 200;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 40px 20px;
-  overflow-y: auto;
-}
-
-.modal-overlay.active {
-  display: flex;
-}
-
-.modal {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  width: 100%;
-  max-width: 760px;
-  position: relative;
-  animation: modalIn 0.3s ease;
-}
-
-@keyframes modalIn {
-  from { opacity: 0; transform: translateY(20px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--border);
-}
-
-.modal-header h2 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.modal-close {
-  width: 32px;
-  height: 32px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-secondary);
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.modal-close:hover {
-  border-color: var(--red);
-  color: var(--red);
-}
-
-.modal-body {
-  padding: 24px;
-}
-
 /* ─── WIZARD ─── */
 .wizard-progress {
   display: flex;
@@ -750,56 +417,6 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   font-size: 11px;
   color: var(--text-dim);
   margin-top: 2px;
-}
-
-/* Form Controls */
-.form-group {
-  margin-bottom: 18px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-  width: 100%;
-  padding: 10px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-  border-color: var(--border-cyan);
-}
-
-.form-group input::placeholder,
-.form-group textarea::placeholder {
-  color: var(--text-dim);
-}
-
-.form-group textarea {
-  min-height: 80px;
-  resize: vertical;
-}
-
-.form-group select {
-  cursor: pointer;
 }
 
 .form-hint {
@@ -1714,15 +1331,16 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
 </style>
 </head>
 <body>
+<a href="#agent-grid" class="skip-link">Skip to agents</a>
 
 <!-- ═══════ SIDEBAR ═══════ -->
-<aside class="sidebar">
+<aside class="sidebar" role="complementary" aria-label="App sidebar">
   <button class="sidebar-toggle" onclick="toggleSidebar()" title="Collapse sidebar">&#x276E;</button>
   <a href="index.html" class="sidebar-logo">
     <span class="claw-icon">&#x27C1;</span>
     <span class="logo-text">Proof of Claw</span>
   </a>
-  <nav class="sidebar-nav">
+  <nav class="sidebar-nav" aria-label="App navigation">
     <a href="agents.html" class="active">
       <span class="nav-icon">&#x2726;</span> Agents
     </a>
@@ -1738,13 +1356,13 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   </nav>
   <div class="sidebar-bottom">
     <div id="poc-connection-slot"></div>
-    <button class="btn-new-agent-sidebar" onclick="openWizard()">+ New Agent</button>
-    <a href="index.html" class="back-link">Back to Home</a>
+    <button class="btn-new-agent" onclick="openWizard()">+ New Agent</button>
+    <a href="index.html" class="back-link btn-home">Back to Home</a>
   </div>
 </aside>
 
 <!-- ═══════ TOPBAR ═══════ -->
-<header class="topbar">
+<header class="topbar" role="banner">
   <h1 class="topbar-title">Agent Command Center</h1>
   <div class="topbar-right">
     <span class="badge badge-count" id="agent-count-badge">0 agents</span>
@@ -1753,12 +1371,12 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
 </header>
 
 <!-- ═══════ MAIN CONTENT ═══════ -->
-<main class="main-content">
+<main class="main-content" role="main">
 
   <!-- Toolbar -->
   <div class="toolbar" id="toolbar" style="display:none;">
     <div class="search-box">
-      <input type="text" id="search-input" placeholder="Search agents by name, type, or ENS...">
+      <input type="text" id="search-input" placeholder="Search agents by name, type, or ENS..." aria-label="Search agents">
     </div>
     <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">All</button>
     <button class="filter-btn" data-filter="online" onclick="setFilter('online', this)">Online</button>
@@ -1782,11 +1400,11 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
 </main>
 
 <!-- ═══════ NEW AGENT WIZARD MODAL ═══════ -->
-<div class="modal-overlay" id="wizard-modal">
+<div class="modal-overlay" id="wizard-modal" role="dialog" aria-modal="true" aria-labelledby="wizard-modal-title">
   <div class="modal">
     <div class="modal-header">
       <h2 id="wizard-modal-title">Deploy New Agent</h2>
-      <button class="modal-close" onclick="closeWizard()">&times;</button>
+      <button class="modal-close" onclick="closeWizard()" aria-label="Close wizard">&times;</button>
     </div>
     <div class="modal-body" id="wizard-body">
 
@@ -1975,11 +1593,11 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
 </div>
 
 <!-- ═══════ AGENT PROFILE MODAL ═══════ -->
-<div class="modal-overlay" id="profile-modal">
+<div class="modal-overlay" id="profile-modal" role="dialog" aria-modal="true">
   <div class="modal profile-modal" style="max-width:580px;">
     <div class="modal-header">
       <h2>Agent Profile</h2>
-      <button class="modal-close" onclick="closeProfile()">&times;</button>
+      <button class="modal-close" onclick="closeProfile()" aria-label="Close wizard">&times;</button>
     </div>
     <div class="modal-body" id="profile-body"></div>
   </div>
@@ -2004,6 +1622,7 @@ body.sidebar-collapsed .sidebar-nav a .nav-icon { font-size: 18px; }
   </div>
 </div>
 
+<script src="shared.js"></script>
 <script>
 // ═══════════════════════════════════════
 // DATA & STATE
@@ -2133,8 +1752,8 @@ function renderAgents() {
           <div class="stat-label">Uptime</div>
         </div>
       </div>
-      ${a.address ? `<div style="font-size:10px;color:var(--text-dim);padding:0 16px;margin-top:-4px;margin-bottom:4px;font-family:var(--font-mono);word-break:break-all;">${a.address}</div>` : ''}
-      ${a.inftTokenId ? `<div style="font-size:10px;padding:0 16px;margin-bottom:4px;"><span style="color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:0.5px;">iNFT #${a.inftTokenId}</span></div>` : ''}
+      ${a.address ? `<div style="font-size:10px;color:var(--text-dim);padding:0 16px;margin-top:-4px;margin-bottom:4px;font-family:var(--font-mono);word-break:break-all;">${esc(a.address)}</div>` : ''}
+      ${a.inftTokenId ? `<div style="font-size:10px;padding:0 16px;margin-bottom:4px;"><span style="color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:0.5px;">iNFT #${esc(String(a.inftTokenId))}</span></div>` : ''}
       <div class="agent-actions" onclick="event.stopPropagation();">
         <a href="dashboard.html?agent=${a.id}">Dashboard</a>
         <a href="#" onclick="event.preventDefault();openProfile('${a.id}');">Profile</a>
@@ -2191,10 +1810,10 @@ function openProfile(agentId) {
       </div>
     </div>
     ${a.description ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">${esc(a.description)}</p>` : ''}
-    ${a.address ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Address:</span> ${a.address}</div>` : ''}
-    ${a.policyHash ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Policy:</span> ${a.policyHash.slice(0, 18)}...</div>` : ''}
-    ${a.inftTokenId ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;">iNFT Token #${a.inftTokenId} on 0G Chain (ERC-7857)</div>` : ''}
-    ${a.imageId ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">RISC Zero Image:</span> ${a.imageId.slice(0, 18)}...</div>` : ''}
+    ${a.address ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Address:</span> ${esc(a.address)}</div>` : ''}
+    ${a.policyHash ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">Policy:</span> ${esc(a.policyHash.slice(0, 18))}...</div>` : ''}
+    ${a.inftTokenId ? `<div style="font-size:11px;color:var(--amber);margin-bottom:8px;">iNFT Token #${esc(String(a.inftTokenId))} on 0G Chain (ERC-7857)</div>` : ''}
+    ${a.imageId ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;word-break:break-all;"><span style="color:var(--cyan-dim);">RISC Zero Image:</span> ${esc(a.imageId.slice(0, 18))}...</div>` : ''}
     <div class="profile-stats-grid">
       <div class="profile-stat"><div class="val">${a.stats.actions}</div><div class="lbl">Total Actions</div></div>
       <div class="profile-stat"><div class="val">${autonomous}</div><div class="lbl">Autonomous</div></div>
@@ -2216,8 +1835,8 @@ function openProfile(agentId) {
         <button id="profile-edit-toggle" onclick="toggleProfileEdit('${a.id}')" style="font-size:10px;padding:3px 10px;background:rgba(0,229,255,0.1);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;font-family:var(--font-mono);">Edit</button>
       </div>
       <div id="profile-permissions-view">
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Tools:</span> ${(a.allowedTools || []).join(', ') || 'None'}</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Value Limit:</span> $${a.valueLimit || 0} USD</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Tools:</span> ${esc((a.allowedTools || []).join(', ') || 'None')}</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Value Limit:</span> $${esc(String(a.valueLimit || 0))} USD</div>
         <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Endpoints:</span> ${esc(a.endpoints || 'Any')}</div>
         <div style="font-size:12px;color:var(--text-secondary);"><span style="color:var(--text-dim);width:100px;display:inline-block;">Network:</span> ${esc(a.network || 'sepolia')}</div>
       </div>
@@ -2588,8 +2207,8 @@ function buildReview() {
 
   document.getElementById('review-policy').innerHTML = `
     <h4>Policy</h4>
-    <div class="review-row"><span class="label">Allowed Tools</span><span class="value">${wizardData.allowedTools.join(', ') || 'None'}</span></div>
-    <div class="review-row"><span class="label">Value Limit</span><span class="value">$${wizardData.valueLimit || 0}</span></div>
+    <div class="review-row"><span class="label">Allowed Tools</span><span class="value">${esc(wizardData.allowedTools.join(', ') || 'None')}</span></div>
+    <div class="review-row"><span class="label">Value Limit</span><span class="value">$${esc(String(wizardData.valueLimit || 0))}</span></div>
     <div class="review-row"><span class="label">Endpoints</span><span class="value">${esc(wizardData.endpoints || 'Any')}</span></div>
   `;
 }
@@ -3027,7 +2646,7 @@ function renderChatMsg(msg, agentData) {
   const timeStr = formatRelativeTime(msg.timestamp);
   let proofHtml = '';
   if (!isUser && msg.proof) {
-    proofHtml = `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${msg.proof.mode} | ${msg.proof.hash}</div>`;
+    proofHtml = `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${esc(msg.proof.mode)} | ${esc(msg.proof.hash)}</div>`;
   }
   return `<div class="chat-msg ${isUser ? 'user' : 'agent'}">
     <div class="chat-msg-bubble">${escChatText(msg.text)}</div>
@@ -3170,7 +2789,7 @@ async function sendLiveChat(agentData, userMessage, baseUrl) {
     const msgDiv = document.getElementById(msgId);
     if (msgDiv) {
       msgDiv.insertAdjacentHTML('beforeend',
-        `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${proof.mode} | ${proof.hash}</div>`);
+        `<div class="chat-proof-badge"><span class="proof-check">\u2713</span> Proof verified | ${esc(proof.mode)} | ${esc(proof.hash)}</div>`);
       msgDiv.insertAdjacentHTML('beforeend', `<div class="chat-msg-time">just now</div>`);
     }
     scrollChatToBottom();

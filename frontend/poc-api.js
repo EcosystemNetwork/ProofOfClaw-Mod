@@ -145,18 +145,25 @@ const PocAPI = (() => {
     return `${h}h ${m}m`;
   }
 
+  // ── HTML escaping (XSS prevention) ──
+  function escHtml(str) {
+    if (str == null) return '';
+    return String(str).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  }
+
   // ── Connection status indicator (injects into sidebar) ──
   function renderConnectionBadge(container) {
     if (!container) return;
     const conn = getConnection();
     container.innerHTML = conn
-      ? `<div class="conn-badge connected" onclick="PocAPI.showDisconnectPrompt()">
-           <span class="conn-dot"></span>
-           <span class="conn-text">${conn.agentId}</span>
+      ? `<div class="conn-badge connected" role="status" aria-label="Connected to ${escHtml(conn.agentId)}" onclick="PocAPI.showDisconnectPrompt()">
+           <span class="conn-dot" aria-hidden="true"></span>
+           <span class="conn-text">${escHtml(conn.agentId)}</span>
            <span class="conn-label">LIVE</span>
          </div>`
-      : `<button class="conn-badge disconnected" onclick="PocAPI.showConnectModal()">
-           <span class="conn-dot"></span>
+      : `<button class="conn-badge disconnected" aria-label="Connect to OpenClaw agent" onclick="PocAPI.showConnectModal()">
+           <span class="conn-dot" aria-hidden="true"></span>
            <span class="conn-text">Connect OpenClaw</span>
          </button>`;
   }
@@ -168,16 +175,16 @@ const PocAPI = (() => {
     modal.id = 'poc-connect-modal';
     modal.className = 'poc-modal-overlay';
     modal.innerHTML = `
-      <div class="poc-modal">
+      <div class="poc-modal" role="dialog" aria-modal="true" aria-labelledby="poc-modal-title">
         <div class="poc-modal-header">
-          <h2>Connect OpenClaw Agent</h2>
-          <button class="poc-modal-close" onclick="PocAPI.hideConnectModal()">&times;</button>
+          <h2 id="poc-modal-title">Connect OpenClaw Agent</h2>
+          <button class="poc-modal-close" onclick="PocAPI.hideConnectModal()" aria-label="Close">&times;</button>
         </div>
         <div class="poc-modal-body">
           <p class="poc-modal-desc">Enter the API endpoint of your running Proof of Claw agent runtime.</p>
           <div class="poc-form-group">
-            <label>Agent API URL</label>
-            <input type="text" id="poc-connect-url" placeholder="http://localhost:8420" value="">
+            <label for="poc-connect-url">Agent API URL</label>
+            <input type="text" id="poc-connect-url" placeholder="http://localhost:8420" value="" autocomplete="url">
             <div class="poc-form-hint">Default port is 8420. Set API_PORT env var to change.</div>
           </div>
           <div id="poc-connect-error" class="poc-error" style="display:none;"></div>
@@ -199,7 +206,8 @@ const PocAPI = (() => {
 
   function showConnectModal() {
     injectModal();
-    document.getElementById('poc-connect-modal').classList.add('active');
+    const modal = document.getElementById('poc-connect-modal');
+    modal.classList.add('active');
     document.getElementById('poc-connect-error').style.display = 'none';
     document.getElementById('poc-connect-success').style.display = 'none';
     document.getElementById('poc-btn-connect').disabled = false;
@@ -213,6 +221,10 @@ const PocAPI = (() => {
         urlInput.value = 'http://localhost:8420';
       }
     }
+
+    // Focus trap for accessibility
+    if (typeof trapFocus === 'function') trapFocus(modal.querySelector('.poc-modal'));
+    urlInput.focus();
   }
   function hideConnectModal() {
     const m = document.getElementById('poc-connect-modal');
@@ -239,7 +251,7 @@ const PocAPI = (() => {
 
     try {
       const conn = await connect(url);
-      succEl.textContent = `Connected to ${conn.agentId} (${conn.ens})`;
+      succEl.textContent = `Connected to ${conn.agentId || 'agent'} (${conn.ens || 'unknown'})`;
       succEl.style.display = 'block';
       btn.textContent = 'Connected!';
 
