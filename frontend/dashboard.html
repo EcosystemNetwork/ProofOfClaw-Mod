@@ -875,7 +875,10 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
   <div class="pending-section" id="pending-section" style="display: none;">
     <div class="pending-header">
       <div class="pending-title">Pending Ledger Approvals</div>
-      <span class="pending-count" id="pending-count">1</span>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span class="pending-count" id="pending-count">1</span>
+        <a href="approve.html" style="font-size:0.75rem;color:var(--cyan);text-decoration:none;font-family:var(--font-mono);letter-spacing:0.03em;opacity:0.8;" title="Open Ledger approval page">Go to Approve &#x2192;</a>
+      </div>
     </div>
     <div id="pending-list"></div>
   </div>
@@ -883,7 +886,30 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
   <!-- Recent Activity -->
   <div class="activity-section">
     <div class="section-title">Recent Activity</div>
-    <ul class="activity-list" id="activity-list" aria-live="polite"></ul>
+    <ul class="activity-list" id="activity-list" aria-live="polite">
+      <li id="activity-empty" class="activity-item" style="justify-content:center;color:var(--text-dim);font-size:0.8rem;padding:1.5rem 0;cursor:default;">
+        No activity yet &mdash; connect an agent to start
+      </li>
+    </ul>
+  </div>
+
+  <!-- Bridge Modal -->
+  <div id="bridge-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center;" role="dialog" aria-modal="true" aria-labelledby="bridge-modal-title">
+    <div style="background:var(--bg-card);border:1px solid var(--border-cyan);border-radius:12px;padding:1.5rem;max-width:440px;width:90%;box-shadow:0 0 40px rgba(0,229,255,0.08);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <div id="bridge-modal-title" style="font-size:0.9rem;font-weight:600;color:var(--cyan);">Start Swarm Bridge</div>
+        <button onclick="closeBridgeModal()" style="background:transparent;border:none;color:var(--text-dim);font-size:1.1rem;cursor:pointer;">&times;</button>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.75rem;">Run this command in your project directory:</div>
+      <div style="display:flex;align-items:center;gap:8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;padding:10px 12px;">
+        <code id="bridge-cmd" style="flex:1;font-family:var(--font-mono);font-size:0.82rem;color:var(--cyan);user-select:all;">make run-swarm-bridge</code>
+        <button onclick="copyBridgeCmd()" aria-label="Copy command"
+          style="background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:4px 10px;font-size:0.75rem;color:var(--text-secondary);cursor:pointer;font-family:var(--font-mono);white-space:nowrap;">
+          Copy
+        </button>
+      </div>
+      <div style="margin-top:1rem;font-size:0.75rem;color:var(--text-dim);">The bridge enables cross-agent communication via the Swarm protocol. Health check: <code style="font-family:var(--font-mono);color:var(--cyan);">localhost:3002/health</code></div>
+    </div>
   </div>
 
   <!-- Quick Actions -->
