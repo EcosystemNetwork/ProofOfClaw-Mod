@@ -1,33 +1,28 @@
 //! Boundless Groth16 Prover for Proof of Claw
 //!
-//! Submits a proof request to the Boundless proving marketplace on Sepolia,
-//! waits for fulfillment, and outputs the Groth16 seal ready for on-chain verification.
-//!
-//! Usage:
-//!   # First generate a STARK receipt:
-//!   cd zkvm && ./target/release/proof-of-claw-host > /dev/null
-//!
-//!   # Then submit to Boundless for Groth16 wrapping:
-//!   ./target/release/boundless-prover
+//! Submits a proof request to the Boundless marketplace on Sepolia,
+//! waits for fulfillment, and outputs the Groth16 seal for on-chain verification.
 //!
 //! Required env vars:
-//!   PRIVATE_KEY         — Funded Sepolia wallet
-//!   SEPOLIA_RPC_URL     — Sepolia RPC endpoint
+//!   PRIVATE_KEY       — Funded Sepolia wallet (needs Sepolia ETH + Boundless collateral)
+//!   SEPOLIA_RPC_URL   — Sepolia RPC (default: publicnode)
+//!   PINATA_JWT        — Pinata API token for uploading ELF to IPFS
 //!
-//! The guest ELF and image ID are loaded automatically from the build artifacts.
+//! Setup:
+//!   1. Get Sepolia ETH from a faucet
+//!   2. Get Boundless collateral tokens (bridge or faucet)
+//!   3. Get Pinata JWT from https://app.pinata.cloud/developers/api-keys
+//!   4. Run: cargo run --release --manifest-path zkvm/boundless-prover/Cargo.toml
 
-use alloy::{
-    network::EthereumWallet,
-    providers::ProviderBuilder,
-    signers::local::PrivateKeySigner,
-};
 use anyhow::{Context, Result};
 use boundless_market::{
     client::ClientBuilder,
     deployments::SEPOLIA,
-    contracts::Input,
+    input::GuestEnv,
+    storage::StorageUploaderConfig,
 };
-use risc0_zkvm::compute_image_id;
+// Image ID pre-computed from the guest ELF
+const IMAGE_ID_HEX: &str = "a2ad29fbb85c3aee3a8863ffcb1fa287f537d89473f44df19cb2065834f025d2";
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -42,176 +37,113 @@ struct ExecutionTrace {
     output_commitment: [u8; 32],
     action_value: u64,
 }
-
 #[derive(Serialize, Deserialize)]
-struct ToolInvocation {
-    tool_name: String,
-    input_hash: [u8; 32],
-    output_hash: [u8; 32],
-    capability_hash: [u8; 32],
-    within_policy: bool,
-}
-
+struct ToolInvocation { tool_name: String, input_hash: [u8; 32], output_hash: [u8; 32], capability_hash: [u8; 32], within_policy: bool }
 #[derive(Serialize, Deserialize)]
-struct PolicyResult {
-    rule_id: String,
-    severity: String,
-    details: String,
-}
-
+struct PolicyResult { rule_id: String, severity: String, details: String }
 #[derive(Serialize, Deserialize)]
-struct AgentPolicy {
-    allowed_tools: Vec<String>,
-    endpoint_allowlist: Vec<String>,
-    max_value_autonomous: u64,
-    capability_root: [u8; 32],
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct VerifiedOutput {
-    agent_id: String,
-    policy_hash: [u8; 32],
-    output_commitment: [u8; 32],
-    all_checks_passed: bool,
-    requires_ledger_approval: bool,
-    action_value: u64,
-}
+struct AgentPolicy { allowed_tools: Vec<String>, endpoint_allowlist: Vec<String>, max_value_autonomous: u64, capability_root: [u8; 32] }
 
 #[tokio::main]
 async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    let image_id = compute_image_id(GUEST_ELF)?;
+    let image_id_bytes: [u8; 32] = hex::decode(IMAGE_ID_HEX)
+        .expect("invalid IMAGE_ID_HEX")
+        .try_into()
+        .expect("wrong length");
     println!("Proof of Claw — Boundless Groth16 Prover");
-    println!("Image ID: 0x{}", hex::encode(image_id.as_bytes()));
+    println!("Image ID: 0x{IMAGE_ID_HEX}");
 
-    // Load env
     let private_key = std::env::var("PRIVATE_KEY")
-        .context("PRIVATE_KEY env var required")?;
-    let rpc_url = std::env::var("SEPOLIA_RPC_URL")
-        .unwrap_or_else(|_| "https://ethereum-sepolia-rpc.publicnode.com".to_string());
+        .context("Set PRIVATE_KEY env var (Sepolia funded wallet)")?;
+    let rpc_url: url::Url = std::env::var("SEPOLIA_RPC_URL")
+        .unwrap_or_else(|_| "https://ethereum-sepolia-rpc.publicnode.com".to_string())
+        .parse()?;
 
-    // Set up wallet and provider
-    let signer: PrivateKeySigner = private_key.parse()
-        .context("Invalid PRIVATE_KEY")?;
-    let wallet = EthereumWallet::from(signer.clone());
-    let provider = ProviderBuilder::new()
-        .wallet(wallet)
-        .on_http(rpc_url.parse()?);
-
-    println!("Wallet: {:?}", signer.address());
-
-    // Build Boundless client using Sepolia deployment
-    let client = ClientBuilder::default()
-        .with_deployment(SEPOLIA)
-        .build(&provider, &signer)
-        .await
-        .context("Failed to build Boundless client")?;
-
-    // Build proof input (trace + policy serialized together)
+    // Build input for the guest
     let trace = ExecutionTrace {
         agent_id: "alice.proofofclaw.eth".to_string(),
         inference_commitment: [0u8; 32],
-        tool_invocations: vec![
-            ToolInvocation {
-                tool_name: "swap_tokens".to_string(),
-                input_hash: [1u8; 32],
-                output_hash: [2u8; 32],
-                capability_hash: [3u8; 32],
-                within_policy: true,
-            },
-        ],
+        tool_invocations: vec![ToolInvocation {
+            tool_name: "swap_tokens".to_string(),
+            input_hash: [1u8; 32], output_hash: [2u8; 32],
+            capability_hash: [3u8; 32], within_policy: true,
+        }],
         policy_check_results: vec![],
         output_commitment: [0u8; 32],
         action_value: 50_000_000_000_000_000,
     };
-
     let policy = AgentPolicy {
         allowed_tools: vec!["swap_tokens".to_string(), "transfer".to_string()],
         endpoint_allowlist: vec!["https://api.uniswap.org".to_string()],
         max_value_autonomous: 100_000_000_000_000_000,
         capability_root: [0u8; 32],
     };
+    let input_bytes = bincode::serialize(&(&trace, &policy))?;
 
-    let input_bytes = bincode::serialize(&(&trace, &policy))
-        .context("Failed to serialize input")?;
+    let guest_env = GuestEnv::builder()
+        .write(&trace)?
+        .write(&policy)?
+        .build_env();
 
-    println!("Submitting proof request to Boundless (Sepolia)...");
-    println!("Input size: {} bytes", input_bytes.len());
-    println!("Guest ELF size: {} bytes", GUEST_ELF.len());
+    // Build storage config for Pinata
+    let storage_config = StorageUploaderConfig::builder()
+        .storage_uploader(boundless_market::storage::StorageUploaderType::Pinata)
+        .pinata_jwt(std::env::var("PINATA_JWT")
+            .context("Set PINATA_JWT env var (get from https://app.pinata.cloud/developers/api-keys)")?)
+        .build()
+        .context("Failed to build storage config")?;
 
-    // Submit proof request
-    let request_id = client
-        .submit(client.new_request(
-            Input::builder()
-                .with_image_id(image_id)
-                .with_input(&input_bytes)
-                .with_elf(GUEST_ELF)
-                .build(),
-        ))
+    // Build Boundless client
+    println!("Connecting to Boundless on Sepolia...");
+    let client = ClientBuilder::new()
+        .with_deployment(SEPOLIA)
+        .with_rpc_url(rpc_url)
+        .with_private_key_str(&private_key)
+        .context("Invalid PRIVATE_KEY")?
+        .with_uploader_config(&storage_config)
         .await
-        .context("Failed to submit proof request to Boundless")?;
-
-    println!("Proof request submitted! ID: {request_id}");
-    println!("Waiting for fulfillment (this may take 2-10 minutes)...");
-
-    // Wait for the proof to be fulfilled
-    let expires_at = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)?
-        .as_secs() + 600; // 10 minute timeout
-
-    let receipt = client
-        .wait_for_request_fulfillment(
-            request_id,
-            Duration::from_secs(10), // check every 10s
-            expires_at,
-        )
+        .context("Failed to configure storage uploader")?
+        .build()
         .await
-        .context("Proof request was not fulfilled in time")?;
+        .context("Failed to build Boundless client")?;
 
-    println!("\n=== PROOF FULFILLED ===");
-    println!("Journal length: {} bytes", receipt.journal.bytes.len());
+    println!("Wallet: {}", client.caller());
 
-    // Decode output
-    let output: VerifiedOutput = receipt.journal.decode()
-        .context("Failed to decode journal")?;
-    println!("Agent: {}", output.agent_id);
-    println!("All checks passed: {}", output.all_checks_passed);
+    // Submit proof request with program and env
+    println!("Submitting proof request (ELF: {} bytes, input: {} bytes)...", GUEST_ELF.len(), input_bytes.len());
+    // Pass image_id as raw bytes converted to the Digest type used by boundless-market
+    let params = client.new_request()
+        .with_program(GUEST_ELF.to_vec())
+        .with_env(guest_env)
+        .with_image_id(image_id_bytes);
 
-    // Extract Groth16 seal
-    match receipt.inner.groth16() {
-        Ok(groth16) => {
-            let seal_hex = hex::encode(&groth16.seal);
-            println!("\n=== ON-CHAIN READY (Groth16) ===");
-            println!("Seal length: {} bytes", groth16.seal.len());
-            println!("\nSolidity calldata for verifyAndExecute():");
-            println!("  imageId:     0x{}", hex::encode(image_id.as_bytes()));
-            println!("  seal:        0x{}", seal_hex);
-            println!("  journalData: 0x{}", hex::encode(&receipt.journal.bytes));
+    let (request_id, block) = client
+        .submit(params)
+        .await
+        .context("Failed to submit proof request")?;
 
-            // Save to file for easy consumption
-            let output_path = "groth16-proof.json";
-            let proof_json = serde_json::json!({
-                "image_id": format!("0x{}", hex::encode(image_id.as_bytes())),
-                "seal": format!("0x{}", seal_hex),
-                "journal": format!("0x{}", hex::encode(&receipt.journal.bytes)),
-                "journal_hash": format!("0x{}", hex::encode(sha256(&receipt.journal.bytes))),
-            });
-            std::fs::write(output_path, serde_json::to_string_pretty(&proof_json)?)?;
-            println!("\nProof saved to: {output_path}");
-        }
-        Err(_) => {
-            println!("WARNING: Receipt is not Groth16. Got STARK/Succinct receipt instead.");
-            println!("The Boundless marketplace may have returned a non-Groth16 proof.");
-        }
-    }
+    println!("Request submitted! ID: {request_id} (block: {block})");
+    println!("Waiting for fulfillment (up to 10 min)...");
+
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)?.as_secs();
+    let fulfillment = client
+        .wait_for_request_fulfillment(request_id, Duration::from_secs(15), now + 600)
+        .await
+        .context("Proof not fulfilled in time")?;
+
+    println!("\nProof fulfilled!");
+    println!("Seal length: {} bytes", fulfillment.seal.len());
+
+    // Save proof
+    let proof_json = serde_json::json!({
+        "image_id": format!("0x{IMAGE_ID_HEX}"),
+        "seal": format!("0x{}", hex::encode(&fulfillment.seal)),
+    });
+    std::fs::write("groth16-proof.json", serde_json::to_string_pretty(&proof_json)?)?;
+    println!("Proof saved to groth16-proof.json");
 
     Ok(())
-}
-
-fn sha256(data: &[u8]) -> [u8; 32] {
-    use sha2::{Digest, Sha256};
-    let mut hasher = Sha256::new();
-    hasher.update(data);
-    hasher.finalize().into()
 }

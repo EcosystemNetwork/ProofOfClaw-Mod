@@ -218,6 +218,18 @@ proof-of-claw/
 │   ├── shared.js               # Shared UI utilities
 │   └── public/                 # Favicons, logos, sponsor assets
 │
+├── cli/                        # TypeScript CLI tool (`poc`)
+│   └── src/                    # Commander.js commands for org, swarm, agent, epoch, backup
+│
+├── delivery-service/           # DM3-compatible message delivery service
+│   └── server.js               # Express + WebSocket server (port 3001)
+│
+├── swarm-bridge/               # Bidirectional bridge to swarmprotocol.fun
+│   └── bridge.js               # Routes messages between DM3 and Swarm hub
+│
+├── 1claw-server/               # 1clawAI-compatible credential & data storage API
+│   └── server.js               # Express server (port 3456)
+│
 ├── spec.md                     # Full technical specification
 ├── ARCHITECTURE.md             # System architecture docs
 ├── IRONCLAW_INTEGRATION.md     # IronClaw integration guide
@@ -247,12 +259,24 @@ cd contracts && forge build
 cd zkvm && cargo build --release
 ```
 
+### Configure
+
+```bash
+cp .env.example .env
+# Edit .env with your values (private key, RPC URL, etc.)
+```
+
+See [.env.example](.env.example) for all configuration variables with descriptions.
+
 ### Run
 
 > **Warning:** The private key below is a well-known Hardhat/Anvil test key. Never use it on mainnet or with real funds. If `PRIVATE_KEY` is omitted, the server falls back to a hardcoded demo key — this is only safe for local development.
 
 ```bash
-# Terminal 1: Start the agent
+# Terminal 1: DM3 delivery service (required for messaging)
+cd delivery-service && npm start
+
+# Terminal 2: Start the agent
 cd agent && AGENT_ID=my-agent ENS_NAME=my-agent.proofofclaw.eth \
   PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 \
   RPC_URL=https://eth-sepolia.g.alchemy.com/v2/demo \
@@ -264,7 +288,7 @@ cd agent && AGENT_ID=my-agent ENS_NAME=my-agent.proofofclaw.eth \
   MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000 \
   cargo run
 
-# Terminal 2: Serve the frontend
+# Terminal 3: Serve the frontend
 cd frontend && python3 -m http.server 8080
 ```
 
@@ -281,6 +305,21 @@ Open `http://localhost:8080/agents.html` → Connect OpenClaw → Chat.
 - Chain ID: 16602
 - RPC: https://evmrpc-testnet.0g.ai
 - Explorer: https://chainscan-dev.0g.ai
+
+## Deployed Contracts (Sepolia)
+
+| Contract | Address |
+|----------|---------|
+| RiscZeroMockVerifier | `0x14a750E841fa7e3F40e11b9492dcE9157DC51D8a` |
+| ProofOfClawVerifier | `0xEa9ce963B9082cD13A7057ed1A9EdB040c7932a0` |
+| ProofOfClawINFT | `0xf20aE18D72A7C811873D5ce24D9D24214123f48F` |
+| SoulVaultSwarm | `0x11938021169a5094B5c67389286A1FAe72bdE561` |
+| ERC8004RegistryAdapter | `0x56B19562c7d6cB3bCCD0FA78214EFC3928F6eE6a` |
+| EIP8004Integration | `0x6254651F29e7afEE1c52a1D6Fd4b7B211d2dBed2` |
+
+**Network Details:**
+- Chain ID: 11155111
+- Explorer: https://sepolia.etherscan.io
 
 ### Deploy Contracts
 
@@ -328,6 +367,22 @@ PRIVATE_KEY=$PRIVATE_KEY forge script script/Deploy.s.sol \
 | **Ledger** | Hardware-gated human approval | **Stub** — always returns `Ok(true)`; no real device communication |
 | **EIP-8004** | Trustless agent discovery & reputation | Working — identity, reputation, validation queries (contracts unaudited) |
 | **iNFT (ERC-7857)** | Agent identity NFT on 0G Chain | Working — minting, metadata, proof recording (custom ERC-721, not OZ-based) |
+
+## Supporting Services
+
+| Service | Directory | Port | Purpose |
+|---------|-----------|------|---------|
+| **Delivery Service** | `delivery-service/` | 3001 | DM3-compatible message delivery (Express + WebSocket) |
+| **Swarm Bridge** | `swarm-bridge/` | 3002 | Bidirectional bridge between DM3 agents and swarmprotocol.fun |
+| **1clawAI Server** | `1claw-server/` | 3456 | Credential storage, license verification, task management |
+| **CLI** | `cli/` | — | `poc` command-line tool for org, swarm, agent, epoch, and backup operations |
+
+```bash
+# Start supporting services
+cd delivery-service && npm start        # DM3 messaging on :3001
+cd swarm-bridge && node bridge.js       # Swarm bridge on :3002
+cd 1claw-server && node server.js       # 1clawAI API on :3456
+```
 
 ## Security Model
 

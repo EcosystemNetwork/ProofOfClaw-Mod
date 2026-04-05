@@ -1555,12 +1555,18 @@ app.listen(8420);</code></pre>
 <pre>AGENT_ID=alice-agent
 ENS_NAME=alice.proofofclaw.eth
 PRIVATE_KEY=0x...
+SIGNER_MODE=private-key
 RPC_URL=https://eth-sepolia.g.alchemy.com/v2/...
+CHAIN_ID=11155111
 ZERO_G_INDEXER_RPC=https://indexer-storage-testnet.0g.ai
 ZERO_G_COMPUTE_ENDPOINT=https://broker-testnet.0g.ai
+ZERO_G_CHAIN_RPC=https://evmrpc-testnet.0g.ai
+ZERO_G_CHAIN_ID=16602
 DM3_DELIVERY_SERVICE_URL=http://localhost:3001
 ALLOWED_TOOLS=swap_tokens,transfer,query
-MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
+ENDPOINT_ALLOWLIST=https://api.uniswap.org,https://api.0x.org
+MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000
+API_PORT=8420</pre>
   </div>
 </div>
 
@@ -1572,13 +1578,34 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
   <tbody>
     <tr><td><code>AGENT_ID</code></td><td>Unique agent identifier</td></tr>
     <tr><td><code>ENS_NAME</code></td><td>Agent's ENS subname for identity and DM3 messaging</td></tr>
-    <tr><td><code>PRIVATE_KEY</code></td><td>Agent server wallet private key</td></tr>
-    <tr><td><code>RPC_URL</code></td><td>Ethereum RPC endpoint</td></tr>
+    <tr><td><code>PRIVATE_KEY</code></td><td>Agent server wallet private key (never commit this)</td></tr>
+    <tr><td><code>SIGNER_MODE</code></td><td><code>private-key</code> or <code>mnemonic</code></td></tr>
+    <tr><td><code>RPC_URL</code></td><td>Ethereum RPC endpoint (Alchemy, Infura, etc.)</td></tr>
+    <tr><td><code>CHAIN_ID</code></td><td>Target chain ID (default: 11155111 for Sepolia)</td></tr>
     <tr><td><code>ZERO_G_INDEXER_RPC</code></td><td>0G Storage indexer endpoint</td></tr>
     <tr><td><code>ZERO_G_COMPUTE_ENDPOINT</code></td><td>0G Compute broker endpoint</td></tr>
+    <tr><td><code>ZERO_G_CHAIN_RPC</code></td><td>0G Chain RPC (default: <code>https://evmrpc-testnet.0g.ai</code>)</td></tr>
+    <tr><td><code>ZERO_G_CHAIN_ID</code></td><td>0G Chain ID (default: 16602)</td></tr>
     <tr><td><code>DM3_DELIVERY_SERVICE_URL</code></td><td>DM3 delivery service for encrypted messaging</td></tr>
     <tr><td><code>ALLOWED_TOOLS</code></td><td>Comma-separated list of permitted tools</td></tr>
+    <tr><td><code>ENDPOINT_ALLOWLIST</code></td><td>Comma-separated external API URLs the agent may call</td></tr>
     <tr><td><code>MAX_VALUE_AUTONOMOUS_WEI</code></td><td>Threshold above which Ledger approval is required (in wei)</td></tr>
+    <tr><td><code>API_PORT</code></td><td>Agent REST API port (default: 8420)</td></tr>
+    <tr><td><code>ETHERSCAN_API_KEY</code></td><td>Etherscan API key for contract verification</td></tr>
+    <tr><td><code>INFT_CONTRACT</code></td><td>ERC-7857 iNFT contract address (set after deployment)</td></tr>
+    <tr><td><code>SOULVAULT_SWARM_CONTRACT</code></td><td>SoulVault swarm coordination contract</td></tr>
+    <tr><td><code>ERC8004_REGISTRY_ADDRESS</code></td><td>ERC-8004 agent registry adapter contract</td></tr>
+    <tr><td><code>RISC_ZERO_VERIFIER_ADDRESS</code></td><td>On-chain RISC Zero proof verifier</td></tr>
+    <tr><td><code>RISC_ZERO_IMAGE_ID</code></td><td>Guest program image ID (from circuit compilation)</td></tr>
+    <tr><td><code>LEDGER_ORIGIN_TOKEN</code></td><td>Ledger DMK origin token (optional — for hardware-signed approvals)</td></tr>
+    <tr><td><code>EIP8004_IDENTITY_REGISTRY</code></td><td>EIP-8004 identity registry contract</td></tr>
+    <tr><td><code>EIP8004_INTEGRATION_CONTRACT</code></td><td>EIP-8004 integration bridge contract</td></tr>
+    <tr><td><code>SEPOLIA_RPC_URL</code></td><td>Sepolia RPC endpoint (for ENS and identity)</td></tr>
+    <tr><td><code>ENS_REGISTRY</code></td><td>ENS registry address (Sepolia: <code>0x00...2e1e</code>)</td></tr>
+    <tr><td><code>SWARM_HUB_URL</code></td><td>Swarm Protocol hub URL (optional — for swarm bridge)</td></tr>
+    <tr><td><code>BRIDGE_PORT</code></td><td>Swarm bridge WebSocket port (default: 3002)</td></tr>
+    <tr><td><code>GOOGLE_CLIENT_ID</code></td><td>Google OAuth client ID (optional — for calendar integration)</td></tr>
+    <tr><td><code>ONECLAW_API_KEY</code></td><td>1clawAI server API key (optional — for credential storage)</td></tr>
   </tbody>
 </table>
 </div>
@@ -1595,30 +1622,45 @@ MAX_VALUE_AUTONOMOUS_WEI=1000000000000000000</pre>
   </div>
   <div class="code-body">
 <pre>proof-of-claw/
-├── agent/                      <span class="cm"># Rust agent runtime</span>
+├── agent/                      <span class="cm"># Rust agent runtime (IronClaw workspace)</span>
+│   ├── crates/                 <span class="cm"># Core crates (engine, safety, skills, common)</span>
 │   └── src/
-│       ├── core/               <span class="cm"># Agent loop, intent router, job scheduler</span>
-│       ├── tools/              <span class="cm"># WASM sandbox, tool registry, capabilities</span>
-│       ├── safety/             <span class="cm"># Policy engine, sanitizer, injection detector</span>
-│       └── integrations/       <span class="cm"># 0G, ENS/DM3, Ledger integrations</span>
+│       ├── agent/              <span class="cm"># Agent loop, dispatcher, sessions</span>
+│       ├── channels/           <span class="cm"># Multi-channel input (HTTP, CLI, WebSocket, WASM)</span>
+│       ├── tools/              <span class="cm"># WASM sandbox, tool registry, MCP</span>
+│       ├── safety/             <span class="cm"># Policy engine, injection detector</span>
+│       └── integrations/       <span class="cm"># 0G, ENS, DM3, Ledger, EIP-8004, iNFT</span>
 ├── zkvm/                       <span class="cm"># RISC Zero zkVM programs</span>
 │   ├── guest/                  <span class="cm"># Guest program (policy verification)</span>
 │   └── host/                   <span class="cm"># Host program (proof generation)</span>
-├── contracts/                  <span class="cm"># Solidity smart contracts</span>
+├── contracts/                  <span class="cm"># Solidity smart contracts (Foundry)</span>
 │   ├── src/
-│   │   └── ProofOfClawVerifier.sol
+│   │   ├── ProofOfClawVerifier.sol     <span class="cm"># ZK proof verification + routing</span>
+│   │   ├── ProofOfClawINFT.sol         <span class="cm"># ERC-7857 agent identity NFT</span>
+│   │   ├── SoulVaultSwarm.sol          <span class="cm"># Epoch-based swarm coordination</span>
+│   │   ├── EIP8004Integration.sol      <span class="cm"># EIP-8004 registry bridge</span>
+│   │   └── SoulVaultERC8004RegistryAdapter.sol
 │   ├── clear-signing/
-│   │   └── proofofclaw.json    <span class="cm"># ERC-7730 metadata</span>
-│   └── script/Deploy.s.sol
-├── frontend/                   <span class="cm"># Web UI</span>
+│   │   └── proofofclaw.json    <span class="cm"># ERC-7730 Ledger Clear Signing</span>
+│   └── script/
+│       ├── Deploy.s.sol        <span class="cm"># Sepolia deployment</span>
+│       ├── Deploy0G.s.sol      <span class="cm"># 0G Chain deployment</span>
+│       └── DeploySwarm.s.sol   <span class="cm"># Swarm + identity deployment</span>
+├── frontend/                   <span class="cm"># Web UI (vanilla HTML/CSS/JS)</span>
 │   ├── index.html              <span class="cm"># Landing page</span>
-│   ├── docs.html               <span class="cm"># Documentation (this page)</span>
-│   ├── agents.html             <span class="cm"># Agent management</span>
+│   ├── agents.html             <span class="cm"># Agent registry, wizard, chat</span>
 │   ├── dashboard.html          <span class="cm"># Monitoring dashboard</span>
-│   ├── deploy.html             <span class="cm"># Agent deployment</span>
-│   ├── messages.html           <span class="cm"># DM3 message viewer</span>
-│   └── proofs.html             <span class="cm"># ZK proof explorer</span>
-└── spec.md                     <span class="cm"># Full technical specification</span></pre>
+│   ├── messages.html           <span class="cm"># DM3 message threads</span>
+│   ├── proofs.html             <span class="cm"># ZK proof explorer</span>
+│   ├── soul-vault.html         <span class="cm"># Agent deployment interface</span>
+│   └── docs.html               <span class="cm"># Documentation (this page)</span>
+├── cli/                        <span class="cm"># TypeScript CLI tool (poc)</span>
+├── delivery-service/           <span class="cm"># DM3 message delivery (port 3001)</span>
+├── swarm-bridge/               <span class="cm"># Bridge to swarmprotocol.fun (port 3002)</span>
+├── 1claw-server/               <span class="cm"># 1clawAI credential storage (port 3456)</span>
+├── spec.md                     <span class="cm"># Full technical specification</span>
+├── ARCHITECTURE.md             <span class="cm"># System architecture</span>
+└── .env.example                <span class="cm"># Configuration reference</span></pre>
   </div>
 </div>
 
