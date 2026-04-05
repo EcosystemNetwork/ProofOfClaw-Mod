@@ -1,6 +1,11 @@
-.PHONY: all build-agent build-zkvm build-contracts build-poc-server test clean
+.PHONY: all build-agent build-zkvm build-contracts build-poc-server build-frontend test clean
 
-all: build-agent build-contracts build-poc-server
+all: build-frontend build-agent build-contracts build-poc-server
+
+build-frontend:
+	@echo "Generating frontend/env-config.js..."
+	bun scripts/build-env.js
+
 
 build-agent:
 	cd agent && cargo build --release
