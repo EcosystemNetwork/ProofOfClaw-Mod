@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(node scripts/build-env.js)",
+      "Bash(grep -r \"boundless\\\\|Boundless\" /home/god/ProofOfClaw/ProofOfClaw/*.md)"
+    ]
+  }
+}
