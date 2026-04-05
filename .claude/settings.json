@@ -41,7 +41,8 @@
       "Bash(chmod +x /home/god/ProofOfClaw/ProofOfClaw/deploy_multichain.sh)",
       "Bash(chmod +x /home/god/ProofOfClaw/ProofOfClaw/delivery-service/setup.sh)",
       "Bash(curl -s 'https://esm.sh/viem@2.21.44/es2022/_esm/constants/contracts.mjs')",
-      "Bash(curl -s 'https://esm.sh/viem@2.21.44/_esm/accounts/privateKeyToAccount.js')"
+      "Bash(curl -s 'https://esm.sh/viem@2.21.44/_esm/accounts/privateKeyToAccount.js')",
+      "Bash(gh pr:*)"
     ]
   }
 }
