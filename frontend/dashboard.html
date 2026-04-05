@@ -275,6 +275,75 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 }
 
 /* ======================================== */
+/* LEDGER CARD (security upgrade widget)    */
+/* ======================================== */
+.dash-ledger-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.75rem;
+  margin-bottom: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  transition: border-color 0.3s, background 0.3s;
+}
+.dash-ledger-card.connected {
+  border-color: rgba(0,230,118,0.3);
+  background: linear-gradient(135deg, rgba(0,230,118,0.04), var(--bg-card));
+}
+.dash-ledger-info {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex: 1;
+}
+.dash-ledger-icon {
+  width: 52px; height: 52px; border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; flex-shrink: 0;
+  transition: border-color 0.3s, background 0.3s;
+}
+.dash-ledger-card.connected .dash-ledger-icon {
+  border-color: rgba(0,230,118,0.3);
+  background: var(--green-glow, rgba(0,230,118,0.08));
+}
+.dash-ledger-details h3 {
+  font-family: var(--font-display);
+  font-size: 1rem; font-weight: 700;
+  color: var(--text-primary); margin-bottom: 0.25rem;
+}
+.dash-ledger-details p {
+  font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;
+}
+.dash-ledger-meta {
+  display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: 0.5rem;
+}
+.dash-ledger-meta-item {
+  font-size: 0.75rem; color: var(--text-dim);
+}
+.dash-ledger-meta-item span { color: var(--text-primary); font-weight: 500; }
+/* Status bar when connected + no pending */
+.dash-ledger-status-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 0.7rem 1.25rem;
+  border-radius: 8px;
+  background: rgba(0,230,118,0.06);
+  border: 1px solid rgba(0,230,118,0.2);
+  margin-bottom: 1.75rem;
+  font-size: 0.8rem; color: var(--text-secondary);
+}
+.dash-ledger-status-bar .dot-green {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green, #00e676); flex-shrink: 0;
+  box-shadow: 0 0 6px var(--green, #00e676);
+}
+
+/* ======================================== */
 /* ACTIVITY FEED                            */
 /* ======================================== */
 .activity-section { margin-bottom: 1.75rem; }
@@ -871,23 +940,48 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
     </div>
   </div>
 
-  <!-- Pending Ledger Approvals -->
-  <div class="pending-section" id="pending-section" style="display: none;">
+  <!-- ═══ LEDGER SECURITY ZONE ═══════════════════════════════════════════ -->
+  <!-- State 1 (default): full-width connection card — security upgrade CTA -->
+  <div class="dash-ledger-card" id="dash-ledger-card">
+    <div class="dash-ledger-info">
+      <div class="dash-ledger-icon" id="dash-ledger-icon">&#x1F512;</div>
+      <div class="dash-ledger-details">
+        <h3 id="dash-ledger-title">Upgrade Security — Connect Ledger</h3>
+        <p id="dash-ledger-desc">Add a hardware wallet as the owner of your agents. High-value actions will require Ledger Clear Signing before execution.</p>
+        <div class="dash-ledger-meta" id="dash-ledger-meta" style="display:none;">
+          <div class="dash-ledger-meta-item">Device: <span id="dash-lmeta-device">---</span></div>
+          <div class="dash-ledger-meta-item">Address: <span id="dash-lmeta-address" style="color:var(--cyan);">---</span></div>
+          <div class="dash-ledger-meta-item">App: <span id="dash-lmeta-app">Ethereum</span></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn-ledger connect" id="dash-ledger-connect-btn" onclick="dashConnectLedger()">
+      &#x1F517; Connect Ledger
+    </button>
+  </div>
+
+  <!-- State 2: compact status bar — connected, no pending actions -->
+  <div class="dash-ledger-status-bar" id="dash-ledger-idle" style="display:none;">
+    <div class="dot-green"></div>
+    <span style="font-weight:600;color:var(--green,#00e676);font-family:var(--font-mono);font-size:0.78rem;">Ledger Active</span>
+    <span id="dash-lmeta-idle-addr" style="font-family:var(--font-mono);font-size:0.75rem;color:var(--cyan);"></span>
+    <span style="flex:1"></span>
+    <span style="font-size:0.75rem;color:var(--text-dim);">No pending approvals</span>
+    <a href="approve.html" style="font-size:0.75rem;color:var(--cyan);text-decoration:none;font-family:var(--font-mono);opacity:0.8;">Full page &#x2192;</a>
+  </div>
+
+  <!-- State 3: pending approvals block — only shown when count > 0 -->
+  <div class="pending-section" id="pending-section" style="display:none;">
     <div class="pending-header">
       <div class="pending-title">Pending Ledger Approvals</div>
       <div style="display:flex;align-items:center;gap:10px;">
-        <span class="pending-count" id="pending-count">1</span>
-        <button id="dash-ledger-btn" onclick="dashConnectLedger()"
-          style="font-size:0.72rem;padding:3px 10px;border-radius:5px;border:1px solid var(--amber);background:transparent;color:var(--amber);font-family:var(--font-mono);cursor:pointer;transition:all 0.2s;white-space:nowrap;"
-          title="Connect Ledger to sign directly">
-          &#x1F517; Connect Ledger
-        </button>
-        <span id="dash-ledger-status" style="font-size:0.72rem;color:var(--text-dim);font-family:var(--font-mono);display:none;"></span>
-        <a href="approve.html" style="font-size:0.75rem;color:var(--cyan);text-decoration:none;font-family:var(--font-mono);letter-spacing:0.03em;opacity:0.8;" title="Open full Ledger approval page">Full page &#x2192;</a>
+        <span class="pending-count" id="pending-count">0</span>
+        <a href="approve.html" style="font-size:0.75rem;color:var(--cyan);text-decoration:none;font-family:var(--font-mono);opacity:0.8;" title="Open full Ledger approval page">Full page &#x2192;</a>
       </div>
     </div>
     <div id="pending-list"></div>
   </div>
+  <!-- ═══════════════════════════════════════════════════════════════════ -->
 
   <!-- Ledger signing confirmation modal -->
   <div id="dash-sign-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;" role="dialog" aria-modal="true" aria-labelledby="dash-sign-modal-title">
@@ -900,7 +994,7 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
       <div id="dash-sign-detail" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.8rem;font-family:var(--font-mono);line-height:1.8;margin-bottom:1.25rem;"></div>
       <div style="display:flex;gap:10px;">
         <button id="dash-sign-confirm-btn" onclick="dashConfirmSign()"
-          style="flex:1;padding:10px;background:var(--amber);color:#000;border:none;border-radius:7px;font-weight:700;font-family:var(--font-mono);font-size:0.82rem;cursor:pointer;transition:opacity 0.2s;">
+          style="flex:1;padding:10px;background:var(--amber);color:#000;border:none;border-radius:7px;font-weight:700;font-family:var(--font-mono);font-size:0.82rem;cursor:pointer;">
           &#x270F; Sign on Ledger
         </button>
         <button onclick="dashCloseSignModal()"
@@ -1667,12 +1761,11 @@ function seedActivity() {
   if (empty) empty.style.display = '';
 }
 
-// scheduleSimulations — demo mode: show pending Ledger approval after 3 s
-// (signing uses real WebHID via dashConfirmSign, not a stub)
+// scheduleSimulations — demo mode: no fake timers
+// The Ledger connection card is always visible; pending block requires Ledger connected
 function scheduleSimulations() {
-  setTimeout(function() {
-    if (currentAgent) showPendingApproval();
-  }, 3000);
+  // No mock timers. Ledger card is the default prompt.
+  // Pending block appears only after connect + pending action arrives.
 }
 
 
@@ -1696,29 +1789,54 @@ const DASH_EIP712_TYPES = {
   ],
 };
 
-function dashSetLedgerStatus(msg, color) {
-  var el = document.getElementById('dash-ledger-status');
-  if (!el) return;
-  el.textContent = msg;
-  el.style.color = color || 'var(--text-dim)';
-  el.style.display = msg ? 'inline' : 'none';
+// ─── State machine ──────────────────────────────────────────────────────────
+// 'card'    → Ledger not connected: full-width upgrade CTA (default)
+// 'idle'    → Ledger connected, no pending: compact green status bar
+// 'pending' → Ledger connected, has pending: amber approval block
+function dashLedgerSetState(state) {
+  var card    = document.getElementById('dash-ledger-card');
+  var idleBar = document.getElementById('dash-ledger-idle');
+  var pending = document.getElementById('pending-section');
+
+  // Hide all, then show the right one
+  if (card)    card.style.display    = 'none';
+  if (idleBar) idleBar.style.display = 'none';
+  if (pending) pending.style.display = 'none';
+
+  if (state === 'card') {
+    if (card) card.style.display = 'flex';
+  } else if (state === 'idle') {
+    if (idleBar) idleBar.style.display = 'flex';
+    // Populate address in idle bar
+    var addrEl = document.getElementById('dash-lmeta-idle-addr');
+    if (addrEl && _dashLedgerAddr) {
+      addrEl.textContent = _dashLedgerAddr.slice(0, 8) + '\u2026' + _dashLedgerAddr.slice(-4);
+    }
+  } else if (state === 'pending') {
+    if (pending) pending.style.display = 'block';
+  }
 }
 
+// ─── Ledger connection ───────────────────────────────────────────────────────
 async function dashConnectLedger() {
-  var btn = document.getElementById('dash-ledger-btn');
+  var btn = document.getElementById('dash-ledger-connect-btn');
   if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
-  dashSetLedgerStatus('', '');
 
   var SDK  = window.LedgerSDK;
   var THID = SDK && SDK.TransportWebHID;
   var Eth  = SDK && SDK.Eth;
 
+  // Card: update icon to show connecting
+  var icon = document.getElementById('dash-ledger-icon');
+  if (icon) icon.textContent = '\u23F3';
+
   if (!navigator.hid || !THID) {
-    // No WebHID — simulated mode
-    await new Promise(function(r) { setTimeout(r, 800); });
-    _dashEthApp = null; _dashLedgerAddr = '0xsimulated'; _dashLedgerSim = true;
-    if (btn) { btn.textContent = '\uD83D\uDD13 Connected (sim)'; btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; btn.disabled = false; }
-    dashSetLedgerStatus('Simulated mode', 'var(--amber)');
+    // No WebHID — simulated
+    await new Promise(function(r) { setTimeout(r, 900); });
+    _dashEthApp = null;
+    _dashLedgerAddr = '0xSimulated000000000000000000000000000deadbeef';
+    _dashLedgerSim = true;
+    _dashOnLedgerConnected('Ledger (Simulated)', _dashLedgerAddr, true);
     return;
   }
 
@@ -1736,26 +1854,66 @@ async function dashConnectLedger() {
     _dashEthApp = eth;
     _dashLedgerAddr = res.address;
     _dashLedgerSim = false;
-    var dev = transport.device && transport.device.productName || 'Ledger';
-    if (btn) { btn.textContent = '\uD83D\uDD13 ' + dev; btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; btn.disabled = false; }
-    dashSetLedgerStatus(res.address.slice(0, 8) + '\u2026' + res.address.slice(-4), 'var(--cyan)');
+    var dev = (transport.device && transport.device.productName) || 'Ledger Device';
+    _dashOnLedgerConnected(dev, res.address, false);
+
   } catch(err) {
-    var msg = err && err.message || String(err);
+    var emsg = (err && err.message) || String(err);
     if (btn) { btn.disabled = false; btn.textContent = '\uD83D\uDD17 Connect Ledger'; }
-    if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('no device')) {
-      _dashTransport = null; return;
+    if (icon) icon.textContent = '\uD83D\uDD12';
+
+    var descEl = document.getElementById('dash-ledger-desc');
+    if (emsg.toLowerCase().includes('cancel') || emsg.toLowerCase().includes('no device')) {
+      _dashTransport = null;
+      if (descEl) descEl.textContent = 'Connection cancelled. Click Connect Ledger to try again.';
+      return;
     }
-    // Device locked or app not open — friendly error
-    if (msg.includes('0x5515') || msg.toLowerCase().includes('locked')) {
-      dashSetLedgerStatus('Unlock device & retry', 'var(--amber)');
-    } else if (msg.includes('0x6d00') || msg.includes('0x6e00') || msg.toLowerCase().includes('ethereum app')) {
-      dashSetLedgerStatus('Open Ethereum app & retry', 'var(--amber)');
+    if (emsg.includes('0x5515') || emsg.toLowerCase().includes('locked')) {
+      if (descEl) descEl.textContent = '\u26A0\uFE0F Device locked. Unlock with PIN, then click Connect Ledger again.';
+    } else if (emsg.includes('0x6d00') || emsg.includes('0x6e00') || emsg.toLowerCase().includes('ethereum app')) {
+      if (descEl) descEl.textContent = '\u26A0\uFE0F Open the Ethereum app on your Ledger, then click Connect Ledger again.';
     } else {
-      dashSetLedgerStatus('Error: ' + msg.slice(0, 60), 'var(--error)');
+      if (descEl) descEl.textContent = '\u26A0\uFE0F Error: ' + emsg.slice(0, 100);
     }
     console.error('Dash Ledger connect:', err);
     _dashTransport = null;
   }
+}
+
+function _dashOnLedgerConnected(deviceName, address, isSimulated) {
+  // Update the card to connected state (briefly shown, then transitions to idle)
+  var card   = document.getElementById('dash-ledger-card');
+  var icon   = document.getElementById('dash-ledger-icon');
+  var title  = document.getElementById('dash-ledger-title');
+  var desc   = document.getElementById('dash-ledger-desc');
+  var meta   = document.getElementById('dash-ledger-meta');
+  var btn    = document.getElementById('dash-ledger-connect-btn');
+
+  if (card)  card.classList.add('connected');
+  if (icon)  icon.textContent = '\uD83D\uDD13';
+  if (title) title.textContent = 'Ledger Connected' + (isSimulated ? ' (Simulated)' : '');
+  if (desc)  desc.textContent  = 'Hardware wallet active. High-value actions will require your signature.';
+  if (meta)  meta.style.display = 'flex';
+  var devEl = document.getElementById('dash-lmeta-device');
+  var addrEl = document.getElementById('dash-lmeta-address');
+  if (devEl)  devEl.textContent  = deviceName;
+  if (addrEl) addrEl.textContent = address;
+  if (btn) {
+    btn.textContent = '\u2714 Connected';
+    btn.className   = 'btn-ledger disconnect';
+    btn.style.cursor = 'default';
+    btn.disabled = true;
+  }
+
+  // Transition to idle state after 1.5 s (card fades out, compact bar appears)
+  setTimeout(function() {
+    dashLedgerSetState('idle');
+  }, 1500);
+
+  // Log to activity feed
+  addActivity('approval', 'Ledger Connected',
+    (isSimulated ? 'Simulated mode' : deviceName) + ' \u2022 ' +
+    address.slice(0, 8) + '\u2026' + address.slice(-4));
 }
 
 function showPendingApproval() {
