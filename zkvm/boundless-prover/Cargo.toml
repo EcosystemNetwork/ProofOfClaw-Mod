@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 boundless-market = { version = "1.4", default-features = false, features = [] }
 risc0-zkvm = "1.2"
-alloy = { version = "0.9", features = ["full", "signer-local"] }
+alloy = { version = "1.0", features = ["full", "signer-local"] }
 tokio = { version = "1", features = ["full"] }
 anyhow = "1"
 hex = "0.4"
