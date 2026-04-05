@@ -877,10 +877,39 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
       <div class="pending-title">Pending Ledger Approvals</div>
       <div style="display:flex;align-items:center;gap:10px;">
         <span class="pending-count" id="pending-count">1</span>
-        <a href="approve.html" style="font-size:0.75rem;color:var(--cyan);text-decoration:none;font-family:var(--font-mono);letter-spacing:0.03em;opacity:0.8;" title="Open Ledger approval page">Go to Approve &#x2192;</a>
+        <button id="dash-ledger-btn" onclick="dashConnectLedger()"
+          style="font-size:0.72rem;padding:3px 10px;border-radius:5px;border:1px solid var(--amber);background:transparent;color:var(--amber);font-family:var(--font-mono);cursor:pointer;transition:all 0.2s;white-space:nowrap;"
+          title="Connect Ledger to sign directly">
+          &#x1F517; Connect Ledger
+        </button>
+        <span id="dash-ledger-status" style="font-size:0.72rem;color:var(--text-dim);font-family:var(--font-mono);display:none;"></span>
+        <a href="approve.html" style="font-size:0.75rem;color:var(--cyan);text-decoration:none;font-family:var(--font-mono);letter-spacing:0.03em;opacity:0.8;" title="Open full Ledger approval page">Full page &#x2192;</a>
       </div>
     </div>
     <div id="pending-list"></div>
+  </div>
+
+  <!-- Ledger signing confirmation modal -->
+  <div id="dash-sign-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:2000;align-items:center;justify-content:center;" role="dialog" aria-modal="true" aria-labelledby="dash-sign-modal-title">
+    <div style="background:var(--bg-card);border:1px solid var(--amber);border-radius:12px;padding:1.75rem;max-width:420px;width:90%;box-shadow:0 0 50px rgba(255,179,0,0.12);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+        <div id="dash-sign-modal-title" style="font-size:0.95rem;font-weight:700;color:var(--amber);">&#x1F512; Sign on Ledger</div>
+        <button onclick="dashCloseSignModal()" style="background:transparent;border:none;color:var(--text-dim);font-size:1.1rem;cursor:pointer;">&times;</button>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-dim);margin-bottom:1rem;">Review the action below, then confirm on your Ledger device.</div>
+      <div id="dash-sign-detail" style="background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:0.8rem;font-family:var(--font-mono);line-height:1.8;margin-bottom:1.25rem;"></div>
+      <div style="display:flex;gap:10px;">
+        <button id="dash-sign-confirm-btn" onclick="dashConfirmSign()"
+          style="flex:1;padding:10px;background:var(--amber);color:#000;border:none;border-radius:7px;font-weight:700;font-family:var(--font-mono);font-size:0.82rem;cursor:pointer;transition:opacity 0.2s;">
+          &#x270F; Sign on Ledger
+        </button>
+        <button onclick="dashCloseSignModal()"
+          style="padding:10px 18px;background:transparent;color:var(--error);border:1px solid var(--error);border-radius:7px;font-family:var(--font-mono);font-size:0.82rem;cursor:pointer;">
+          Cancel
+        </button>
+      </div>
+      <div id="dash-sign-spinner" style="display:none;margin-top:1rem;text-align:center;color:var(--amber);font-size:0.8rem;font-family:var(--font-mono);">&#x23F3; Waiting for Ledger confirmation...</div>
+    </div>
   </div>
 
   <!-- Recent Activity -->
@@ -922,6 +951,7 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 </main>
 
 <script type="module" src="viem-client.js"></script>
+<script src="ledger-sdk.js?v=20260404f"></script>
 <script src="wallet.js"></script>
 <script src="nav.js"></script>
 <script src="shared.js"></script>
@@ -1637,11 +1667,107 @@ function scheduleSimulations() {
 }
 
 
+// =====================================================
+// LEDGER STATE (dashboard inline signing)
+// =====================================================
+var _dashEthApp      = null;   // hw-app-eth instance
+var _dashLedgerAddr  = null;   // checksummed address from device
+var _dashTransport   = null;   // kept alive across retries
+var _dashLedgerSim   = false;  // true when WebHID unavailable
+var _dashSignAction  = null;   // action object being signed
+
+const DASH_DERIVE_PATH = "44'/60'/0'/0/0";
+const DASH_EIP712_DOMAIN = { name: 'ProofOfClaw', version: '1', chainId: 11155111 };
+const DASH_EIP712_TYPES = {
+  ApprovalAction: [
+    { name: 'description', type: 'string' },
+    { name: 'value_wei',   type: 'uint64' },
+    { name: 'nonce',       type: 'uint64' },
+    { name: 'timestamp',   type: 'uint64' },
+  ],
+};
+
+function dashSetLedgerStatus(msg, color) {
+  var el = document.getElementById('dash-ledger-status');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color || 'var(--text-dim)';
+  el.style.display = msg ? 'inline' : 'none';
+}
+
+async function dashConnectLedger() {
+  var btn = document.getElementById('dash-ledger-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
+  dashSetLedgerStatus('', '');
+
+  var SDK  = window.LedgerSDK;
+  var THID = SDK && SDK.TransportWebHID;
+  var Eth  = SDK && SDK.Eth;
+
+  if (!navigator.hid || !THID) {
+    // No WebHID — simulated mode
+    await new Promise(function(r) { setTimeout(r, 800); });
+    _dashEthApp = null; _dashLedgerAddr = '0xsimulated'; _dashLedgerSim = true;
+    if (btn) { btn.textContent = '\uD83D\uDD13 Connected (sim)'; btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; btn.disabled = false; }
+    dashSetLedgerStatus('Simulated mode', 'var(--amber)');
+    return;
+  }
+
+  try {
+    var transport = _dashTransport;
+    if (!transport) {
+      var permitted = await THID.list();
+      transport = permitted.length > 0
+        ? await THID.open(permitted[0])
+        : await THID.request();
+      _dashTransport = transport;
+    }
+    var eth = new Eth(transport);
+    var res = await eth.getAddress(DASH_DERIVE_PATH, false, false);
+    _dashEthApp = eth;
+    _dashLedgerAddr = res.address;
+    _dashLedgerSim = false;
+    var dev = transport.device && transport.device.productName || 'Ledger';
+    if (btn) { btn.textContent = '\uD83D\uDD13 ' + dev; btn.style.borderColor = 'var(--green)'; btn.style.color = 'var(--green)'; btn.disabled = false; }
+    dashSetLedgerStatus(res.address.slice(0, 8) + '\u2026' + res.address.slice(-4), 'var(--cyan)');
+  } catch(err) {
+    var msg = err && err.message || String(err);
+    if (btn) { btn.disabled = false; btn.textContent = '\uD83D\uDD17 Connect Ledger'; }
+    if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('no device')) {
+      _dashTransport = null; return;
+    }
+    // Device locked or app not open — friendly error
+    if (msg.includes('0x5515') || msg.toLowerCase().includes('locked')) {
+      dashSetLedgerStatus('Unlock device & retry', 'var(--amber)');
+    } else if (msg.includes('0x6d00') || msg.includes('0x6e00') || msg.toLowerCase().includes('ethereum app')) {
+      dashSetLedgerStatus('Open Ethereum app & retry', 'var(--amber)');
+    } else {
+      dashSetLedgerStatus('Error: ' + msg.slice(0, 60), 'var(--error)');
+    }
+    console.error('Dash Ledger connect:', err);
+    _dashTransport = null;
+  }
+}
+
 function showPendingApproval() {
-  const section = document.getElementById('pending-section');
-  const list = document.getElementById('pending-list');
-  const a = currentAgent;
-  const limit = a.spendLimit || 100;
+  var section = document.getElementById('pending-section');
+  var list    = document.getElementById('pending-list');
+  var a       = currentAgent;
+  var limit   = (a && a.spendLimit) || 100;
+
+  // Build action object
+  _dashSignAction = {
+    id:          'dash-act-' + Date.now(),
+    agentId:     (a && a.id) || 'agent',
+    agentName:   (a && a.name) || 'Agent',
+    type:        'transfer',
+    description: 'Transfer 500 USDC to 0xd8dA\u20266045',
+    valueEth:    '0.500',
+    valueUsd:    '500.00',
+    to:          '0xd8dA...6045',
+    gasLimit:    '21,000',
+    chain:       'Sepolia Testnet',
+  };
 
   section.style.display = 'block';
   section.classList.add('fade-in');
@@ -1649,14 +1775,15 @@ function showPendingApproval() {
   list.innerHTML =
     '<div class="approval-card">' +
       '<div class="approval-desc">High-Value Transfer Requires Ledger Approval</div>' +
-      '<div class="approval-meta">Transfer 500 USDC to 0xd8dA...6045 exceeds autonomous limit</div>' +
+      '<div class="approval-meta">Transfer 500 USDC to 0xd8dA\u20266045 exceeds autonomous limit</div>' +
       '<div class="approval-details">' +
         'Action Value: 500 USDC ($500.00)<br>' +
-        'Autonomous Limit: ' + esc(limit) + ' USDC<br>' +
+        'Autonomous Limit: ' + esc(String(limit)) + ' USDC<br>' +
+        'To: 0xd8dA...6045<br>' +
         '<span class="hash">Output Commitment: 0xabcd1234ef5678900987654321fedcba...ef01</span>' +
       '</div>' +
       '<div class="approval-actions">' +
-        '<button class="btn btn-amber" onclick="approveLedger()">Approve on Ledger</button>' +
+        '<button class="btn btn-amber" onclick="dashOpenSignModal()">&#x270F; Sign on Ledger</button>' +
         '<button class="btn btn-danger" onclick="rejectAction()">Reject</button>' +
       '</div>' +
     '</div>';
@@ -1664,19 +1791,131 @@ function showPendingApproval() {
   addActivity('approval', 'Approval Requested', 'Transfer 500 USDC \u2022 Awaiting Ledger \u2022 Just now');
 }
 
-function approveLedger() {
-  document.getElementById('pending-section').style.display = 'none';
-  addActivity('approval', 'Ledger Approval Granted', 'Transfer 500 USDC \u2022 Signed via Ledger \u2022 Just now');
-  stats.approved++;
-  stats.total++;
-  stats.proofs++;
-  stats.verified++;
-  updateStats();
+function dashOpenSignModal() {
+  if (!_dashEthApp && !_dashLedgerSim) {
+    // Auto-connect first — open modal after success
+    dashConnectLedger().then(function() {
+      if (_dashEthApp || _dashLedgerSim) dashOpenSignModal();
+    });
+    return;
+  }
+  if (!_dashSignAction) return;
+  var det = document.getElementById('dash-sign-detail');
+  if (det) {
+    det.innerHTML =
+      '<div><span style="color:var(--text-dim)">Action: </span>' + esc(_dashSignAction.description) + '</div>' +
+      '<div><span style="color:var(--text-dim)">Value:  </span>' + esc(_dashSignAction.valueEth) + ' ETH (~$' + esc(_dashSignAction.valueUsd) + ')</div>' +
+      '<div><span style="color:var(--text-dim)">To:     </span>' + esc(_dashSignAction.to) + '</div>' +
+      '<div><span style="color:var(--text-dim)">Chain:  </span>' + esc(_dashSignAction.chain) + '</div>' +
+      '<div><span style="color:var(--text-dim)">Signer: </span><span style="color:var(--cyan);">' + (_dashLedgerSim ? 'Simulated' : esc(_dashLedgerAddr || '---')) + '</span></div>';
+  }
+  var m = document.getElementById('dash-sign-modal');
+  if (m) m.style.display = 'flex';
+  var spinner = document.getElementById('dash-sign-spinner');
+  if (spinner) spinner.style.display = 'none';
+  var btn = document.getElementById('dash-sign-confirm-btn');
+  if (btn) btn.disabled = false;
+}
+
+function dashCloseSignModal() {
+  var m = document.getElementById('dash-sign-modal');
+  if (m) m.style.display = 'none';
+}
+
+async function dashConfirmSign() {
+  if (!_dashSignAction) return;
+  var btn     = document.getElementById('dash-sign-confirm-btn');
+  var spinner = document.getElementById('dash-sign-spinner');
+  if (btn) btn.disabled = true;
+  if (spinner) spinner.style.display = 'block';
+
+  var action    = _dashSignAction;
+  var nonce     = Math.floor(Math.random() * Math.pow(2, 32));
+  var timestamp = Math.floor(Date.now() / 1000);
+  var valueWei  = Math.round(parseFloat(action.valueEth || '0') * 1e18);
+
+  var typedData = {
+    domain:      DASH_EIP712_DOMAIN,
+    types:       DASH_EIP712_TYPES,
+    primaryType: 'ApprovalAction',
+    message: {
+      description: action.description,
+      value_wei:   valueWei,
+      nonce:       nonce,
+      timestamp:   timestamp,
+    },
+  };
+
+  var signature = null;
+  var txHash    = null;
+
+  try {
+    if (_dashEthApp && !_dashLedgerSim) {
+      // ── Real Ledger path (EIP-712 hashed signing) ────────────────
+      // signEIP712HashedMessage bypasses hw-app-eth API fetching → no CORS
+      var ethers = window.ethers;
+      if (!ethers || !ethers.TypedDataEncoder) throw new Error('ethers.TypedDataEncoder not loaded');
+      var domainHash  = ethers.TypedDataEncoder.hashDomain(typedData.domain);
+      var messageHash = ethers.TypedDataEncoder.hashStruct(
+        typedData.primaryType, typedData.types, typedData.message
+      );
+      var result = await _dashEthApp.signEIP712HashedMessage(
+        DASH_DERIVE_PATH,
+        domainHash.substring(2),
+        messageHash.substring(2)
+      );
+      var vHex  = result.v.toString(16).padStart(2, '0');
+      signature = '0x' + result.r + result.s + vHex;
+      // POST to backend if agent connected
+      if (typeof PocAPI !== 'undefined' && PocAPI.isConnected()) {
+        var conn = PocAPI.getConnection();
+        try {
+          var resp = await fetch(conn.url + '/api/approve-action', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json',
+              'Authorization': 'Bearer ' + (localStorage.getItem('poc_gateway_token') || '') },
+            body: JSON.stringify({ action_id: action.id, signature: signature, signer: _dashLedgerAddr, typed_data: typedData }),
+          });
+          if (resp.ok) { var d = await resp.json(); txHash = d.tx_hash || null; }
+        } catch(_) {}
+      }
+    } else {
+      // ── Simulated path ───────────────────────────────────────────
+      await new Promise(function(r) { setTimeout(r, 1800); });
+      signature = '0xSIMULATED';
+    }
+
+    // Record result in activity feed
+    var sigDisplay = (signature && signature !== '0xSIMULATED')
+      ? signature.slice(0, 14) + '\u2026'
+      : '(simulated)';
+    addActivity('approval', 'Ledger Approval Granted',
+      'Transfer 500 USDC \u2022 Signed: ' + sigDisplay + (txHash ? ' \u2022 tx: ' + txHash.slice(0, 10) + '\u2026' : ''));
+
+    document.getElementById('pending-section').style.display = 'none';
+    dashCloseSignModal();
+    _dashSignAction = null;
+
+  } catch(err) {
+    var emsg = (err && err.message) || String(err);
+    if (spinner) spinner.style.display = 'none';
+    if (btn) btn.disabled = false;
+    // Show inline error in modal
+    var det2 = document.getElementById('dash-sign-detail');
+    if (det2) {
+      var errDiv = document.createElement('div');
+      errDiv.style.cssText = 'margin-top:8px;color:var(--error);font-size:0.78rem;';
+      errDiv.textContent = '\u26A0\uFE0F Error: ' + emsg.slice(0, 120);
+      det2.appendChild(errDiv);
+    }
+    console.error('Dash Ledger sign:', err);
+  }
 }
 
 function rejectAction() {
   document.getElementById('pending-section').style.display = 'none';
   addActivity('approval', 'Action Rejected', 'Transfer 500 USDC \u2022 Rejected by owner \u2022 Just now');
+  _dashSignAction = null;
 }
 
 // =====================================================
