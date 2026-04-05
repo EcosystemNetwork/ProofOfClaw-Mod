@@ -1223,7 +1223,7 @@ function renderPendingActions() {
               '<span class="ens">' + escapeHtml(action.ens) + '</span>' +
             '</div>' +
           '</div>' +
-          '<span class="action-type-badge ' + action.type + '">' + action.type.toUpperCase() + '</span>' +
+          '<span class="action-type-badge ' + escapeHtml(action.type) + '">' + escapeHtml(action.type).toUpperCase() + '</span>' +
           (action.isLiveDemo
             ? '<span class="live-demo-badge">&#x26A1; LIVE EIP-712</span>'
             : '') +
@@ -1248,8 +1248,8 @@ function renderPendingActions() {
           '</div>' +
         '</div>' +
         '<div class="status-checks">' +
-          '<span class="status-check ' + policyClass + '">' + policyIcon + ' Policy: ' + action.policyCheck + '</span>' +
-          '<span class="status-check ' + zkClass + '">' + zkIcon + ' ZK Proof: ' + action.zkProof + '</span>' +
+          '<span class="status-check ' + policyClass + '">' + policyIcon + ' Policy: ' + escapeHtml(action.policyCheck) + '</span>' +
+          '<span class="status-check ' + zkClass + '">' + zkIcon + ' ZK Proof: ' + escapeHtml(action.zkProof) + '</span>' +
         '</div>' +
         '<div class="action-buttons">' +
           '<button class="btn-reject" onclick="rejectAction(\'' + action.id + '\')" ' + (!ledgerConnected ? 'disabled' : '') + '>&#x2717; Reject</button>' +

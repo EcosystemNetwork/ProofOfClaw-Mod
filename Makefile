@@ -8,10 +8,10 @@ build-frontend:
 
 
 build-agent:
-	cd agent && cargo build --release
+	cd proof_of_claw && cargo build --release
 
 build-poc-server:
-	cd agent && cargo build -p proof_of_claw --bin poc-server --release
+	cd proof_of_claw && cargo build -p proof_of_claw --bin poc-server --release
 
 build-zkvm:
 	cd zkvm && cargo build --release
@@ -20,16 +20,16 @@ build-contracts:
 	cd contracts && forge build
 
 test-agent:
-	cd agent && cargo test
+	cd proof_of_claw && cargo test
 
 test-poc:
-	cd agent && cargo test -p proof_of_claw
+	cd proof_of_claw && cargo test -p proof_of_claw
 
 test-contracts:
 	cd contracts && forge test
 
 deploy-contracts:
-	cd contracts && forge script script/Deploy.s.sol --rpc-url $(RPC_URL) --broadcast
+	cd contracts && forge script script/Deploy.s.sol --rpc-url "$(RPC_URL)" --broadcast
 
 deploy-0g-testnet:
 	cd contracts && forge script script/Deploy0G.s.sol \
@@ -43,14 +43,14 @@ deploy-0g-mainnet:
 
 deploy-sepolia:
 	cd contracts && forge script script/Deploy.s.sol \
-		--rpc-url $(SEPOLIA_RPC_URL) \
+		--rpc-url "$(SEPOLIA_RPC_URL)" \
 		--broadcast --verify
 
 run-agent:
-	cd agent && cargo run
+	cd proof_of_claw && cargo run
 
 run-poc-server:
-	cd agent && RUST_LOG=proof_of_claw=info cargo run -p proof_of_claw --bin poc-server
+	cd proof_of_claw && RUST_LOG=proof_of_claw=info cargo run -p proof_of_claw --bin poc-server
 
 run-delivery-service:
 	cd delivery-service && npm start
@@ -71,13 +71,13 @@ run-all-services:
 	@echo "Starting Swarm bridge..."
 	cd swarm-bridge && npm start &
 	@echo "Starting POC agent server..."
-	cd agent && RUST_LOG=proof_of_claw=info cargo run -p proof_of_claw --bin poc-server
+	cd proof_of_claw && RUST_LOG=proof_of_claw=info cargo run -p proof_of_claw --bin poc-server
 
 clean:
-	cd agent && cargo clean
+	cd proof_of_claw && cargo clean
 	cd zkvm && cargo clean
 	cd contracts && forge clean
 
 check:
-	cd agent && cargo check
+	cd proof_of_claw && cargo check
 	cd contracts && forge build

@@ -33,7 +33,7 @@ echo "Image ID: $RISC_ZERO_IMAGE_ID"
 echo ""
 
 forge script script/DeployAndVerify.s.sol:DeployAndVerifyScript \
-    --rpc-url $SEPOLIA_RPC_URL \
+    --rpc-url "$SEPOLIA_RPC_URL" \
     --broadcast \
     -vvvv
 

@@ -4,7 +4,7 @@ use crate::types::AgentMessage;
 use anyhow::{Context, Result};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
 use crypto_box::{
-    aead::Aead,
+    aead::{Aead, AeadCore},
     PublicKey, SecretKey, SalsaBox,
 };
 use rand::rngs::OsRng;
@@ -67,7 +67,7 @@ fn encrypt_dm3_message(
 
     // Create NaCl box and encrypt
     let salsa_box = SalsaBox::new(&recipient_pk, &ephemeral_sk);
-    let nonce = crypto_box::generate_nonce(&mut OsRng);
+    let nonce = SalsaBox::generate_nonce(&mut OsRng);
     let ciphertext = salsa_box
         .encrypt(&nonce, plaintext)
         .map_err(|_| anyhow::anyhow!("x25519-xsalsa20-poly1305 encryption failed"))?;

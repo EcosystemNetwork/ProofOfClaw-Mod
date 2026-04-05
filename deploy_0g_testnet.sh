@@ -35,7 +35,7 @@ cd contracts
 
 # Deploy Groth16 verifier + ProofOfClawVerifier
 forge script script/Deploy0GTestnet.s.sol:Deploy0GTestnet \
-    --rpc-url $OG_TESTNET_RPC_URL \
+    --rpc-url "$OG_TESTNET_RPC_URL" \
     --broadcast \
     -vvvv
 

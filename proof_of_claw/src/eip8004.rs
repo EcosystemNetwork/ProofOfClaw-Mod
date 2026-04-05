@@ -364,7 +364,7 @@ impl EIP8004Client {
         let data_bytes = ethers::types::Bytes::from(calldata.to_vec());
 
         if let Some(ref pk) = self.private_key {
-            use ethers::signers::{LocalWallet, Signer};
+            use ethers_signers::{LocalWallet, Signer};
             use ethers::types::transaction::eip2718::TypedTransaction;
 
             let stripped = pk.trim_start_matches("0x");

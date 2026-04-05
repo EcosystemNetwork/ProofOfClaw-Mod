@@ -89,7 +89,7 @@ export function registerEpochCommands(program: Command): void {
           // Generate fresh epoch key
           const kEpoch = generateEpochKey();
           console.log(
-            chalk.dim(`  Epoch key: ${kEpoch.toString("hex").slice(0, 16)}...`)
+            chalk.dim(`  Epoch key: [generated, ${kEpoch.length} bytes]`)
           );
 
           // Generate bundle

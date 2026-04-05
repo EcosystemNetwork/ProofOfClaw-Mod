@@ -37,13 +37,13 @@ echo "Seal: ${SEAL:0:50}..."
 echo "Journal: ${JOURNAL:0:50}..."
 echo ""
 
-cast send $VERIFIER_ADDRESS \
+cast send "$VERIFIER_ADDRESS" \
     "verifyAndExecute(bytes,bytes,bytes)" \
     "$SEAL" \
     "$JOURNAL" \
     "$ACTION" \
-    --rpc-url $OG_TESTNET_RPC_URL \
-    --private-key $PRIVATE_KEY \
+    --rpc-url "$OG_TESTNET_RPC_URL" \
+    --private-key "$PRIVATE_KEY" \
     --gas-limit 500000
 
 echo ""

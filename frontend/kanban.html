@@ -830,13 +830,13 @@ function showZkResult(cardId, result, ok, msg) {
   el.className = `zk-result ${ok ? 'success' : 'error'}`;
   if (ok && result && result.verified_output) {
     const vo = result.verified_output;
-    el.innerHTML = `<div style="margin-bottom:.3rem"><span class="zk-time">&#x2713; ${msg}</span></div>
-      <div><span class="hash-label">agent_id:</span> <span class="hash-val" style="font-size:.65rem">${vo.agent_id}</span></div>
-      <div><span class="hash-label">policy:</span> <span class="hash-val" style="font-size:.65rem">${vo.policy_hash}</span></div>
-      <div><span class="hash-label">all_passed:</span> <span style="color:${vo.all_checks_passed?'var(--green)':'var(--red)'}">${vo.all_checks_passed}</span></div>
+    el.innerHTML = `<div style="margin-bottom:.3rem"><span class="zk-time">&#x2713; ${esc(msg)}</span></div>
+      <div><span class="hash-label">agent_id:</span> <span class="hash-val" style="font-size:.65rem">${esc(vo.agent_id)}</span></div>
+      <div><span class="hash-label">policy:</span> <span class="hash-val" style="font-size:.65rem">${esc(vo.policy_hash)}</span></div>
+      <div><span class="hash-label">all_passed:</span> <span style="color:${vo.all_checks_passed?'var(--green)':'var(--red)'}">${esc(String(vo.all_checks_passed))}</span></div>
       <div><span class="hash-label">ledger:</span> <span style="color:${vo.requires_ledger_approval?'var(--amber)':'var(--green)'}">${vo.requires_ledger_approval ? 'required' : 'autonomous'}</span></div>`;
   } else {
-    el.innerHTML = `<span class="zk-error">&#x2717; ${msg}</span>`;
+    el.innerHTML = `<span class="zk-error">&#x2717; ${esc(msg)}</span>`;
   }
 }
 

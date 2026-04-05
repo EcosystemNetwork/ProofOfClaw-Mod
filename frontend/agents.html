@@ -2828,7 +2828,7 @@ function renderAgents() {
   }
 
   grid.innerHTML = filtered.map(a => `
-    <div class="agent-card" onclick="openChat('${a.id}')">
+    <div class="agent-card" onclick="openChat('${escAttr(a.id)}')">
       <div class="agent-card-header">
         <div class="agent-avatar"><img src="${a.typeIcon || agentSvg(a.type)}" alt="" style="width:100%;height:100%;object-fit:contain;"></div>
         <div class="agent-info">
@@ -2861,7 +2861,7 @@ function renderAgents() {
         <div class="url-label">Message URL</div>
         <div class="url-box">
           <input type="text" value="${esc(a.endpoints)}" readonly id="url-${a.id}">
-          <button onclick="copyAgentUrl('${a.id}')" title="Copy URL">&#x2398;</button>
+          <button onclick="copyAgentUrl('${escAttr(a.id)}')" title="Copy URL">&#x2398;</button>
           <a href="messages.html?agent=${a.id}&url=${encodeURIComponent(a.endpoints)}" title="Message this agent">&#x2709;</a>
         </div>
       </div>
@@ -2870,7 +2870,7 @@ function renderAgents() {
       ${a.inftTokenId ? `<div style="font-size:10px;padding:0 16px;margin-bottom:4px;"><span style="color:var(--cyan);font-size:9px;text-transform:uppercase;letter-spacing:0.5px;">iNFT #${esc(String(a.inftTokenId))}</span>${a.walletAddress ? ' <span style="color:var(--green);font-size:9px;">&#x2713; ENS Credential</span>' : ''}</div>` : ''}
       <div class="agent-actions" onclick="event.stopPropagation();">
         <a href="dashboard.html?agent=${a.id}">Dashboard</a>
-        <a href="#" onclick="event.preventDefault();openProfile('${a.id}');">Profile</a>
+        <a href="#" onclick="event.preventDefault();openProfile('${escAttr(a.id)}');">Profile</a>
         <a href="proofs.html?agent=${a.id}">Proofs</a>
       </div>
     </div>
@@ -2882,6 +2882,8 @@ function esc(s) {
   d.textContent = s;
   return d.innerHTML;
 }
+
+function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/'/g,'&#39;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function copyAgentUrl(agentId) {
   const input = document.getElementById('url-' + agentId);
@@ -3331,7 +3333,7 @@ function openProfile(agentId) {
       </div>
       <div style="display:flex;gap:8px;">
         <input type="text" value="${esc(a.endpoints)}" readonly id="profile-url-${a.id}" style="flex:1;padding:8px 10px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-family:var(--font-mono);font-size:11px;outline:none;">
-        <button onclick="copyProfileUrl('${a.id}')" style="padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;cursor:pointer;font-family:var(--font-mono);">Copy</button>
+        <button onclick="copyProfileUrl('${escAttr(a.id)}')" style="padding:8px 12px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;color:var(--text-secondary);font-size:11px;cursor:pointer;font-family:var(--font-mono);">Copy</button>
         <a href="messages.html?agent=${a.id}&url=${encodeURIComponent(a.endpoints)}" style="padding:8px 12px;background:linear-gradient(135deg,var(--cyan),#00b8d4);border:none;border-radius:6px;color:#000;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer;font-family:var(--font-mono);">Message</a>
       </div>
       <div style="margin-top:8px;font-size:10px;color:var(--text-dim);line-height:1.5;">
@@ -3361,7 +3363,7 @@ function openProfile(agentId) {
     <div style="border-top:1px solid var(--border);margin:16px 0;padding-top:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;">Permissions &amp; Policy</div>
-        <button id="profile-edit-toggle" onclick="toggleProfileEdit('${a.id}')" style="font-size:10px;padding:3px 10px;background:rgba(0,229,255,0.1);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;font-family:var(--font-mono);">Edit</button>
+        <button id="profile-edit-toggle" onclick="toggleProfileEdit('${escAttr(a.id)}')" style="font-size:10px;padding:3px 10px;background:rgba(0,229,255,0.1);border:1px solid var(--border-cyan);border-radius:4px;color:var(--cyan);cursor:pointer;font-family:var(--font-mono);">Edit</button>
       </div>
       <div id="profile-permissions-view">
         <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px;"><span style="color:var(--text-dim);width:100px;display:inline-block;">Tools:</span> ${esc((a.allowedTools || []).join(', ') || 'None')}</div>
@@ -3387,18 +3389,18 @@ function openProfile(agentId) {
           <textarea id="profile-edit-desc" style="font-size:12px;padding:8px 10px;min-height:60px;">${esc(a.description || '')}</textarea>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="saveProfileEdit('${a.id}')" style="flex:1;padding:8px;font-size:11px;background:var(--cyan);color:#000;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-family:var(--font-mono);">Save &amp; Get New Command</button>
-          <button onclick="toggleProfileEdit('${a.id}')" style="padding:8px 14px;font-size:11px;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:var(--font-mono);">Cancel</button>
+          <button onclick="saveProfileEdit('${escAttr(a.id)}')" style="flex:1;padding:8px;font-size:11px;background:var(--cyan);color:#000;border:none;border-radius:6px;font-weight:700;cursor:pointer;font-family:var(--font-mono);">Save &amp; Get New Command</button>
+          <button onclick="toggleProfileEdit('${escAttr(a.id)}')" style="padding:8px 14px;font-size:11px;background:var(--bg-card);color:var(--text-secondary);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:var(--font-mono);">Cancel</button>
         </div>
         <div id="profile-edit-result" style="margin-top:8px;font-size:11px;"></div>
       </div>
     </div>
 
     <div class="profile-actions">
-      <button onclick="closeProfile();openChat('${a.id}');" style="background:linear-gradient(135deg,var(--cyan),#00b8d4);color:#000;font-weight:700;border:none;">Chat</button>
+      <button onclick="closeProfile();openChat('${escAttr(a.id)}');" style="background:linear-gradient(135deg,var(--cyan),#00b8d4);color:#000;font-weight:700;border:none;">Chat</button>
       <a href="dashboard.html?agent=${a.id}">Dashboard</a>
       <a href="proofs.html?agent=${a.id}">Proofs</a>
-      <button class="btn-delete" onclick="deleteAgent('${a.id}')">Delete</button>
+      <button class="btn-delete" onclick="deleteAgent('${escAttr(a.id)}')">Delete</button>
     </div>
   `;
 
@@ -4853,7 +4855,7 @@ async function chatSendVoice(file) {
   const typingId = 'typing-' + Date.now();
   container.insertAdjacentHTML('beforeend', `
     <div class="chat-typing" id="${typingId}">
-      <div class="chat-typing-avatar"><img src="${a.typeIcon}" alt="" style="width:100%;height:100%;object-fit:contain;"></div>
+      <div class="chat-typing-avatar"><img src="${esc(a.typeIcon)}" alt="" style="width:100%;height:100%;object-fit:contain;"></div>
       <div class="chat-typing-dots"><span></span><span></span><span></span></div>
     </div>`);
   scrollChatToBottom();
@@ -5603,7 +5605,7 @@ function buildSuccessMetrics(session) {
       : m.value;
     const cls = m.isHash ? ' hash' : '';
     const click = m.isHash
-      ? ` onclick="navigator.clipboard.writeText('${m.value}').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='${short}'},1200)})" style="cursor:pointer" title="${m.value}"`
+      ? ` onclick="navigator.clipboard.writeText('${escAttr(m.value)}').then(()=>{this.textContent='Copied!';setTimeout(()=>{this.textContent='${escAttr(short)}'},1200)})" style="cursor:pointer" title="${esc(m.value)}"`
       : '';
     return `<div class="success-metric-item"><span class="label">${m.label}</span><span class="value${cls}"${click}>${short}</span></div>`;
   }).join('');

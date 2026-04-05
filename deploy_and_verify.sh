@@ -3,6 +3,9 @@
 
 set -e
 
+DEPLOY_OUTPUT=$(mktemp /tmp/deploy_output.XXXXXX)
+trap "rm -f '$DEPLOY_OUTPUT'" EXIT
+
 if [ -z "$PRIVATE_KEY" ]; then
     echo "Error: PRIVATE_KEY not set"
     exit 1
@@ -25,12 +28,12 @@ cd contracts
 # Deploy
 echo "Step 1: Deploying contracts..."
 forge script script/Deploy0GTestnet.s.sol:Deploy0GTestnet \
-    --rpc-url $OG_TESTNET_RPC_URL \
+    --rpc-url "$OG_TESTNET_RPC_URL" \
     --broadcast \
-    -vvvv 2>&1 | tee /tmp/deploy_output.txt
+    -vvvv 2>&1 | tee "$DEPLOY_OUTPUT"
 
 # Extract verifier address
-VERIFIER_ADDRESS=$(grep "ProofOfClawVerifier deployed at:" /tmp/deploy_output.txt | tail -1 | awk '{print $NF}')
+VERIFIER_ADDRESS=$(grep "ProofOfClawVerifier deployed at:" "$DEPLOY_OUTPUT" | tail -1 | awk '{print $NF}')
 
 echo ""
 echo "Step 2: Preparing verification..."
@@ -46,14 +49,14 @@ echo "Step 3: Submitting proof verification..."
 
 cd ..
 
-cast send $VERIFIER_ADDRESS \
+cast send "$VERIFIER_ADDRESS" \
     "verifyAndExecute(bytes,bytes,bytes)" \
     "$SEAL" \
     "$JOURNAL" \
     "$ACTION" \
-    --rpc-url $OG_TESTNET_RPC_URL \
-    --private-key $PRIVATE_KEY \
-    --gas-limit 500000 2>&1 | tee /tmp/verify_output.txt
+    --rpc-url "$OG_TESTNET_RPC_URL" \
+    --private-key "$PRIVATE_KEY" \
+    --gas-limit 500000
 
 echo ""
 echo "==================================="
@@ -62,5 +65,5 @@ echo "==================================="
 echo "Verifier: $VERIFIER_ADDRESS"
 echo ""
 echo "To verify again:"
-echo "export VERIFIER_ADDRESS=$VERIFIER_ADDRESS"
+echo "export VERIFIER_ADDRESS=\"$VERIFIER_ADDRESS\""
 echo "./verify_onchain.sh"
