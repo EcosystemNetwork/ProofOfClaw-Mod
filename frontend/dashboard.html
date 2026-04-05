@@ -811,19 +811,19 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
       <div class="card-title">Execution Stats</div>
       <div class="metric">
         <span class="metric-label">Total Actions</span>
-        <span class="metric-value" id="stat-total">0</span>
+        <span class="metric-value" id="stat-total" data-live="false">&#x2014;</span>
       </div>
       <div class="metric">
         <span class="metric-label">Autonomous</span>
-        <span class="metric-value success" id="stat-autonomous">0</span>
+        <span class="metric-value success" id="stat-autonomous" data-live="false">&#x2014;</span>
       </div>
       <div class="metric">
         <span class="metric-label">Ledger Approved</span>
-        <span class="metric-value warning" id="stat-approved">0</span>
+        <span class="metric-value warning" id="stat-approved" data-live="false">&#x2014;</span>
       </div>
       <div class="metric">
         <span class="metric-label">Policy Violations</span>
-        <span class="metric-value error" id="stat-violations">0</span>
+        <span class="metric-value error" id="stat-violations" data-live="false">&#x2014;</span>
       </div>
     </div>
 
@@ -832,15 +832,15 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
       <div class="card-title">Proof Generation</div>
       <div class="metric">
         <span class="metric-label">Proofs Generated</span>
-        <span class="metric-value" id="stat-proofs">0</span>
+        <span class="metric-value" id="stat-proofs" data-live="false">&#x2014;</span>
       </div>
       <div class="metric">
         <span class="metric-label">Verified On-Chain</span>
-        <span class="metric-value success" id="stat-verified">0</span>
+        <span class="metric-value success" id="stat-verified" data-live="false">&#x2014;</span>
       </div>
       <div class="metric">
         <span class="metric-label">Avg. Proof Time</span>
-        <span class="metric-value">~45s</span>
+        <span class="metric-value" id="stat-proof-time">&#x2014;</span>
       </div>
       <div class="metric">
         <span class="metric-label">Provider</span>
