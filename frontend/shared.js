@@ -682,41 +682,68 @@ function updateOrgWalletChoice() {
  */
 async function connectLedgerForOrg() {
   const statusEl = document.getElementById('org-ledger-address');
-  statusEl.innerHTML = '<span style="color:var(--text-dim);">Connecting to Ledger...</span>';
+  const btn = document.querySelector('[onclick="connectLedgerForOrg()"]');
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Connecting...'; }
+  statusEl.innerHTML = '<span style="color:var(--amber);">&#x23F3; Connecting to Ledger\u2026 Unlock device and open Ethereum app.</span>';
+
+  // Ensure ledger-sdk.js is loaded (lazy-load for pages that don't include it)
+  if (!window.LedgerSDK) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'ledger-sdk.js?v=20260404f';
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Failed to load ledger-sdk.js'));
+      document.head.appendChild(s);
+    });
+  }
+
+  const TransportWebHID = window.LedgerSDK?.TransportWebHID;
+  const Eth             = window.LedgerSDK?.Eth;
+  const DERIVE_PATH     = "44'/60'/0'/0/0";
 
   try {
-    // Use MetaMask's Ledger integration if available
-    if (window.ethereum && window.ethereum.isMetaMask) {
-      // MetaMask can proxy Ledger connections
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      if (accounts && accounts.length > 0) {
-        const addr = accounts[0];
-        statusEl.innerHTML = `<span style="color:var(--green);">&#x2713; Connected: ${esc(addr)}</span>`;
-        // Store the ledger address for org registration
-        window._orgLedgerAddress = addr;
-        // Enable the register button
-        const btn = document.getElementById('org-register-btn');
-        if (btn) btn.disabled = false;
-        return;
-      }
+    let addr;
+
+    if (!navigator.hid || !TransportWebHID || !Eth) {
+      // WebHID not available (Firefox / non-HTTPS) — simulated demo
+      await new Promise(r => setTimeout(r, 900));
+      addr = '0xSimulated' + Math.random().toString(16).slice(2,10).toUpperCase().padEnd(32,'0');
+      statusEl.innerHTML = `<span style="color:var(--amber);">&#x26A0;&#xFE0F; WebHID not supported — simulated: <strong style="color:var(--cyan);">${esc(addr.slice(0,8)+'\u2026'+addr.slice(-4))}</strong></span>`;
+    } else {
+      // Real WebHID path — same logic as approve.html
+      const permitted = await TransportWebHID.list();
+      const transport = permitted.length > 0
+        ? await TransportWebHID.open(permitted[0])
+        : await TransportWebHID.request();
+      const eth    = new Eth(transport);
+      const result = await eth.getAddress(DERIVE_PATH, false, false);
+      addr = result.address;
+      statusEl.innerHTML = `<span style="color:var(--green);">&#x2713; Connected: <strong style="color:var(--cyan);font-family:var(--font-mono);">${esc(addr)}</strong></span>`;
     }
 
-    // Fallback: direct WebHID Ledger connection
-    // This requires @ledgerhq/hw-transport-webhid which is loaded if available
-    if (window.TransportWebHID) {
-      const transport = await window.TransportWebHID.create();
-      const eth = new window.LedgerEth(transport);
-      const result = await eth.getAddress("44'/60'/0'/0/0");
-      const addr = result.address;
-      statusEl.innerHTML = `<span style="color:var(--green);">&#x2713; Ledger: ${esc(addr)}</span>`;
-      window._orgLedgerAddress = addr;
-      await transport.close();
+    window._orgLedgerAddress = addr;
+
+    if (btn) { btn.textContent = '\u2714 Connected'; btn.style.background = 'var(--green, #00e676)'; btn.style.color = '#000'; }
+    const regBtn = document.getElementById('org-register-btn');
+    if (regBtn) regBtn.disabled = false;
+
+  } catch (err) {
+    const msg = err.message || String(err);
+    if (btn) { btn.disabled = false; btn.textContent = 'Connect Ledger'; }
+
+    if (msg.toLowerCase().includes('cancel') || msg.toLowerCase().includes('no device')) {
+      statusEl.innerHTML = '<span style="color:var(--text-dim);">Cancelled. Click Connect Ledger to try again.</span>';
       return;
     }
-
-    statusEl.innerHTML = '<span style="color:var(--text-secondary);">Connect your Ledger through MetaMask, or install the Ledger Live bridge.</span>';
-  } catch (err) {
-    statusEl.innerHTML = `<span style="color:var(--red);">&#x2717; ${esc(err.message || 'Connection failed')}</span>`;
+    if (msg.includes('0x5515') || msg.toLowerCase().includes('locked')) {
+      statusEl.innerHTML = '<span style="color:var(--amber);">&#x26A0;&#xFE0F; Device locked — enter PIN then click Connect Ledger again.</span>';
+    } else if (msg.includes('0x6d00') || msg.includes('0x6e00') || msg.toLowerCase().includes('ethereum')) {
+      statusEl.innerHTML = '<span style="color:var(--amber);">&#x26A0;&#xFE0F; Open the Ethereum app on your Ledger, then click Connect Ledger again.</span>';
+    } else {
+      statusEl.innerHTML = `<span style="color:var(--red);">&#x2717; ${esc(msg.slice(0, 120))}</span>`;
+    }
+    console.error('connectLedgerForOrg:', err);
   }
 }
 
