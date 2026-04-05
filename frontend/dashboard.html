@@ -1372,6 +1372,13 @@ function updateFromStatus(status) {
     updateBalance(status.wallet_balance_wei);
   }
 
+  // Pending Ledger approvals from live API
+  if (typeof status.pending_approvals === 'number' && status.pending_approvals > 0) {
+    var countEl = document.getElementById('pending-count');
+    if (countEl) countEl.textContent = status.pending_approvals;
+    showPendingApproval();
+  }
+
   // Live connection indicator
   var liveRow = document.getElementById('metric-live-row');
   if (liveRow) liveRow.style.display = 'flex';
@@ -1660,10 +1667,12 @@ function seedActivity() {
   if (empty) empty.style.display = '';
 }
 
-// scheduleSimulations — removed fake timers, all data must come from live API
+// scheduleSimulations — demo mode: show pending Ledger approval after 3 s
+// (signing uses real WebHID via dashConfirmSign, not a stub)
 function scheduleSimulations() {
-  // No mock simulations. Connect a live agent to see real activity.
-  // The seed script (scripts/seed_activity.py) can inject test data into the API.
+  setTimeout(function() {
+    if (currentAgent) showPendingApproval();
+  }, 3000);
 }
 
 
