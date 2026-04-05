@@ -6,8 +6,22 @@
 
 import { configValidator, Networks } from './config-validator.js';
 import { ZERO_G_CONFIG, DM3_CONFIG } from './env-config.js';
-import { Indexer as ZgIndexer } from 'https://esm.sh/@0glabs/0g-ts-sdk@0.3.3';
 import { BrowserProvider } from 'https://esm.sh/ethers@6.13.4';
+
+// Lazy-load 0G SDK — it uses crypto.createHash (Node.js API) which
+// throws in some browser environments. Defer until first actual use.
+let _ZgIndexer = null;
+async function getZgIndexer() {
+  if (_ZgIndexer) return _ZgIndexer;
+  try {
+    const mod = await import('https://esm.sh/@0glabs/0g-ts-sdk@0.3.3');
+    _ZgIndexer = mod.Indexer;
+  } catch (e) {
+    console.warn('[0g-registration] 0G SDK unavailable:', e.message);
+    _ZgIndexer = null;
+  }
+  return _ZgIndexer;
+}
 
 /**
  * Agent Registration Manager
@@ -515,8 +529,11 @@ export class AgentRegistrationManager {
     // Get ethers signer for 0G chain transactions
     const signer = await this.getEthersSigner();
 
-    // Initialize 0G Storage indexer
+    // Initialize 0G Storage indexer (lazy-loaded to avoid browser crypto.createHash crash)
+    const ZgIndexer = await getZgIndexer();
+    if (!ZgIndexer) throw new Error('0G SDK unavailable in this browser environment');
     const indexer = new ZgIndexer(indexerUrl);
+
 
     // Upload to 0G Storage — submits on-chain tx to Flow contract + uploads segments
     const [tx, err] = await indexer.upload(file, evmRpc, signer);
