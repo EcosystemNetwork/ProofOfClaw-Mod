@@ -1048,6 +1048,14 @@ let activityTimers = [];
 // INIT
 // =====================================================
 function init() {
+  // Restore checklist visibility (respect dismiss)
+  try {
+    if (localStorage.getItem('poc_checklist_dismissed') === '1') {
+      var cl = document.getElementById('setup-checklist');
+      if (cl) cl.style.display = 'none';
+    }
+  } catch(_) {}
+
   loadAgents();
   const urlParams = new URLSearchParams(window.location.search);
   const agentId = urlParams.get('agent');
@@ -1310,13 +1318,32 @@ function updateFromStatus(status) {
   // Execution stats
   if (status.stats) {
     var st = status.stats;
+    // Mark as live so em-dash placeholders get replaced
+    ['stat-total','stat-autonomous','stat-approved','stat-violations','stat-proofs','stat-verified'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) el.setAttribute('data-live', 'true');
+    });
     document.getElementById('stat-total').textContent = st.total_actions || 0;
     document.getElementById('stat-autonomous').textContent = st.autonomous_actions || 0;
     document.getElementById('stat-approved').textContent = st.approved_actions || 0;
     document.getElementById('stat-violations').textContent = st.violations || 0;
     document.getElementById('stat-proofs').textContent = st.proofs_generated || 0;
     document.getElementById('stat-verified').textContent = st.proofs_verified || 0;
+    // Proof time if available
+    if (st.avg_proof_time_secs) {
+      var ptEl = document.getElementById('stat-proof-time');
+      if (ptEl) ptEl.textContent = '~' + st.avg_proof_time_secs + 's';
+    }
   }
+
+  // Wallet balance
+  if (status.wallet_balance_wei !== undefined) {
+    updateBalance(status.wallet_balance_wei);
+  }
+
+  // Live connection indicator
+  var liveRow = document.getElementById('metric-live-row');
+  if (liveRow) liveRow.style.display = 'flex';
 }
 
 function updateFromActivity(actData) {
@@ -1326,6 +1353,10 @@ function updateFromActivity(actData) {
   var list = document.getElementById('activity-list');
   if (!list) return;
   list.innerHTML = '';
+
+  // Remove empty state placeholder
+  var empty = document.getElementById('activity-empty');
+  if (empty) empty.style.display = 'none';
 
   var icons = { proof: '\u27C1', message: '\u2709', approval: '\u2713' };
   var shown = items.slice(0, 12);
@@ -1473,8 +1504,8 @@ function renderAgent() {
   const statusClass = a.status === 'online' ? '' : a.status === 'busy' ? 'busy' : 'offline';
   const statusLabel = a.status === 'online' ? 'Online' : a.status === 'busy' ? 'Busy' : 'Offline';
 
-  // Header
-  document.getElementById('agent-avatar').innerHTML = '<img src="' + (a.icon || 'public/icons/coordinator.svg') + '" alt="" style="width:100%;height:100%;object-fit:contain;">';
+  // Header — use SVG avatar generator
+  document.getElementById('agent-avatar').innerHTML = generateAvatar(a);
   document.getElementById('agent-name').textContent = a.name;
   document.getElementById('agent-ens').textContent = a.ens || a.name + '.proofofclaw.eth';
   document.getElementById('agent-type-badge').textContent = a.type || 'agent';
@@ -1527,12 +1558,16 @@ function renderAgent() {
 }
 
 function updateStats() {
-  document.getElementById('stat-total').textContent = stats.total;
-  document.getElementById('stat-autonomous').textContent = stats.autonomous;
-  document.getElementById('stat-approved').textContent = stats.approved;
-  document.getElementById('stat-violations').textContent = stats.violations;
-  document.getElementById('stat-proofs').textContent = stats.proofs;
-  document.getElementById('stat-verified').textContent = stats.verified;
+  // Only update elements that have been confirmed live (data-live=true)
+  // Elements start with data-live="false" and em-dash — don't overwrite with mock
+  var ids = ['stat-total','stat-autonomous','stat-approved','stat-violations','stat-proofs','stat-verified'];
+  var vals = [stats.total, stats.autonomous, stats.approved, stats.violations, stats.proofs, stats.verified];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el && el.getAttribute('data-live') === 'true') {
+      el.textContent = vals[i];
+    }
+  }
 }
 
 function copyDashUrl() {
@@ -1586,50 +1621,20 @@ function addActivity(type, title, description) {
   }
 }
 
+// seedActivity — no-op when not live; real data comes from /api/activity poll
 function seedActivity() {
-  const a = currentAgent;
-  const ens = a.ens || a.name + '.proofofclaw.eth';
-  addActivity('proof', 'Proof Generated', 'Swap 100 USDC \u2192 ETH \u2022 Autonomous \u2022 2 min ago');
-  addActivity('message', 'DM3 Message Received', 'From bob.proofofclaw.eth \u2022 5 min ago');
-  addActivity('approval', 'Ledger Approval Granted', 'Transfer 500 USDC \u2022 10 min ago');
-  addActivity('proof', 'Proof Verified On-Chain', 'Query balance \u2022 Autonomous \u2022 18 min ago');
-  addActivity('message', 'DM3 Message Sent', 'To ' + ens + ' \u2022 25 min ago');
+  // Intentionally empty — activity is populated by startLivePolling() / updateFromActivity()
+  // when a live agent is connected. Show the empty state placeholder instead.
+  const empty = document.getElementById('activity-empty');
+  if (empty) empty.style.display = '';
 }
 
-// =====================================================
-// SIMULATIONS
-// =====================================================
+// scheduleSimulations — removed fake timers, all data must come from live API
 function scheduleSimulations() {
-  // Show pending Ledger approval after 3 seconds
-  activityTimers.push(setTimeout(function() {
-    showPendingApproval();
-  }, 3000));
-
-  // Add proof activity after 8 seconds
-  activityTimers.push(setTimeout(function() {
-    addActivity('proof', 'Proof Generated', 'Query token balance \u2022 Autonomous \u2022 Just now');
-    stats.proofs++;
-    stats.verified++;
-    stats.autonomous++;
-    stats.total++;
-    updateStats();
-  }, 8000));
-
-  // Add message activity after 15 seconds
-  activityTimers.push(setTimeout(function() {
-    addActivity('message', 'DM3 Message Received', 'From alpha.proofofclaw.eth \u2022 Just now');
-  }, 15000));
-
-  // Add another proof after 22 seconds
-  activityTimers.push(setTimeout(function() {
-    addActivity('proof', 'Proof Verified On-Chain', 'Swap 50 USDC \u2192 DAI \u2022 Autonomous \u2022 Just now');
-    stats.proofs++;
-    stats.verified++;
-    stats.autonomous++;
-    stats.total++;
-    updateStats();
-  }, 22000));
+  // No mock simulations. Connect a live agent to see real activity.
+  // The seed script (scripts/seed_activity.py) can inject test data into the API.
 }
+
 
 function showPendingApproval() {
   const section = document.getElementById('pending-section');
@@ -1675,6 +1680,103 @@ function rejectAction() {
 
 // =====================================================
 // EMPTY STATE
+// =====================================================
+// =====================================================
+// AVATAR GENERATOR
+// =====================================================
+function generateAvatar(agent) {
+  // If agent has a valid SVG icon path, use it
+  if (agent.icon && agent.icon.endsWith('.svg')) {
+    return '<img src="' + agent.icon + '" alt="" style="width:100%;height:100%;object-fit:contain;" ' +
+           'onerror="this.parentNode.innerHTML=generateAvatarSVG(\'' + (agent.id || 'a') + '\')">';
+  }
+  return generateAvatarSVG(agent.id || agent.name || 'agent');
+}
+
+function generateAvatarSVG(id) {
+  // Deterministic color from id hash
+  var hash = 0;
+  for (var i = 0; i < id.length; i++) hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  var hue = Math.abs(hash) % 360;
+  var letters = id.replace(/[^a-zA-Z]/g, '').slice(0, 2).toUpperCase() || id.slice(0, 2).toUpperCase();
+  var bg = 'hsl(' + hue + ',55%,18%)';
+  var fg = 'hsl(' + hue + ',80%,65%)';
+  var border = 'hsl(' + hue + ',60%,35%)';
+  return '<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 48 48">' +
+    '<rect width="48" height="48" rx="10" fill="' + bg + '" stroke="' + border + '" stroke-width="1.5"/>' +
+    '<text x="24" y="31" text-anchor="middle" font-family="monospace" font-size="16" font-weight="700" fill="' + fg + '">' + letters + '</text>' +
+    '</svg>';
+}
+
+// =====================================================
+// CHECKLIST & MODAL HELPERS
+// =====================================================
+function dismissChecklist() {
+  var wrapper = document.getElementById('setup-checklist');
+  if (wrapper) {
+    wrapper.style.transition = 'opacity 0.3s';
+    wrapper.style.opacity = '0';
+    setTimeout(function() { wrapper.style.display = 'none'; }, 300);
+  }
+  try { localStorage.setItem('poc_checklist_dismissed', '1'); } catch(_) {}
+}
+
+function openBridgeModal() {
+  var m = document.getElementById('bridge-modal');
+  if (m) { m.style.display = 'flex'; }
+}
+
+function closeBridgeModal() {
+  var m = document.getElementById('bridge-modal');
+  if (m) { m.style.display = 'none'; }
+}
+
+function openDM3Modal() {
+  var m = document.getElementById('bridge-modal');
+  var title = document.getElementById('bridge-modal-title');
+  var cmd = document.getElementById('bridge-cmd');
+  if (title) title.textContent = 'Start DM3 Delivery Service';
+  if (cmd) cmd.textContent = 'make run-delivery-service';
+  if (m) m.style.display = 'flex';
+}
+
+function copyBridgeCmd() {
+  var cmd = document.getElementById('bridge-cmd');
+  if (cmd) {
+    navigator.clipboard.writeText(cmd.textContent).then(function() {
+      var btn = cmd.nextElementSibling;
+      if (btn) { btn.textContent = 'Copied!'; setTimeout(function() { btn.textContent = 'Copy'; }, 1500); }
+    }).catch(function() {
+      // Fallback: select text
+      var range = document.createRange();
+      range.selectNode(cmd);
+      window.getSelection().removeAllRanges();
+      window.getSelection().addRange(range);
+    });
+  }
+}
+
+function updateBalance(weiStr) {
+  var el = document.getElementById('metric-balance');
+  if (!el) return;
+  if (!weiStr || weiStr === '0' || weiStr === '') {
+    el.textContent = '0.000 ETH';
+    el.style.color = 'var(--error)';
+    return;
+  }
+  try {
+    var eth = parseFloat(weiStr) / 1e18;
+    var display = eth.toFixed(4) + ' ETH';
+    el.textContent = display;
+    el.style.color = eth < 0.01 ? 'var(--error)' : eth < 0.1 ? 'var(--amber)' : 'var(--green)';
+  } catch(_) {
+    el.textContent = '---';
+    el.style.color = 'var(--text-dim)';
+  }
+}
+
+// =====================================================
+// SHOW EMPTY STATE
 // =====================================================
 function showEmptyState() {
   document.getElementById('main-content').innerHTML =
@@ -1736,7 +1838,7 @@ function runSetupChecklist() {
           .catch(function() { return false; });
       },
       actionLabel: 'Start Bridge',
-      action: 'alert("Run: make run-swarm-bridge")'
+      action: 'openBridgeModal()'
     },
     {
       id: 'dm3',
@@ -1748,7 +1850,7 @@ function runSetupChecklist() {
           .catch(function() { return false; });
       },
       actionLabel: 'Start DM3',
-      action: 'alert("Run: make run-delivery-service")'
+      action: 'openDM3Modal()'
     }
   ];
 
