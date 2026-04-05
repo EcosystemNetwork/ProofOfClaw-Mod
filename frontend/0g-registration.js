@@ -186,7 +186,12 @@ export class AgentRegistrationManager {
         riscZeroImageId,
         metadataHash: results.storage?.rootHash || '0x0',
         encryptedURI: results.storage?.url || '',
-        soulBackupHash: results.soulBackup?.hash || '0x0',
+        soulBackupHash: (() => {
+          if (!results.soulBackup?.hash || results.soulBackup.hash === '0x0') {
+            throw new Error('Soul backup upload failed — agents must have a soul to mint an iNFT');
+          }
+          return results.soulBackup.hash;
+        })(),
         soulBackupURI: results.soulBackup?.uri || '',
         skills: config.skills || [],
         maxTasks: config.maxTasks || 5,
@@ -494,7 +499,9 @@ export class AgentRegistrationManager {
     }
 
     // Fallback for environments without a wallet (e.g. tests) — derive from config secret
-    const fallback = config.encryptionSecret || config.walletAddress || 'proof-of-claw';
+    // SECURITY: Never use a static string as encryption key. Use crypto.randomUUID() if
+    // no config secret is available, so each session gets a unique (non-persistent) key.
+    const fallback = config.encryptionSecret || crypto.randomUUID();
     console.warn('No wallet available for encryption key derivation — using fallback. Data will NOT be securely encrypted.');
     const bytes = new TextEncoder().encode(fallback);
     this._cachedKeyMaterial = bytes;
@@ -567,7 +574,7 @@ export class AgentRegistrationManager {
     const agentConfig = {
       name: data.agentId ? data.agentId.slice(2, 18) : 'agent',
       ens: data.ensName || '',
-      network: networkConfig.name?.toLowerCase().includes('0g') ? 'og_testnet' : 'sepolia',
+      network: networkConfig.name?.toLowerCase().includes('mainnet') ? 'mainnet' : networkConfig.name?.toLowerCase().includes('sepolia') ? 'sepolia' : 'testnet',
       allowedTools: data.skills || ['swap_tokens', 'transfer', 'query'],
       valueLimit: data.maxTasks || 100,
       endpoints: '',
@@ -653,7 +660,7 @@ export class AgentRegistrationManager {
 
   generateImageId(config) {
     // Use the deployed RISC Zero image ID from network config
-    const network = config.network?.includes('sepolia') ? 'sepolia' : 'testnet';
+    const network = config.network?.includes('mainnet') ? 'mainnet' : config.network?.includes('sepolia') ? 'sepolia' : 'testnet';
     const networkConfig = ZERO_G_CONFIG[network];
     if (networkConfig?.riscZeroImageId) {
       return networkConfig.riscZeroImageId;

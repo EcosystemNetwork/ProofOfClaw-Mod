@@ -66,6 +66,9 @@ contract ProofOfClawINFT {
     /// @notice Contract deployer
     address public admin;
 
+    /// @notice Pending admin for two-step transfer
+    address public pendingAdmin;
+
     // ─── Events ─────────────────────────────────────────────────────────
 
     event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
@@ -83,6 +86,10 @@ contract ProofOfClawINFT {
     event SoulBackupUpdated(uint256 indexed tokenId, bytes32 newSoulBackupHash, string newSoulBackupURI);
     event ProofRecorded(uint256 indexed tokenId, uint256 totalProofs);
     event ReputationUpdated(uint256 indexed tokenId, uint256 newScore);
+    event PolicyUpdated(uint256 indexed tokenId);
+    event AgentDeactivated(uint256 indexed tokenId);
+    event AdminTransferStarted(address indexed previousAdmin, address indexed newAdmin);
+    event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
 
     // ─── Errors ─────────────────────────────────────────────────────────
 
@@ -298,26 +305,14 @@ contract ProofOfClawINFT {
 
     // ─── Policy Management ──────────────────────────────────────────────
 
-    /// @notice Update the soul backup (OCMB continuity data)
-    function updateSoulBackup(
-        uint256 tokenId,
-        bytes32 newSoulBackupHash,
-        string calldata newSoulBackupURI
-    ) external {
-        AgentINFT storage agent = agents[tokenId];
-        if (agent.owner != msg.sender) revert NotOwner();
-        if (newSoulBackupHash == bytes32(0)) revert SoulBackupRequired();
-
-        agent.soulBackupHash = newSoulBackupHash;
-        agent.soulBackupURI = newSoulBackupURI;
-    }
-
     /// @notice Update agent's policy hash (after policy change)
     function updatePolicy(uint256 tokenId, bytes32 newPolicyHash) external {
         AgentINFT storage agent = agents[tokenId];
         if (agent.owner != msg.sender) revert NotOwner();
 
         agent.policyHash = newPolicyHash;
+
+        emit PolicyUpdated(tokenId);
     }
 
     /// @notice Deactivate an agent iNFT
@@ -326,6 +321,38 @@ contract ProofOfClawINFT {
         if (agent.owner != msg.sender) revert NotOwner();
 
         agent.active = false;
+
+        emit AgentDeactivated(tokenId);
+    }
+
+    // ─── Burn ───────────────────────────────────────────────────────────
+
+    /// @notice Permanently destroy an iNFT, freeing its agentId and ensName for re-registration
+    /// @param tokenId The token to burn — caller must be the owner
+    function burn(uint256 tokenId) external {
+        AgentINFT storage agent = agents[tokenId];
+        if (agent.owner != msg.sender) revert NotOwner();
+
+        // Clear mappings
+        delete agentToToken[agent.agentId];
+        if (bytes(agent.ensName).length > 0) {
+            bytes32 ensHash = keccak256(bytes(agent.ensName));
+            delete ensNameToToken[ensHash];
+        }
+
+        // Clear enumeration
+        _removeTokenFromOwner(msg.sender, tokenId);
+
+        // Clear approvals
+        delete _tokenApprovals[tokenId];
+
+        // Update balance
+        _balances[msg.sender]--;
+
+        // Clear agent data
+        delete agents[tokenId];
+
+        emit Transfer(msg.sender, address(0), tokenId);
     }
 
     // ─── View Functions ─────────────────────────────────────────────────
@@ -477,6 +504,23 @@ contract ProofOfClawINFT {
 
     function setVerifier(address _verifier) external {
         if (msg.sender != admin) revert OnlyAdmin();
+        if (_verifier == address(0)) revert ZeroAddress();
         verifier = _verifier;
+    }
+
+    /// @notice Start a two-step admin transfer
+    function transferAdmin(address newAdmin) external {
+        if (msg.sender != admin) revert OnlyAdmin();
+        if (newAdmin == address(0)) revert ZeroAddress();
+        pendingAdmin = newAdmin;
+        emit AdminTransferStarted(admin, newAdmin);
+    }
+
+    /// @notice Accept a pending admin transfer
+    function acceptAdmin() external {
+        if (msg.sender != pendingAdmin) revert NotAuthorized();
+        emit AdminTransferred(admin, msg.sender);
+        admin = msg.sender;
+        pendingAdmin = address(0);
     }
 }

@@ -3587,12 +3587,19 @@ function validateStep() {
       valid = document.getElementById('agent-name').value.trim().length > 0
            && document.getElementById('agent-swarm').value.length > 0;
       break;
+    case 3:
+      // At least one tool must be selected
+      valid = document.querySelectorAll('#step-3 input[type="checkbox"]:checked').length > 0;
+      break;
     case 4:
       // Soul backup is REQUIRED — validate OCMB format
       valid = validateSoulBackupStep();
       break;
     case 5:
-      valid = true; // Wallet is auto-generated at deploy if not already done
+      valid = true; // Private key is optional — auto-generated if omitted
+      break;
+    case 6:
+      valid = true; // Review step — always valid if we got here
       break;
   }
 
@@ -3761,6 +3768,12 @@ function gatherStepData() {
     case 4:
       // Soul Backup — store raw YAML for upload and hashing
       wizardData.soulBackupYaml = document.getElementById('soul-backup-yaml').value.trim();
+      break;
+    case 5:
+      // Secrets — collect private key and optional tokens
+      wizardData.privateKey = document.getElementById('private-key').value.trim();
+      wizardData.ogApiKey = document.getElementById('og-api-key').value.trim();
+      wizardData.ledgerToken = document.getElementById('ledger-token').value.trim();
       break;
   }
 }
@@ -5645,6 +5658,12 @@ Object.assign(window, {
 
 init();
 checkWalletConnection();
+
+// Live validation for soul backup textarea
+document.getElementById('soul-backup-yaml')?.addEventListener('input', () => {
+  validateSoulBackupStep();
+  validateStep();
+});
 </script>
 <script src="openclaw-backup-schema.js"></script>
 <script src="ens-resolver.js"></script>

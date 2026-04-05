@@ -742,6 +742,70 @@ contract ProofOfClawINFTTest is Test {
         inft.updateSoulBackup(tokenId, bytes32(0), "");
     }
 
+    // --- Burn ---
+
+    function test_burn() public {
+        uint256 tokenId = _mint();
+
+        // Verify token exists
+        assertEq(inft.ownerOf(tokenId), alice);
+        assertEq(inft.getTokenByAgent(AGENT_ID), tokenId);
+
+        // Burn the token
+        vm.prank(alice);
+        inft.burn(tokenId);
+
+        // agentToToken should be cleared — returns 0 for burned agent
+        assertEq(inft.getTokenByAgent(AGENT_ID), 0);
+
+        // Balance should be 0
+        assertEq(inft.balanceOf(alice), 0);
+
+        // ensName should be freed — can re-register with the same ensName
+        vm.prank(bob);
+        uint256 newTokenId = inft.mint(
+            keccak256("agent-reuse"),
+            POLICY,
+            IMAGE_ID_INFT,
+            "0g://new-enc",
+            META_HASH,
+            SOUL_HASH,
+            "0g://soul-backup",
+            "agent.proofofclaw.eth"
+        );
+        assertEq(inft.ownerOf(newTokenId), bob);
+    }
+
+    function test_burn_nonOwnerReverts() public {
+        uint256 tokenId = _mint();
+
+        vm.prank(bob);
+        vm.expectRevert(ProofOfClawINFT.NotOwner.selector);
+        inft.burn(tokenId);
+    }
+
+    function test_burn_freesAgentIdForReregistration() public {
+        uint256 tokenId = _mint();
+
+        vm.prank(alice);
+        inft.burn(tokenId);
+
+        // The same agentId can now be used for a new mint
+        vm.prank(bob);
+        uint256 newTokenId = inft.mint(
+            AGENT_ID,
+            POLICY,
+            IMAGE_ID_INFT,
+            "0g://re-enc",
+            META_HASH,
+            SOUL_HASH,
+            "0g://soul-backup",
+            "new-agent.proofofclaw.eth"
+        );
+        assertEq(inft.ownerOf(newTokenId), bob);
+        assertEq(inft.getTokenByAgent(AGENT_ID), newTokenId);
+    }
+
     // --- Admin ---
 
     function test_setVerifier() public {
@@ -1197,6 +1261,205 @@ contract ProofOfClawVerifierSecurityTest is Test {
         (bytes32 storedPolicy, uint256 storedMax,,,) = verifierContract.agents(agentId);
         assertEq(storedPolicy, keccak256("new"));
         assertEq(storedMax, 2 ether);
+    }
+
+    // --- approveAction reverts for deactivated agent -------------------------
+
+    function test_approveAction_revertsForDeactivatedAgent() public {
+        DummyTarget target = new DummyTarget();
+        vm.prank(owner);
+        verifierContract.setAllowedTarget(address(target), true);
+
+        bytes32 agentId = keccak256("agent-deact-approve");
+        bytes32 policyHash = keccak256("policy-deact-approve");
+        bytes32 outputCommitment = keccak256("output-deact-approve");
+        vm.prank(owner);
+        verifierContract.registerAgent(agentId, policyHash, 1 ether, agentWallet);
+
+        // Submit action for approval
+        bytes memory action = abi.encode(address(target), uint256(0), abi.encodeCall(DummyTarget.ping, ()));
+
+        ProofOfClawVerifier.VerifiedOutput memory output = ProofOfClawVerifier.VerifiedOutput({
+            agentId: "agent-deact-approve",
+            policyHash: policyHash,
+            outputCommitment: outputCommitment,
+            allChecksPassed: true,
+            requiresLedgerApproval: true,
+            actionValue: 1 ether
+        });
+
+        verifierContract.verifyAndExecute(hex"00", abi.encode(output), action);
+
+        // Deactivate the agent
+        vm.prank(owner);
+        verifierContract.deactivateAgent(agentId);
+
+        // Try to approve — should revert because agent is deactivated
+        (uint8 v, bytes32 r, bytes32 s) = _signApproval(agentId, outputCommitment, 1 ether);
+        vm.prank(owner);
+        vm.expectRevert("Agent deactivated");
+        verifierContract.approveAction(agentId, outputCommitment, action, v, r, s);
+    }
+
+    // --- maxValueAutonomous enforcement --------------------------------------
+
+    function test_verifyAndExecute_revertsWhenValueExceedsAutonomousLimit() public {
+        DummyTarget target = new DummyTarget();
+        vm.startPrank(owner);
+        verifierContract.setAllowedTarget(address(target), true);
+
+        bytes32 agentId = keccak256("agent-maxval");
+        bytes32 policyHash = keccak256("policy-maxval");
+        verifierContract.registerAgent(agentId, policyHash, 1 ether, agentWallet);
+        vm.stopPrank();
+
+        bytes memory action = abi.encode(address(target), uint256(0), abi.encodeCall(DummyTarget.ping, ()));
+
+        // Action value (2 ether) exceeds maxValueAutonomous (1 ether)
+        ProofOfClawVerifier.VerifiedOutput memory output = ProofOfClawVerifier.VerifiedOutput({
+            agentId: "agent-maxval",
+            policyHash: policyHash,
+            outputCommitment: keccak256(action),
+            allChecksPassed: true,
+            requiresLedgerApproval: false,
+            actionValue: 2 ether
+        });
+
+        bytes memory journalData = abi.encode(output);
+        vm.prank(agentWallet);
+        vm.expectRevert("Value exceeds autonomous limit");
+        verifierContract.verifyAndExecute(hex"00", journalData, action);
+    }
+
+    // --- Two-step ownership transfer -----------------------------------------
+
+    function test_twoStepOwnershipTransfer() public {
+        address newOwner = address(0x1E01);
+
+        // Step 1: Current owner initiates transfer
+        vm.prank(owner);
+        verifierContract.transferOwnership(newOwner);
+        assertEq(verifierContract.pendingOwner(), newOwner);
+        // Owner has not changed yet
+        assertEq(verifierContract.owner(), owner);
+
+        // Step 2: New owner accepts
+        vm.prank(newOwner);
+        verifierContract.acceptOwnership();
+        assertEq(verifierContract.owner(), newOwner);
+        assertEq(verifierContract.pendingOwner(), address(0));
+    }
+
+    function test_acceptOwnership_revertsForNonPendingOwner() public {
+        address newOwner = address(0x1E02);
+        address imposter = address(0xBAD);
+
+        vm.prank(owner);
+        verifierContract.transferOwnership(newOwner);
+
+        // Imposter tries to accept — should revert
+        vm.prank(imposter);
+        vm.expectRevert("Not pending owner");
+        verifierContract.acceptOwnership();
+    }
+
+    function test_transferOwnership_revertsForNonOwner() public {
+        vm.prank(address(0xBAD));
+        vm.expectRevert(ProofOfClawVerifier.Unauthorized.selector);
+        verifierContract.transferOwnership(address(0x123));
+    }
+
+    function test_transferOwnership_revertsForZeroAddress() public {
+        vm.prank(owner);
+        vm.expectRevert("Zero address");
+        verifierContract.transferOwnership(address(0));
+    }
+
+    // --- Zero-address rejection in registerAgent -----------------------------
+
+    function test_registerAgent_revertsForZeroWallet() public {
+        bytes32 agentId = keccak256("agent-zero-wallet");
+        vm.prank(owner);
+        vm.expectRevert("Zero agent wallet");
+        verifierContract.registerAgent(agentId, keccak256("policy"), 1 ether, address(0));
+    }
+
+    // --- Duplicate agentId rejection -----------------------------------------
+
+    function test_registerAgent_revertsDuplicateAgentId() public {
+        bytes32 agentId = keccak256("agent-dup-id");
+        bytes32 policyHash = keccak256("policy-dup-id");
+
+        vm.prank(owner);
+        verifierContract.registerAgent(agentId, policyHash, 1 ether, agentWallet);
+
+        // Try to register another agent with the same agentId — should revert
+        vm.prank(owner);
+        vm.expectRevert(ProofOfClawVerifier.AgentAlreadyExists.selector);
+        verifierContract.registerAgent(agentId, keccak256("other-policy"), 2 ether, address(0xBEEF));
+    }
+
+    // --- Action expiry -------------------------------------------------------
+
+    function test_actionExpiry_approvableBeforeExpiry() public {
+        DummyTarget target = new DummyTarget();
+        vm.startPrank(owner);
+        verifierContract.setAllowedTarget(address(target), true);
+
+        bytes32 agentId = keccak256("agent-expiry-ok");
+        bytes32 policyHash = keccak256("policy-expiry-ok");
+        bytes32 outputCommitment = keccak256("output-expiry-ok");
+        verifierContract.registerAgent(agentId, policyHash, 1 ether, agentWallet);
+        vm.stopPrank();
+
+        bytes memory action = abi.encode(address(target), uint256(0), abi.encodeCall(DummyTarget.ping, ()));
+
+        ProofOfClawVerifier.VerifiedOutput memory output = ProofOfClawVerifier.VerifiedOutput({
+            agentId: "agent-expiry-ok",
+            policyHash: policyHash,
+            outputCommitment: outputCommitment,
+            allChecksPassed: true,
+            requiresLedgerApproval: true,
+            actionValue: 1 ether
+        });
+
+        verifierContract.verifyAndExecute(hex"00", abi.encode(output), action);
+
+        // Warp to just before expiry (23 hours) — should still work
+        vm.warp(block.timestamp + 23 hours);
+
+        (uint8 v, bytes32 r, bytes32 s) = _signApproval(agentId, outputCommitment, 1 ether);
+        vm.prank(owner);
+        verifierContract.approveAction(agentId, outputCommitment, action, v, r, s);
+
+        assertTrue(target.pinged());
+    }
+
+    function test_actionExpiry_revertsAfterExpiry() public {
+        bytes32 agentId = keccak256("agent-expiry-fail");
+        bytes32 policyHash = keccak256("policy-expiry-fail");
+        bytes32 outputCommitment = keccak256("output-expiry-fail");
+        vm.prank(owner);
+        verifierContract.registerAgent(agentId, policyHash, 1 ether, agentWallet);
+
+        ProofOfClawVerifier.VerifiedOutput memory output = ProofOfClawVerifier.VerifiedOutput({
+            agentId: "agent-expiry-fail",
+            policyHash: policyHash,
+            outputCommitment: outputCommitment,
+            allChecksPassed: true,
+            requiresLedgerApproval: true,
+            actionValue: 1 ether
+        });
+
+        verifierContract.verifyAndExecute(hex"00", abi.encode(output), hex"");
+
+        // Warp past the 24h expiry
+        vm.warp(block.timestamp + 25 hours);
+
+        (uint8 v, bytes32 r, bytes32 s) = _signApproval(agentId, outputCommitment, 1 ether);
+        vm.prank(owner);
+        vm.expectRevert(ProofOfClawVerifier.ActionExpired.selector);
+        verifierContract.approveAction(agentId, outputCommitment, hex"", v, r, s);
     }
 }
 
