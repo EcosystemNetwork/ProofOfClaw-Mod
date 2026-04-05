@@ -2742,30 +2742,10 @@ function agentSvg(typeId) {
   return type ? type.icon : 'public/icons/coordinator.svg';
 }
 
-// Demo agent that connects to the running local API
-const DEFAULT_AGENTS = [
-  {
-    id: 'proof-agent',
-    name: 'Proof Agent',
-    ens: 'proof.proofclaw.eth',
-    type: 'coordinator',
-    typeIcon: 'public/icons/coordinator.svg',
-    network: 'og_testnet',
-    skills: ['zk-proofs', 'smart-contracts', 'security-audit'],
-    allowedTools: ['query', 'read', 'chat'],
-    valueLimit: 100,
-    endpoints: '',
-    status: 'online',
-    deployedAt: new Date().toISOString(),
-    description: 'Provable AI agent with 0G Compute inference and RISC Zero ZK verification',
-    inftTokenId: 1234,
-    policyHash: '0xec90594f438dc47ab87ab99ccbda015db056a6877da6488fe3bf6c85e72a884e',
-    imageId: '0xec90594f438dc47ab87ab99ccbda015db056a6877da6488fe3bf6c85e72a884e',
-    address: '0x116C28e6DCABCa363f83217C712d79DCE168d90e',
-    stats: { actions: 3, proofs: 3, uptime: '1h 30m' },
-    live: true
-  }
-];
+// No default agents — agents are created via the wizard or
+// discovered via ENS lookup. The array starts empty.
+const DEFAULT_AGENTS = [];
+
 
 let agents = [];
 let currentFilter = 'all';
@@ -2779,36 +2759,6 @@ let wizardData = {};
 
 function init() {
   loadAgents();
-  
-  // Add demo agent if not present and auto-connect
-  const demoAgent = DEFAULT_AGENTS[0];
-  if (!agents.find(a => a.id === demoAgent.id)) {
-    agents.push(demoAgent);
-    saveAgents();
-    // Pre-configure connection to running agent
-    saveAgentConfig(demoAgent.id, {
-      lastUrl: 'http://localhost:8420',
-      tools: 'query,read,chat',
-      endpoints: '',
-      maxWei: 1e18,
-      network: 'og_testnet',
-      rpcUrl: 'https://evmrpc-testnet.0g.ai'
-    });
-  }
-  
-  // Auto-connect to running agent
-  const proofAgent = agents.find(a => a.id === 'proof-agent');
-  if (proofAgent && typeof PocAPI !== 'undefined') {
-    PocAPI.connect('http://localhost:8420').then(() => {
-      proofAgent.status = 'online';
-      proofAgent.live = true;
-      saveAgents();
-      renderAgents();
-    }).catch(() => {
-      // Agent not running yet, will show as offline
-    });
-  }
-  
   renderTypeGrid();
   renderAgents();
   bindSearch();
@@ -2822,6 +2772,15 @@ function loadAgents() {
   }
   // No default agents — deploy via the wizard or discover via ENS lookup
   if (!agents) agents = [];
+
+  // One-time migration: remove any known mock agent IDs seeded by old code
+  const MOCK_IDS = ['alpha-sentinel','defi-scout','sec-auditor','gov-delegate','yield-hunter','data-oracle','proof-agent'];
+  const before = agents.length;
+  agents = agents.filter(a => !MOCK_IDS.includes(a.id));
+  if (agents.length !== before) {
+    // Mocks were removed — persist the cleaned list
+    localStorage.setItem('poc_agents', JSON.stringify(agents));
+  }
 }
 
 function saveAgents() {

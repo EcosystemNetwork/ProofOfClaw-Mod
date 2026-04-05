@@ -1062,7 +1062,7 @@ const DEFAULT_AGENTS = [];
     const stored = JSON.parse(localStorage.getItem('poc_agents'));
     if (Array.isArray(stored)) {
       // Known mock agent IDs from the previous DEFAULT_AGENTS list
-      const MOCK_IDS = ['alpha-sentinel','defi-scout','sec-auditor','gov-delegate','yield-hunter','data-oracle'];
+      const MOCK_IDS = ['alpha-sentinel','defi-scout','sec-auditor','gov-delegate','yield-hunter','data-oracle','proof-agent'];
       const real = stored.filter(a => !MOCK_IDS.includes(a.id));
       if (real.length !== stored.length) {
         // Some mocks were present — purge them
