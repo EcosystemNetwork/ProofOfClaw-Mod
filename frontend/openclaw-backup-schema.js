@@ -5,7 +5,7 @@
  * Required for iNFT registration — agents must have a soul to exist.
  */
 
-export const OCMB_VERSION = '0.1';
+const OCMB_VERSION = '0.1';
 
 // Required top-level fields in openclaw_backup
 const REQUIRED_FIELDS = ['version', 'agent_id', 'timestamp', 'scattering_type', 'the_reach'];
@@ -188,7 +188,7 @@ function parseOCMBYaml(yamlStr) {
  * Validate an OCMB backup object.
  * Returns { valid: boolean, errors: string[], warnings: string[], sections: string[] }
  */
-export function validateOCMB(backupObj) {
+function validateOCMB(backupObj) {
   const errors = [];
   const warnings = [];
   const sections = [];
@@ -287,7 +287,7 @@ export function validateOCMB(backupObj) {
  * Validate raw YAML string.
  * Parses then validates.
  */
-export function validateOCMBYaml(yamlString) {
+function validateOCMBYaml(yamlString) {
   try {
     const parsed = parseOCMBYaml(yamlString);
     const result = validateOCMB(parsed);
@@ -310,7 +310,7 @@ export function validateOCMBYaml(yamlString) {
  * The on-chain contract uses keccak256 — the frontend passes the raw content
  * and the registration manager computes the actual keccak256 hash.
  */
-export async function hashSoulBackup(yamlString) {
+async function hashSoulBackup(yamlString) {
   const encoder = new TextEncoder();
   const data = encoder.encode(yamlString);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
@@ -321,7 +321,7 @@ export async function hashSoulBackup(yamlString) {
 /**
  * Generate a minimal OCMB template for a new agent.
  */
-export function generateTemplate(agentId, agentName) {
+function generateTemplate(agentId, agentName) {
   const now = new Date().toISOString();
   return `openclaw_backup:
   version: "${OCMB_VERSION}"
