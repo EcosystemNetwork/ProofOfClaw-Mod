@@ -773,6 +773,144 @@ function findProofForCard(cardId) {
   return state.proofs[keys[keys.length - 1]];
 }
 
+// ═══════════════════════════════════════
+// SYNTHETIC DEMO TASKS
+// ═══════════════════════════════════════
+
+function loadDemoTasks() {
+  // Demo Task 1: Language Detection via Grep
+  const id1 = 'demo-lang-detect-001';
+  state.cards[id1] = {
+    tool_name: 'grep_search',
+    input_hash: '0x7a3f...8b2e',
+    output_hash: '0x9c4d...1a5f',
+    within_policy: true,
+    timestamp: Date.now(),
+    column: 'verified',
+    demo: true,
+    description: 'ZK-proof: Dataset contains 94% English text (verified via character frequency analysis)'
+  };
+  
+  // Demo Task 2: Ciphertext Transmission Verification
+  const id2 = 'demo-crypto-send-002';
+  state.cards[id2] = {
+    tool_name: 'web_fetch',
+    input_hash: '0x2e8a...4c9b',
+    output_hash: '0x5f1d...7e3a',
+    within_policy: true,
+    timestamp: Date.now() - 5000,
+    column: 'verified',
+    demo: true,
+    description: 'ZK-proof: AES-256-GCM ciphertext transmitted with valid MAC (no plaintext leakage)'
+  };
+  
+  // Demo Task 3: Security Procedure - Access Control
+  const id3 = 'demo-security-acl-003';
+  state.cards[id3] = {
+    tool_name: 'read_file',
+    input_hash: '0x8b5c...2f4e',
+    output_hash: '0x3a7e...9c1d',
+    within_policy: true,
+    timestamp: Date.now() - 10000,
+    column: 'verified',
+    demo: true,
+    description: 'ZK-proof: Multi-sig access control policy enforced (2-of-3 signatures verified)'
+  };
+  
+  // Demo Task 4: Malware Scan (Blocked)
+  const id4 = 'demo-malware-blocked-004';
+  state.cards[id4] = {
+    tool_name: 'bash',
+    input_hash: '0x1f9b...6d2a',
+    output_hash: '0x4e7c...8b3f',
+    within_policy: false,
+    timestamp: Date.now() - 15000,
+    column: 'blocked',
+    demo: true,
+    description: 'ZK-proof: Suspicious script detected - policy blocked execution (hash mismatch in allowlist)'
+  };
+  
+  // Demo Task 5: Data Integrity Check
+  const id5 = 'demo-integrity-005';
+  state.cards[id5] = {
+    tool_name: 'structured_output',
+    input_hash: '0x6d4a...9e2b',
+    output_hash: '0x1f8c...4a7d',
+    within_policy: true,
+    timestamp: Date.now() - 20000,
+    column: 'queued',
+    demo: true,
+    description: 'Pending: Merkle root verification for database integrity check'
+  };
+  
+  // Render all demo cards
+  ['verified', 'blocked', 'queued'].forEach(col => {
+    syncColumn(col);
+    syncColumnCount(col);
+  });
+  
+  console.log('[kanban] Loaded 5 synthetic demo tasks');
+}
+
+// Store original renderCard
+const originalRenderCard = renderCard;
+window.renderCard = function(card, id) {
+  if (card.demo) {
+    const cls = toolClass(card.tool_name);
+    return `<div class="card demo-card" id="card-${id}">
+      <div class="card-header">
+        <span class="tool-badge ${cls}">${toolIcon(card.tool_name)} ${card.tool_name}</span>
+        <span class="card-status ${card.column}" id="status-${id}">${card.column.charAt(0).toUpperCase() + card.column.slice(1)}</span>
+      </div>
+      <div class="card-hashes">
+        <div class="hash-row"><span class="hash-label">Input</span><span class="hash-val">${truncate(card.input_hash)}</span></div>
+        <div class="hash-row"><span class="hash-label">Output</span><span class="hash-val">${truncate(card.output_hash)}</span></div>
+      </div>
+      <div style="margin-top:0.5rem;padding:0.5rem;background:rgba(0,229,255,0.05);border-radius:6px;border-left:2px solid var(--cyan);">
+        <div style="font-size:0.72rem;color:var(--text-secondary);line-height:1.4;">${card.description}</div>
+        <div style="font-size:0.6rem;color:var(--text-dim);margin-top:0.3rem;">&#x1F4C4; Synthetic Demo Task</div>
+      </div>
+      ${card.column === 'queued' ? `<button type="button" class="verify-btn" id="vbtn-${id}" onclick="runDemoVerification('${id}')">Verify in Browser</button>` : ''}
+      <div class="zk-result" id="zk-${id}" style="display:none"></div>
+    </div>`;
+  }
+  return originalRenderCard(card, id);
+};
+
+// Demo verification function
+async function runDemoVerification(cardId) {
+  const card = state.cards[cardId];
+  if (!card) return;
+  
+  if (card.column !== 'verifying') moveCard(cardId, 'verifying');
+  
+  const btn = document.getElementById(`vbtn-${cardId}`);
+  if (btn) { btn.textContent = 'Verifying…'; btn.disabled = true; }
+  
+  const zkEl = document.getElementById(`zk-${cardId}`);
+  if (zkEl) { 
+    zkEl.style.display = 'block'; 
+    zkEl.className = 'zk-result'; 
+    zkEl.innerHTML = '<span class="spinner"></span>Generating ZK proof for demo task…'; 
+  }
+  
+  // Simulate verification delay
+  await new Promise(r => setTimeout(r, 2000));
+  
+  // Move to verified
+  moveCard(cardId, 'verified');
+  
+  // Show success result
+  showZkResult(cardId, {
+    verified_output: {
+      agent_id: 'demo-agent.proofclaw.eth',
+      policy_hash: '0x' + Array(64).fill('0').join(''),
+      all_checks_passed: true,
+      requires_ledger_approval: false
+    }
+  }, true, 'Demo proof verified in 1847ms via RISC Zero WASM');
+}
+
 async function initWasm() {
   const statusEl = document.getElementById('wasmStatus');
   const displayEl = document.getElementById('imageIdDisplay');
@@ -788,6 +926,9 @@ async function initWasm() {
     if (statusEl) { statusEl.textContent = 'missing'; statusEl.className = 'wasm-status'; }
     console.warn('[kanban] WASM not built — run: cargo build --release --target wasm32-unknown-unknown -p proof-of-claw-verifier');
   }
+  
+  // Load demo tasks after WASM init
+  loadDemoTasks();
 }
 
 initWasm();

@@ -12,7 +12,7 @@ struct ExecutionTrace {
     action_value: u64,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct ToolInvocation {
     tool_name: String,
     input_hash: [u8; 32],
@@ -21,14 +21,14 @@ struct ToolInvocation {
     within_policy: bool,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct PolicyResult {
     rule_id: String,
     severity: String,
     details: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 struct AgentPolicy {
     allowed_tools: Vec<String>,
     endpoint_allowlist: Vec<String>,

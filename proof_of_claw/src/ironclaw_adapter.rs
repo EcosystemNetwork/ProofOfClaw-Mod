@@ -6,6 +6,8 @@
 //! - `TransformResponse` — capture 0G inference attestations (FailOpen)
 //! - `OnSessionEnd` — drain session state, request 0G attestation, store trace + ZK proof
 
+#![cfg(feature = "ironclaw")]
+
 use crate::{
     config::AgentConfig,
     injection_detector::InjectionDetector,

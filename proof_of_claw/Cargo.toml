@@ -30,8 +30,8 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 # Tracing / logging
 tracing = "0.1"
 
-# IronClaw peer crate (hooks system)
-ironclaw = { path = "../.." }
+# IronClaw peer crate (hooks system) - requires ironclaw feature
+# ironclaw = { path = "../..", optional = true }
 
 # Std / serialization
 serde = { version = "1", features = ["derive"] }
@@ -52,5 +52,10 @@ uuid = { version = "1", features = ["v4", "serde"] }
 regex = "1"
 aho-corasick = "1"
 
+[features]
+default = []
+# ironclaw = ["dep:ironclaw"]
+
 [dev-dependencies]
+risc0-zkvm = "3.0.5"
 tokio-test = "0.4"
