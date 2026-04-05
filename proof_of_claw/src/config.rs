@@ -1,9 +1,10 @@
 //! Configuration for Proof of Claw — loaded from environment variables.
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
 /// Top-level agent configuration.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AgentConfig {
     /// Human-readable agent identifier (also used as ENS subname).
     pub agent_id: String,
@@ -64,6 +65,34 @@ impl Default for PolicyConfig {
             endpoint_allowlist: vec![],
             max_value_autonomous_wei: 1_000_000_000_000_000_000u64, // 1 ETH
         }
+    }
+}
+
+impl fmt::Debug for AgentConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AgentConfig")
+            .field("agent_id", &self.agent_id)
+            .field("ens_name", &self.ens_name)
+            .field("private_key", &"[REDACTED]")
+            .field("rpc_url", &self.rpc_url)
+            .field("zero_g_indexer_rpc", &self.zero_g_indexer_rpc)
+            .field("zero_g_compute_endpoint", &self.zero_g_compute_endpoint)
+            .field("dm3_delivery_service_url", &self.dm3_delivery_service_url)
+            .field("verifier_contract_address", &self.verifier_contract_address)
+            .field("chain_id", &self.chain_id)
+            .field("eip8004_identity_registry", &self.eip8004_identity_registry)
+            .field("eip8004_reputation_registry", &self.eip8004_reputation_registry)
+            .field("eip8004_validation_registry", &self.eip8004_validation_registry)
+            .field("eip8004_integration_contract", &self.eip8004_integration_contract)
+            .field("inft_contract", &self.inft_contract)
+            .field("risc_zero_image_id", &self.risc_zero_image_id)
+            .field("soul_backup_hash", &self.soul_backup_hash)
+            .field("soul_backup_uri", &self.soul_backup_uri)
+            .field("risc_zero_guest_elf_path", &self.risc_zero_guest_elf_path)
+            .field("boundless_api_url", &self.boundless_api_url)
+            .field("boundless_api_key", &"[REDACTED]")
+            .field("policy", &self.policy)
+            .finish()
     }
 }
 

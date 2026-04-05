@@ -172,8 +172,8 @@ contract SoulVaultSwarm is ISoulVaultSwarm {
 
         _members[member].active = false;
 
+        --memberCount;
         unchecked {
-            --memberCount;
             ++membershipVersion;
         }
 
@@ -240,6 +240,7 @@ contract SoulVaultSwarm is ISoulVaultSwarm {
         // Caller must be the member themselves or the owner.
         if (msg.sender != member && msg.sender != owner) revert Unauthorized();
         if (!_members[member].active) revert MemberNotActive(member);
+        require(epoch <= currentEpoch, "Future epoch");
 
         MemberFileMapping storage fm = _memberFileMappings[member];
         fm.storageLocator = storageLocator;

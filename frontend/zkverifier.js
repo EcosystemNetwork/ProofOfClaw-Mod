@@ -31,25 +31,32 @@ window.zkVerifierAvailable = async function() {
 };
 
 /**
- * Verify a RISC Zero proof receipt in the browser.
+ * Validate the structure of a RISC Zero proof receipt in the browser.
+ * WARNING: This performs structural validation only — NOT cryptographic verification.
+ * Full cryptographic STARK/Groth16 verification MUST happen on-chain.
  * @param {string} journalB64 - Base64-encoded journal bytes
  * @param {string} sealB64   - Base64-encoded cryptographic seal
  * @param {string} imageId   - Image ID used to generate the proof (hex string)
- * @returns {Promise<{ok: boolean, verified_output?: object, verify_ms?: number, error?: string}>}
+ * @returns {Promise<{ok: boolean, verified_output?: object, verify_ms?: number, error?: string, verification_level: string, status_label: string}>}
  */
 window.zkVerify = async function(journalB64, sealB64, imageId) {
   const mod = await ensureWasm();
   if (!mod) {
-    return { ok: false, error: 'WASM verifier not built — proof will be verified on-chain only', mock: true };
+    return { ok: false, error: 'WASM verifier not built — proof will be verified on-chain only', mock: true, verification_level: 'none', status_label: 'Awaiting on-chain verification' };
   }
   const result = JSON.parse(window.__zkVerifyRaw(journalB64, sealB64, imageId));
+  // Make verification level explicit for UI consumers
+  result.verification_level = result.verification_level || 'structural';
+  result.status_label = result.ok
+    ? 'Structure Valid \u2014 awaiting on-chain verification'
+    : 'Structure Invalid \u2014 ' + (result.error || 'unknown error');
   return result;
 };
 
 // Expose raw C→JS string return for wasm-bindgen
 window.__zkVerifyRaw = function(journalB64, sealB64, imageId) {
   if (!_wasmModule) throw new Error('WASM not loaded');
-  return _wasmModule.verify_receipt(journalB64, sealB64, imageId);
+  return _wasmModule.validate_receipt_structure(journalB64, sealB64, imageId);
 };
 
 /**

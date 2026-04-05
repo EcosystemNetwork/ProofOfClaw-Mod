@@ -34,6 +34,21 @@ impl PolicyEngine {
             };
         }
 
+        // ── Endpoint allowlist ─────────────────────────────────────────────
+        if !self.config.endpoint_allowlist.is_empty() {
+            if let Some(endpoint_val) = message.payload.params.get("endpoint") {
+                if let Some(endpoint) = endpoint_val.as_str() {
+                    if !self.config.endpoint_allowlist.iter().any(|e| endpoint.starts_with(e)) {
+                        return PolicyResult {
+                            rule_id: "endpoint_allowlist".to_string(),
+                            severity: PolicySeverity::Block,
+                            details: format!("Endpoint '{}' not in allowlist", endpoint),
+                        };
+                    }
+                }
+            }
+        }
+
         // ── Value threshold ────────────────────────────────────────────────
         if let Some(value) = message.payload.params.get("value") {
             if let Some(value_u64) = value.as_u64() {

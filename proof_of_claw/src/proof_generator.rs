@@ -428,14 +428,15 @@ impl ProofGenerator {
         let real_receipt: risc0_zkvm::Receipt = bincode::deserialize(&receipt.seal)
             .context("failed to deserialize proof receipt — not a valid RISC Zero receipt")?;
 
-        // Verify the receipt cryptographically if we have an image ID
-        if !self.image_id.is_empty() {
-            let image_id_bytes = hex_to_bytes32(&self.image_id);
-            let digest = risc0_zkvm::sha::Digest::from(image_id_bytes);
-            real_receipt
-                .verify(digest)
-                .map_err(|e| anyhow::anyhow!("RISC Zero receipt verification failed: {e:?}"))?;
+        // Verify the receipt cryptographically — image_id is required
+        if self.image_id.is_empty() {
+            return Err(anyhow::anyhow!("Cannot verify: image_id is not configured"));
         }
+        let image_id_bytes = hex_to_bytes32(&self.image_id);
+        let digest = risc0_zkvm::sha::Digest::from(image_id_bytes);
+        real_receipt
+            .verify(digest)
+            .map_err(|e| anyhow::anyhow!("RISC Zero receipt verification failed: {e:?}"))?;
 
         // Decode the journal as ZkVerifiedOutput
         let zk_output: ZkVerifiedOutput = real_receipt

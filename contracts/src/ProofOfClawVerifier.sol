@@ -17,8 +17,11 @@ contract ProofOfClawVerifier {
     IRiscZeroVerifier public verifier;
     bytes32 public imageId;
 
-    /// @notice Contract deployer — only address that can configure integrations
-    address public immutable owner;
+    /// @notice Contract owner — address that can configure integrations
+    address public owner;
+
+    /// @notice Pending owner for two-step ownership transfer
+    address public pendingOwner;
 
     /// @notice EIP-8004 integration contract for recording validation results
     IEIP8004Integration public eip8004;
@@ -90,6 +93,11 @@ contract ProofOfClawVerifier {
     event VerifierUpdated(address oldVerifier, address newVerifier);
     event ImageIdUpdated(bytes32 oldImageId, bytes32 newImageId);
     event TargetAllowlistUpdated(address target, bool allowed);
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event AgentPolicyUpdated(bytes32 indexed agentId);
+    event AgentDeactivated(bytes32 indexed agentId);
+    event EtherReceived(address indexed sender, uint256 amount);
 
     modifier nonReentrant() {
         if (_reentrancyStatus == 2) revert ReentrancyGuard();
@@ -133,6 +141,7 @@ contract ProofOfClawVerifier {
     /// @notice Add or remove an address from the allowed execution targets
     function setAllowedTarget(address target, bool allowed) external {
         if (msg.sender != owner) revert Unauthorized();
+        require(target != address(0), "Zero address");
         allowedTargets[target] = allowed;
         emit TargetAllowlistUpdated(target, allowed);
     }
@@ -143,6 +152,7 @@ contract ProofOfClawVerifier {
         uint256 maxValueAutonomous,
         address agentWallet
     ) external {
+        require(agentWallet != address(0), "Zero agent wallet");
         AgentPolicy storage existing = agents[agentId];
         if (existing.active) revert AgentAlreadyExists();
         // Allow re-registration only by the original owner (for reactivation)
@@ -178,7 +188,7 @@ contract ProofOfClawVerifier {
 
         // Record successful verification in EIP-8004 Validation Registry
         if (address(eip8004) != address(0)) {
-            bytes32 requestHash = keccak256(abi.encodePacked(agentId, output.outputCommitment, block.timestamp));
+            bytes32 requestHash = keccak256(abi.encodePacked(agentId, output.outputCommitment, block.timestamp, block.number, msg.sender));
             try eip8004.recordValidation(
                 agentId,
                 requestHash,
@@ -207,6 +217,7 @@ contract ProofOfClawVerifier {
             emit ApprovalRequired(output.agentId, output.outputCommitment, output.actionValue);
         } else {
             if (msg.sender != policy.agentWallet) revert Unauthorized();
+            require(output.actionValue <= policy.maxValueAutonomous, "Value exceeds autonomous limit");
             if (keccak256(action) != output.outputCommitment) revert ActionMismatch();
             _executeAction(action);
             emit ActionVerified(output.agentId, output.outputCommitment, true);
@@ -222,6 +233,7 @@ contract ProofOfClawVerifier {
         bytes32 s
     ) external nonReentrant {
         AgentPolicy memory policy = agents[agentId];
+        require(policy.active, "Agent deactivated");
 
         bytes32 actionId = keccak256(abi.encodePacked(agentId, outputCommitment));
         PendingAction storage pending = pendingActions[actionId];
@@ -263,6 +275,7 @@ contract ProofOfClawVerifier {
         AgentPolicy storage policy = agents[agentId];
         if (msg.sender != policy.owner) revert Unauthorized();
         policy.active = false;
+        emit AgentDeactivated(agentId);
     }
 
     function updateAgentPolicy(
@@ -275,6 +288,7 @@ contract ProofOfClawVerifier {
 
         policy.policyHash = newPolicyHash;
         policy.maxValueAutonomous = newMaxValueAutonomous;
+        emit AgentPolicyUpdated(agentId);
     }
 
     /// @notice Withdraw ETH held by this contract (e.g. from action execution refunds)
@@ -285,5 +299,23 @@ contract ProofOfClawVerifier {
         require(success, "Transfer failed");
     }
 
-    receive() external payable {}
+    receive() external payable {
+        emit EtherReceived(msg.sender, msg.value);
+    }
+
+    /// @notice Start a two-step ownership transfer
+    function transferOwnership(address newOwner) external {
+        if (msg.sender != owner) revert Unauthorized();
+        require(newOwner != address(0), "Zero address");
+        pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner, newOwner);
+    }
+
+    /// @notice Accept a pending ownership transfer
+    function acceptOwnership() external {
+        require(msg.sender == pendingOwner, "Not pending owner");
+        emit OwnershipTransferred(owner, msg.sender);
+        owner = msg.sender;
+        pendingOwner = address(0);
+    }
 }

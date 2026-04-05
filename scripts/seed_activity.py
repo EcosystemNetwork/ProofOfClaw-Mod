@@ -16,6 +16,7 @@ Agent selector:
 
 import argparse
 import json
+import os
 import random
 import time
 import urllib.request
@@ -100,7 +101,7 @@ def make_event(agent_id=None):
     }
 
 
-def post_event(url: str, event: dict, dry_run: bool = False) -> bool:
+def post_event(url: str, event: dict, dry_run: bool = False, api_key: str = '') -> bool:
     """POST a single event to the agent API. Returns True on success."""
     endpoint = url.rstrip("/") + "/api/activity"
     payload = json.dumps(event).encode("utf-8")
@@ -112,10 +113,13 @@ def post_event(url: str, event: dict, dry_run: bool = False) -> bool:
         return True
 
     try:
+        headers = {"Content-Type": "application/json"}
+        if api_key:
+            headers["X-Api-Key"] = api_key
         req = urllib.request.Request(
             endpoint,
             data=payload,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=5) as resp:
@@ -146,6 +150,8 @@ def main():
                         help="Keep drip-feeding events indefinitely")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print events without POSTing to the API")
+    parser.add_argument("--api-key", default=os.environ.get('API_KEY', ''),
+                        help="API key for authentication (default: $API_KEY env var)")
     args = parser.parse_args()
 
     mode = "loop" if args.loop else f"burst of {args.count}"
@@ -161,7 +167,7 @@ def main():
         try:
             while True:
                 event = make_event(args.agent)
-                post_event(args.url, event, args.dry_run)
+                post_event(args.url, event, args.dry_run, args.api_key)
                 sent += 1
                 time.sleep(args.interval)
         except KeyboardInterrupt:
@@ -170,7 +176,7 @@ def main():
         ok = 0
         for i in range(args.count):
             event = make_event(args.agent)
-            if post_event(args.url, event, args.dry_run):
+            if post_event(args.url, event, args.dry_run, args.api_key):
                 ok += 1
             if i < args.count - 1:
                 time.sleep(0.3)  # gentle rate limiting

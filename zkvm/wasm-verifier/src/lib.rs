@@ -23,7 +23,12 @@ struct VerifyResult {
     verify_ms: Option<f64>,
     error: Option<String>,
     image_id: String,
+    /// Always "structural" — cryptographic verification happens on-chain only.
+    verification_level: String,
 }
+
+/// RISC Zero Groth16 proof method selector prefix
+const GROTH16_SELECTOR: [u8; 4] = [0x31, 0x0f, 0xe5, 0x98];
 
 #[derive(Serialize)]
 struct VerifiedOutputJson {
@@ -35,18 +40,24 @@ struct VerifiedOutputJson {
     action_value: String,
 }
 
-/// Verify a RISC Zero proof receipt in the browser.
+/// Validate the structure of a RISC Zero proof receipt in the browser.
 ///
-/// This performs structural validation of the journal data:
-/// - Decodes the journal from base64
-/// - Deserializes the VerifiedOutput
-/// - Verifies the journal hash matches the seal commitment
-/// - Checks the image ID matches the compiled guest
+/// # Security Model
 ///
-/// Note: Full cryptographic STARK/Groth16 verification happens on-chain.
-/// This WASM module provides fast client-side validation of journal integrity.
+/// This function performs STRUCTURAL validation only:
+/// - Image ID matches the expected guest program
+/// - Seal is well-formed with valid Groth16 selector prefix
+/// - Seal meets minimum size requirements (256+ bytes)
+/// - Journal commitment (SHA-256) appears in the seal
+/// - Journal deserializes to a valid VerifiedOutput
+///
+/// **Cryptographic verification happens ON-CHAIN** via `RiscZeroGroth16Verifier.sol`.
+/// This WASM module is a client-side pre-check for UX purposes (fast feedback).
+///
+/// An attacker CAN forge a structurally valid receipt that passes this check.
+/// **Never use this function as a security boundary — always verify on-chain.**
 #[wasm_bindgen]
-pub fn verify_receipt(journal_b64: &str, seal_b64: &str, image_id: &str) -> String {
+pub fn validate_receipt_structure(journal_b64: &str, seal_b64: &str, image_id: &str) -> String {
     let start = js_sys::Date::now();
     let b64 = base64::engine::general_purpose::STANDARD;
 
@@ -77,10 +88,25 @@ pub fn verify_receipt(journal_b64: &str, seal_b64: &str, image_id: &str) -> Stri
     hasher.update(&journal_bytes);
     let journal_hash = hasher.finalize();
 
-    // Verify seal contains the journal hash commitment
-    // RISC Zero seals encode the journal hash - check it's present
-    if seal_bytes.len() < 4 {
-        return error_result("Seal too short");
+    // Check seal has minimum plausible length for a Groth16 proof
+    if seal_bytes.len() < 256 {
+        return error_result("Seal too short for a valid proof (minimum 256 bytes for Groth16)");
+    }
+
+    // Verify Groth16 method selector prefix
+    if seal_bytes.len() >= 4 && seal_bytes[..4] != GROTH16_SELECTOR {
+        return error_result(&format!(
+            "Invalid seal prefix: expected Groth16 selector 0x310fe598, got 0x{}",
+            hex::encode(&seal_bytes[..4])
+        ));
+    }
+
+    // Check journal commitment (SHA-256) appears somewhere in the seal
+    let journal_hash_bytes = journal_hash.as_slice();
+    let has_commitment = seal_bytes.windows(journal_hash_bytes.len())
+        .any(|w| w == journal_hash_bytes);
+    if !has_commitment {
+        return error_result("Journal commitment not found in seal — seal may not correspond to this journal");
     }
 
     // Try to deserialize the journal as VerifiedOutput
@@ -110,6 +136,7 @@ pub fn verify_receipt(journal_b64: &str, seal_b64: &str, image_id: &str) -> Stri
         verify_ms: Some(elapsed),
         error: None,
         image_id: format!("0x{}", expected_id),
+        verification_level: "structural".to_string(),
     };
 
     serde_json::to_string(&result).unwrap_or_else(|_| error_result("Serialization failed"))
@@ -128,8 +155,9 @@ fn error_result(msg: &str) -> String {
         verify_ms: None,
         error: Some(msg.to_string()),
         image_id: IMAGE_ID.to_string(),
+        verification_level: "structural".to_string(),
     };
-    serde_json::to_string(&result).unwrap_or_else(|_| format!(r#"{{"ok":false,"error":"{}"}}"#, msg))
+    serde_json::to_string(&result).unwrap_or_else(|_| format!(r#"{{"ok":false,"error":"{}","verification_level":"structural"}}"#, msg))
 }
 
 /// Simple bincode-compatible deserialization for the VerifiedOutput struct.

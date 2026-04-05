@@ -27,8 +27,9 @@
     'colgroup', 'col',
     // media (src is validated separately)
     'img', 'figure', 'figcaption', 'picture', 'source', 'video', 'audio',
-    // interactive safe subset
-    'a', 'button', 'input', 'label', 'select', 'option', 'textarea',
+    // interactive safe subset (input, textarea, select excluded — they enable
+    // UI redressing / fake login form attacks in user-generated content)
+    'a', 'button', 'label', 'option',
     // semantic / layout
     'nav', 'section', 'article', 'header', 'footer', 'aside', 'main',
     'details', 'summary', 'time',
@@ -165,13 +166,18 @@
           }
         }
 
-        // Sanitize style attribute: strip expression(), url(), -moz-binding
+        // Sanitize style attribute: strip dangerous CSS patterns
         if (aName === 'style') {
           var styleVal = attr.value || '';
           if (/expression\s*\(/i.test(styleVal) ||
               /url\s*\(/i.test(styleVal) ||
               /-moz-binding/i.test(styleVal) ||
-              /behavior\s*:/i.test(styleVal)) {
+              /behavior\s*:/i.test(styleVal) ||
+              /@import/gi.test(styleVal) ||
+              /@charset/gi.test(styleVal) ||
+              /var\s*\(/gi.test(styleVal) ||
+              /-webkit-calc\s*\(/gi.test(styleVal) ||
+              /content\s*:\s*attr\s*\(/gi.test(styleVal)) {
             child.removeAttribute(attr.name);
             continue;
           }

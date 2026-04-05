@@ -1,6 +1,6 @@
 #!/bin/bash
 # Deploy Proof of Claw contracts to 0G Testnet
-# Usage: ./deploy-0g-testnet.sh [PRIVATE_KEY]
+# Usage: export PRIVATE_KEY=0xYOUR_PRIVATE_KEY && ./deploy-0g-testnet.sh
 
 set -e
 
@@ -10,15 +10,14 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-# Check for private key
-if [ -z "$1" ] && [ -z "$PRIVATE_KEY" ]; then
-    echo -e "${RED}Error: Private key required${NC}"
-    echo "Usage: $0 0xYOUR_PRIVATE_KEY"
-    echo "Or set PRIVATE_KEY environment variable"
+# Check for private key — environment variable only (never pass keys as CLI args)
+if [ -z "$PRIVATE_KEY" ]; then
+    echo -e "${RED}Error: PRIVATE_KEY environment variable must be set${NC}"
+    echo "Usage: export PRIVATE_KEY=0xYOUR_PRIVATE_KEY && $0"
     exit 1
 fi
 
-PK="${1:-$PRIVATE_KEY}"
+PK="$PRIVATE_KEY"
 
 # 0G Testnet RPC
 RPC_URL="https://evmrpc-testnet.0g.ai"

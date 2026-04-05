@@ -649,6 +649,17 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
 
 .inft-detail-value.hash { color: var(--cyan); font-size: 0.68rem; }
 
+.explorer-link {
+  color: var(--cyan);
+  text-decoration: none;
+  font-size: 0.72rem;
+  transition: opacity 0.2s;
+}
+.explorer-link:hover {
+  text-decoration: underline;
+  opacity: 0.8;
+}
+
 .infts-loading {
   display: flex;
   align-items: center;
@@ -924,17 +935,17 @@ body.sidebar-collapsed .main-content { margin-left: var(--sidebar-w-collapsed); 
     </div>
   </div>
 
-  <!-- My iNFTs -->
-  <div class="infts-section" id="infts-section" style="display:none;">
+  <!-- Minted iNFTs -->
+  <div class="infts-section" id="infts-section">
     <div class="infts-header">
-      <div class="section-title">My iNFTs</div>
+      <div class="section-title">Minted iNFTs</div>
       <div style="display:flex;align-items:center;gap:0.5rem;">
         <span class="infts-count" id="infts-count">0</span>
-        <button class="infts-refresh-btn" onclick="loadWalletINFTs()" title="Refresh">Refresh</button>
+        <button class="infts-refresh-btn" onclick="loadAllINFTs()" title="Refresh">Refresh</button>
       </div>
     </div>
     <div id="infts-content">
-      <div class="infts-empty">Connect your wallet to view your minted iNFTs</div>
+      <div class="infts-loading"><div class="spinner"></div>Fetching minted iNFTs...</div>
     </div>
   </div>
 
@@ -2278,46 +2289,12 @@ function runSetupChecklist() {
 setTimeout(runSetupChecklist, 500);
 
 // =====================================================
-// MY iNFTs
+// MINTED iNFTs
 // =====================================================
-let walletINFTs = [];
-
-function showINFTsSection(visible) {
-  var section = document.getElementById('infts-section');
-  if (section) section.style.display = visible ? 'block' : 'none';
-}
-
-async function loadWalletINFTs() {
-  if (typeof PocViem === 'undefined') {
-    // Module not ready yet — retry after a short delay
-    setTimeout(loadWalletINFTs, 500);
-    return;
-  }
-
-  var state = PocViem.getWalletState();
-  if (!state.connected || !state.address) {
-    showINFTsSection(false);
-    return;
-  }
-
-  showINFTsSection(true);
-  var content = document.getElementById('infts-content');
-  if (!content) return;
-  content.innerHTML = '<div class="infts-loading"><div class="spinner"></div>Fetching iNFTs from chain...</div>';
-
-  try {
-    var network = detectCurrentNetwork();
-    PocViem.init(network);
-    walletINFTs = await PocViem.getWalletINFTs(state.address, network);
-    renderINFTs(walletINFTs);
-  } catch (e) {
-    console.error('Failed to load wallet iNFTs:', e);
-    content.innerHTML = '<div class="infts-error">Failed to load iNFTs: ' + esc(e.message) + '</div>';
-  }
-}
+let mintedINFTs = [];
+var _currentNetwork = 'sepolia';
 
 function detectCurrentNetwork() {
-  // Check what chain the wallet is connected to
   if (window.ethereum && window.ethereum.chainId) {
     var cid = parseInt(window.ethereum.chainId, 16);
     if (cid === 16602) return 'og_testnet';
@@ -2327,13 +2304,42 @@ function detectCurrentNetwork() {
   return 'sepolia';
 }
 
-function renderINFTs(infts) {
+function getExplorerBase(network) {
+  if (network === 'sepolia') return 'https://sepolia.etherscan.io';
+  if (network === 'og_testnet') return 'https://chainscan-galileo.0g.ai';
+  if (network === 'og_mainnet') return 'https://chainscan.0g.ai';
+  return 'https://etherscan.io';
+}
+
+async function loadAllINFTs() {
+  if (typeof PocViem === 'undefined') {
+    setTimeout(loadAllINFTs, 500);
+    return;
+  }
+
+  var content = document.getElementById('infts-content');
+  if (!content) return;
+  content.innerHTML = '<div class="infts-loading"><div class="spinner"></div>Fetching minted iNFTs from chain...</div>';
+
+  try {
+    _currentNetwork = detectCurrentNetwork();
+    PocViem.init(_currentNetwork);
+    mintedINFTs = await PocViem.getAllMintedINFTs(_currentNetwork);
+    renderINFTs(mintedINFTs, _currentNetwork);
+  } catch (e) {
+    console.error('Failed to load minted iNFTs:', e);
+    content.innerHTML = '<div class="infts-error">Failed to load iNFTs: ' + esc(e.message) + '</div>';
+  }
+}
+
+function renderINFTs(infts, network) {
   var content = document.getElementById('infts-content');
   var countEl = document.getElementById('infts-count');
   countEl.textContent = infts.length;
+  var explorerBase = getExplorerBase(network);
 
   if (infts.length === 0) {
-    content.innerHTML = '<div class="infts-empty">No iNFTs found in this wallet. <a href="agents.html" style="color:var(--cyan);">Mint your first agent</a></div>';
+    content.innerHTML = '<div class="infts-empty">No iNFTs minted on this network yet. <a href="agents.html" style="color:var(--cyan);">Mint your first agent</a></div>';
     return;
   }
 
@@ -2346,6 +2352,9 @@ function renderINFTs(infts) {
     var mintStr = mintDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     var policyShort = nft.policyHash ? (nft.policyHash.slice(0, 6) + '...' + nft.policyHash.slice(-4)) : '---';
     var agentIdShort = nft.agentId ? (nft.agentId.slice(0, 6) + '...' + nft.agentId.slice(-4)) : '---';
+    var ownerShort = nft.owner ? (nft.owner.slice(0, 6) + '...' + nft.owner.slice(-4)) : '---';
+    var ownerUrl = explorerBase + '/address/' + nft.owner;
+    var txUrl = nft.txHash ? (explorerBase + '/tx/' + nft.txHash) : '';
 
     html += '<div class="inft-card" onclick="navigateToINFT(\'' + esc(nameDisplay) + '\')">' +
       '<div class="inft-card-top">' +
@@ -2359,6 +2368,8 @@ function renderINFTs(infts) {
       '<div class="inft-card-details">' +
         '<span class="inft-detail-label">Token ID</span>' +
         '<span class="inft-detail-value">#' + esc(nft.tokenId) + '</span>' +
+        '<span class="inft-detail-label">Owner</span>' +
+        '<span class="inft-detail-value"><a href="' + esc(ownerUrl) + '" target="_blank" rel="noopener" class="explorer-link" onclick="event.stopPropagation()">' + esc(ownerShort) + '</a></span>' +
         '<span class="inft-detail-label">Reputation</span>' +
         '<span class="inft-detail-value">' + esc(nft.reputationScore) + '</span>' +
         '<span class="inft-detail-label">Proofs</span>' +
@@ -2369,6 +2380,7 @@ function renderINFTs(infts) {
         '<span class="inft-detail-value hash">' + esc(policyShort) + '</span>' +
         '<span class="inft-detail-label">Agent ID</span>' +
         '<span class="inft-detail-value hash">' + esc(agentIdShort) + '</span>' +
+        (txUrl ? '<span class="inft-detail-label">TX</span><span class="inft-detail-value"><a href="' + esc(txUrl) + '" target="_blank" rel="noopener" class="explorer-link" onclick="event.stopPropagation()">View on Explorer</a></span>' : '') +
       '</div>' +
     '</div>';
   }
@@ -2387,7 +2399,6 @@ function getAgentIcon(name) {
 }
 
 function navigateToINFT(agentName) {
-  // Try to find matching agent in local state, otherwise go to agents page
   var match = agents.find(function(a) { return a.name === agentName || a.id === agentName; });
   if (match) {
     window.location.href = 'dashboard.html?agent=' + encodeURIComponent(match.id);
@@ -2396,24 +2407,21 @@ function navigateToINFT(agentName) {
   }
 }
 
-// Watch for wallet connection and auto-load iNFTs
-// Poll until wallet display becomes visible (set by wallet.js on connect)
-var _inftWalletPoll = setInterval(function() {
-  var display = document.getElementById('wallet-display');
-  if (display && display.style.display === 'flex') {
-    clearInterval(_inftWalletPoll);
-    loadWalletINFTs();
+// Auto-load minted iNFTs once PocViem is ready
+var _inftLoadPoll = setInterval(function() {
+  if (typeof PocViem !== 'undefined') {
+    clearInterval(_inftLoadPoll);
+    loadAllINFTs();
   }
-}, 800);
+}, 500);
 
-// Also listen for account changes
+// Reload on account/network changes
 if (window.ethereum) {
-  window.ethereum.on('accountsChanged', function(accounts) {
-    if (accounts.length > 0) {
-      setTimeout(loadWalletINFTs, 500);
-    } else {
-      showINFTsSection(false);
-    }
+  window.ethereum.on('accountsChanged', function() {
+    setTimeout(loadAllINFTs, 500);
+  });
+  window.ethereum.on('chainChanged', function() {
+    setTimeout(loadAllINFTs, 500);
   });
 }
 

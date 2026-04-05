@@ -15,6 +15,10 @@ RUN npm ci --production --ignore-scripts 2>/dev/null || npm install --production
 # Copy application source
 COPY . .
 
+# Run as non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+USER appuser
+
 # Default command — override per-service via docker-compose
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "server.js"]

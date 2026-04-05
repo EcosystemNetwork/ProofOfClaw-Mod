@@ -38,7 +38,7 @@
 
 import crypto from "node:crypto";
 import http from "node:http";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync, chmodSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import WebSocket from "ws";
@@ -102,6 +102,7 @@ function ensureKeypair() {
   });
 
   writeFileSync(PRIVATE_KEY_PATH, privateKey);
+  chmodSync(PRIVATE_KEY_PATH, 0o600);
   writeFileSync(PUBLIC_KEY_PATH, publicKey);
   log("KEYS", "Keypair saved to ./keys/ (private key never leaves this directory)");
 
@@ -707,18 +708,40 @@ function resolveSwarmSenderToEns(data) {
 let bridgeKeypair = null;
 let bridgeConfig = null;
 
+// ── Security: API key authentication ──
+const BRIDGE_API_KEY = process.env.API_KEY || '';
+if (!BRIDGE_API_KEY) log("SECURITY", "WARNING: No API_KEY set — running without authentication (dev mode)");
+
+const BRIDGE_CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:8080';
+
 function startHealthServer() {
   const server = http.createServer((req, res) => {
     res.setHeader("Content-Type", "application/json");
-    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Origin", BRIDGE_CORS_ORIGIN);
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-api-key");
+    // Security headers
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("X-Frame-Options", "DENY");
+    res.setHeader("X-XSS-Protection", "0");
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    res.setHeader("Content-Security-Policy", "default-src 'self'");
 
     // CORS preflight
     if (req.method === "OPTIONS") {
       res.writeHead(204);
       res.end();
       return;
+    }
+
+    // API key authentication (skip for health endpoint)
+    if (BRIDGE_API_KEY && req.url !== "/health") {
+      const provided = req.headers["x-api-key"];
+      if (!provided || provided !== BRIDGE_API_KEY) {
+        res.writeHead(401);
+        res.end(JSON.stringify({ error: "Unauthorized" }));
+        return;
+      }
     }
 
     // --- GET /health — status + setup state ---
@@ -946,10 +969,7 @@ function startHealthServer() {
     if (channelMsgMatch) {
       const channelId = decodeURIComponent(channelMsgMatch[1]);
       const messages = channelMessages.get(channelId) || [];
-      res.writeHead(200, {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-      });
+      res.writeHead(200);
       res.end(JSON.stringify({ messages }));
       return;
     }

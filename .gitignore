@@ -7,10 +7,12 @@ Cargo.lock
 cache/
 out/
 lib/
+contracts/broadcast/
 
 # Environment
 .env
 .env.local
+contracts/.env.deploy
 
 # Node
 node_modules/

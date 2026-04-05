@@ -5,7 +5,7 @@
 
 const express = require('express');
 const cors = require('cors');
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const fs = require('fs').promises;
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
@@ -15,9 +15,89 @@ const app = express();
 const PORT = process.env.ONECLAW_PORT || 3456;
 const DATA_DIR = path.join(__dirname, 'data');
 
+// ── Security: rate limiting (in-memory) ──
+const rateLimitStore = new Map();
+function rateLimit(windowMs = 60000, max = 100) {
+  return (req, res, next) => {
+    const key = req.ip;
+    const now = Date.now();
+    const record = rateLimitStore.get(key) || { count: 0, resetAt: now + windowMs };
+    if (now > record.resetAt) { record.count = 0; record.resetAt = now + windowMs; }
+    record.count++;
+    rateLimitStore.set(key, record);
+    if (record.count > max) return res.status(429).json({ error: 'Too many requests' });
+    next();
+  };
+}
+
+// Clean up expired rate limit entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of rateLimitStore) {
+    if (now > record.resetAt) rateLimitStore.delete(key);
+  }
+}, 60000);
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  next();
+});
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+}));
+
+// Stripe setup (must be before webhook route)
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+let stripe = null;
+
+if (STRIPE_SECRET_KEY) {
+  stripe = require('stripe')(STRIPE_SECRET_KEY);
+  console.log('Stripe payment routes enabled');
+} else {
+  console.warn('WARNING: STRIPE_SECRET_KEY not set — payment routes disabled');
+}
+
+// Stripe webhook needs raw body — mount BEFORE express.json()
+app.post('/v1/payment/webhook', express.raw({ type: 'application/json' }), (req, res) => {
+  if (!stripe || !STRIPE_WEBHOOK_SECRET) {
+    return res.status(503).json({ error: 'Webhook not configured' });
+  }
+
+  let event;
+  try {
+    event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], STRIPE_WEBHOOK_SECRET);
+  } catch (err) {
+    console.error('Webhook signature verification failed:', err.message);
+    return res.status(400).send('Webhook Error');
+  }
+
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object;
+      console.log(`Payment completed: tier=${session.metadata.tier}, agent=${session.metadata.agentId}`);
+      break;
+    }
+    default:
+      console.log(`Unhandled Stripe event: ${event.type}`);
+  }
+
+  res.json({ received: true });
+});
+
 app.use(express.json({ limit: '10mb' }));
+
+// Global rate limit
+app.use(rateLimit());
 
 // Ensure data directory exists
 async function ensureDataDir() {
@@ -47,8 +127,85 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
+// Timing-safe string comparison to prevent timing attacks on API keys
+function timingSafeCompare(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) {
+    // Compare against self to maintain constant time
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+// ── SIWE (Sign-In with Ethereum) ──
+const siweSessions = new Map();
+const siweNonces = new Map();
+
+let ethersVerifyMessage;
+try {
+  const ethers = require('ethers');
+  ethersVerifyMessage = ethers.verifyMessage;
+} catch { /* ethers not available — SIWE disabled */ }
+
+if (ethersVerifyMessage) {
+  app.get('/auth/nonce', (req, res) => {
+    const nonce = crypto.randomBytes(16).toString('hex');
+    siweNonces.set(nonce, Date.now() + 5 * 60 * 1000);
+    res.json({ nonce });
+  });
+
+  app.post('/auth/siwe', (req, res) => {
+    try {
+      const { message, signature } = req.body;
+      if (!message || !signature) return res.status(400).json({ error: 'Missing message or signature' });
+
+      const addressMatch = message.match(/^(0x[a-fA-F0-9]{40})$/m);
+      if (!addressMatch) return res.status(400).json({ error: 'No address in SIWE message' });
+      const claimedAddress = addressMatch[1];
+
+      const nonceMatch = message.match(/Nonce:\s*([^\n]+)/);
+      if (nonceMatch) {
+        const nonce = nonceMatch[1].trim();
+        const expiry = siweNonces.get(nonce);
+        if (!expiry || Date.now() > expiry) return res.status(400).json({ error: 'Invalid or expired nonce' });
+        siweNonces.delete(nonce);
+      }
+
+      const recovered = ethersVerifyMessage(message, signature);
+      if (recovered.toLowerCase() !== claimedAddress.toLowerCase()) {
+        return res.status(401).json({ error: 'Signature mismatch' });
+      }
+
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+      siweSessions.set(token, { address: recovered, expiresAt });
+
+      for (const [t, s] of siweSessions) { if (s.expiresAt < Date.now()) siweSessions.delete(t); }
+      for (const [n, e] of siweNonces) { if (Date.now() > e) siweNonces.delete(n); }
+
+      res.json({ token, address: recovered, expiresAt });
+    } catch (err) {
+      res.status(400).json({ error: 'SIWE verification failed' });
+    }
+  });
+}
+
 // Auth middleware
 function authenticateApiKey(req, res, next) {
+  // Check SIWE Bearer token first
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    const session = siweSessions.get(token);
+    if (session && session.expiresAt > Date.now()) {
+      req.walletAddress = session.address;
+      return next();
+    }
+  }
+
   const apiKey = req.headers['x-api-key'];
   const userAuth = req.headers['x-user-auth'];
   const operatorAuth = req.headers['x-operator-auth'];
@@ -63,9 +220,15 @@ function authenticateApiKey(req, res, next) {
     return res.status(401).json({ error: 'Missing authentication' });
   }
 
-  // Validate the provided key against known valid keys
+  // Reject all requests if no API keys are configured
+  if (validKeys.length === 0) {
+    return res.status(503).json({ error: 'Server not configured — no API keys set' });
+  }
+
+  // Validate the provided key against known valid keys (timing-safe)
   const providedKey = apiKey || userAuth || operatorAuth;
-  if (validKeys.length > 0 && !validKeys.includes(providedKey)) {
+  const isValid = validKeys.some(key => timingSafeCompare(key, providedKey));
+  if (!isValid) {
     return res.status(403).json({ error: 'Invalid authentication key' });
   }
 
@@ -91,9 +254,12 @@ app.post('/v1/store', authenticateApiKey, async (req, res) => {
       .update(`${req.agentId}:${key}`)
       .digest('hex');
     
+    // Sanitize originalKey: only allow alphanumeric, hyphens, underscores, dots, colons
+    const safeKey = key.replace(/[^a-zA-Z0-9\-_.:\/]/g, '');
+
     const record = {
       key: storageKey,
-      originalKey: key,
+      originalKey: safeKey,
       agentId: req.agentId,
       data,
       metadata,
@@ -115,7 +281,7 @@ app.post('/v1/store', authenticateApiKey, async (req, res) => {
     
   } catch (error) {
     console.error('Store error:', error);
-    res.status(500).json({ error: 'Storage failed', details: error.message });
+    res.status(500).json({ error: 'Storage failed', details: 'Internal error' });
   }
 });
 
@@ -156,7 +322,7 @@ app.get('/v1/retrieve/:key', authenticateApiKey, async (req, res) => {
     
   } catch (error) {
     console.error('Retrieve error:', error);
-    res.status(500).json({ error: 'Retrieval failed', details: error.message });
+    res.status(500).json({ error: 'Retrieval failed', details: 'Internal error' });
   }
 });
 
@@ -235,6 +401,11 @@ app.delete('/v1/delete/:key', authenticateApiKey, async (req, res) => {
 
 // ==================== LICENSE ENDPOINTS ====================
 
+// License format validation: POC-GCAL-XXXX-XXXX-XXXX (alphanumeric segments, 20+ chars)
+function validateLicenseFormat(key) {
+  return /^POC-GCAL-[A-Z0-9]{4,}-[A-Z0-9]{4,}-[A-Z0-9]{4,}$/.test(key);
+}
+
 /**
  * POST /v1/license/verify
  * Verify license key
@@ -242,8 +413,8 @@ app.delete('/v1/delete/:key', authenticateApiKey, async (req, res) => {
 app.post('/v1/license/verify', authenticateApiKey, async (req, res) => {
   const { licenseKey, feature, agentId } = req.body;
   
-  // Simple license validation - in production check against database
-  const isValid = licenseKey && licenseKey.startsWith('POC-GCAL-');
+  // Validate license format: POC-GCAL-XXXX-XXXX-XXXX with minimum length and structure
+  const isValid = licenseKey && validateLicenseFormat(licenseKey);
   const tier = licenseKey?.split('-')[2] || 'free';
   
   res.json({
@@ -271,22 +442,12 @@ app.post('/v1/license/validate', authenticateApiKey, async (req, res) => {
   
   console.log('License check:', checkRecord);
   
-  const isValid = licenseKey && licenseKey.startsWith('POC-GCAL-');
+  const isValid = licenseKey && validateLicenseFormat(licenseKey);
   res.json({ valid: isValid, timestamp: Date.now() });
 });
 
 // ==================== PAYMENT ENDPOINTS (Stripe) ====================
-
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
-let stripe = null;
-
-if (STRIPE_SECRET_KEY) {
-  stripe = require('stripe')(STRIPE_SECRET_KEY);
-  console.log('Stripe payment routes enabled');
-} else {
-  console.warn('WARNING: STRIPE_SECRET_KEY not set — payment routes disabled');
-}
+// NOTE: stripe, STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET declared above express.json() middleware
 
 const TIER_PRICES = {
   basic: { amount: 999, name: '1clawAI Basic' },
@@ -337,35 +498,7 @@ app.post('/v1/payment/checkout', authenticateApiKey, async (req, res) => {
   }
 });
 
-/**
- * POST /v1/payment/webhook
- * Stripe webhook for payment confirmation
- */
-app.post('/v1/payment/webhook', express.raw({ type: 'application/json' }), (req, res) => {
-  if (!stripe || !STRIPE_WEBHOOK_SECRET) {
-    return res.status(503).json({ error: 'Webhook not configured' });
-  }
-
-  let event;
-  try {
-    event = stripe.webhooks.constructEvent(req.body, req.headers['stripe-signature'], STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  switch (event.type) {
-    case 'checkout.session.completed': {
-      const session = event.data.object;
-      console.log(`Payment completed: tier=${session.metadata.tier}, agent=${session.metadata.agentId}`);
-      break;
-    }
-    default:
-      console.log(`Unhandled Stripe event: ${event.type}`);
-  }
-
-  res.json({ received: true });
-});
+// NOTE: /v1/payment/webhook is mounted above express.json() to receive raw body for Stripe signature verification
 
 /**
  * GET /v1/payment/success
@@ -430,6 +563,11 @@ app.post('/v1/agents/tasks', authenticateApiKey, async (req, res) => {
 app.get('/v1/agents/:agentId/tasks', authenticateApiKey, async (req, res) => {
   try {
     const { agentId } = req.params;
+
+    // TODO: Bind agentId to authenticated identity — currently any authenticated user
+    // can query any agent's tasks. For now, log access for audit trail.
+    console.log(`Task query: agent=${req.params.agentId} from=${req.ip}`);
+
     const files = await fs.readdir(DATA_DIR);
     
     const tasks = [];
@@ -516,7 +654,7 @@ app.post('/v1/soul-backup/upload', authenticateApiKey, async (req, res) => {
 
   } catch (error) {
     console.error('Soul backup upload error:', error);
-    res.status(500).json({ error: 'Soul backup upload failed', details: error.message });
+    res.status(500).json({ error: 'Soul backup upload failed', details: 'Internal error' });
   }
 });
 
@@ -619,7 +757,7 @@ function requireWallet(req, res, next) {
  * GET /v1/preferences
  * Get all preferences for a wallet
  */
-app.get('/v1/preferences', requireWallet, async (req, res) => {
+app.get('/v1/preferences', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     const prefs = await db.getAllPreferences(req.wallet);
     res.json({ success: true, preferences: prefs });
@@ -633,7 +771,7 @@ app.get('/v1/preferences', requireWallet, async (req, res) => {
  * GET /v1/preferences/:key
  * Get a single preference
  */
-app.get('/v1/preferences/:key', requireWallet, async (req, res) => {
+app.get('/v1/preferences/:key', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     const value = await db.getPreference(req.wallet, req.params.key);
     if (value === null) {
@@ -650,7 +788,7 @@ app.get('/v1/preferences/:key', requireWallet, async (req, res) => {
  * PUT /v1/preferences/:key
  * Set a single preference
  */
-app.put('/v1/preferences/:key', requireWallet, async (req, res) => {
+app.put('/v1/preferences/:key', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     const { value } = req.body;
     if (value === undefined) {
@@ -668,7 +806,7 @@ app.put('/v1/preferences/:key', requireWallet, async (req, res) => {
  * PUT /v1/preferences
  * Bulk set preferences { preferences: { key: value, ... } }
  */
-app.put('/v1/preferences', requireWallet, async (req, res) => {
+app.put('/v1/preferences', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     const { preferences } = req.body;
     if (!preferences || typeof preferences !== 'object') {
@@ -686,7 +824,7 @@ app.put('/v1/preferences', requireWallet, async (req, res) => {
  * DELETE /v1/preferences/:key
  * Delete a single preference
  */
-app.delete('/v1/preferences/:key', requireWallet, async (req, res) => {
+app.delete('/v1/preferences/:key', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     await db.deletePreference(req.wallet, req.params.key);
     res.json({ success: true, deleted: req.params.key });
@@ -701,7 +839,7 @@ app.delete('/v1/preferences/:key', requireWallet, async (req, res) => {
  * GET /v1/org
  * Get user's organization
  */
-app.get('/v1/org', requireWallet, async (req, res) => {
+app.get('/v1/org', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     const org = await db.getOrg(req.wallet);
     if (!org) return res.status(404).json({ error: 'No organization found' });
@@ -716,7 +854,7 @@ app.get('/v1/org', requireWallet, async (req, res) => {
  * PUT /v1/org
  * Create or update organization
  */
-app.put('/v1/org', requireWallet, async (req, res) => {
+app.put('/v1/org', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     const { org } = req.body;
     if (!org || !org.id || !org.name || !org.slug) {
@@ -736,7 +874,7 @@ app.put('/v1/org', requireWallet, async (req, res) => {
  * GET /v1/swarms
  * Get all swarms for user
  */
-app.get('/v1/swarms', requireWallet, async (req, res) => {
+app.get('/v1/swarms', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     const swarms = await db.getSwarms(req.wallet);
     res.json({ success: true, swarms });
@@ -750,7 +888,7 @@ app.get('/v1/swarms', requireWallet, async (req, res) => {
  * PUT /v1/swarms
  * Create or update a swarm
  */
-app.put('/v1/swarms', requireWallet, async (req, res) => {
+app.put('/v1/swarms', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     const { swarm } = req.body;
     if (!swarm || !swarm.id || !swarm.name || !swarm.slug || !swarm.orgId) {
@@ -768,7 +906,7 @@ app.put('/v1/swarms', requireWallet, async (req, res) => {
  * DELETE /v1/swarms/:id
  * Delete a swarm
  */
-app.delete('/v1/swarms/:id', requireWallet, async (req, res) => {
+app.delete('/v1/swarms/:id', authenticateApiKey, requireWallet, async (req, res) => {
   try {
     await db.deleteSwarm(req.wallet, req.params.id);
     res.json({ success: true, deleted: req.params.id });

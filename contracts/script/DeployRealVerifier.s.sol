@@ -53,7 +53,7 @@ contract DeployRealVerifierScript is Script {
         console.log("---");
         console.log("Groth16 Verifier:", address(groth16Verifier));
         console.log("ProofOfClawVerifier:", pocVerifierAddr);
-        console.log("Proof Selector:", uint256(uint32(proofSelector)));
+        // console.log("Proof Selector:", uint256(uint32(proofSelector))); // removed: proofSelector undefined
         console.log("---");
         console.log("Next steps:");
         console.log("  1. Update RISC_ZERO_VERIFIER_ADDRESS in .env to:", address(groth16Verifier));

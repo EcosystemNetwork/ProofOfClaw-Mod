@@ -260,7 +260,9 @@ const PocAuthModules = (function() {
   }
 
   function generateLicenseKey() {
-    return `POC-GCAL-${config.pricingTier}-${Date.now().toString(36)}-${Math.random().toString(36).substr(2, 9)}`;
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `POC-GCAL-${hex.slice(0,4).toUpperCase()}-${hex.slice(4,8).toUpperCase()}-${hex.slice(8,12).toUpperCase()}`;
   }
 
   function downloadCredentialPackage() {
@@ -278,6 +280,14 @@ const PocAuthModules = (function() {
 
   async function importCredentialPackage(pkg) {
     if (typeof pkg === 'string') pkg = JSON.parse(pkg);
+    // Validate expected structure
+    if (!pkg || typeof pkg !== 'object') throw new Error('Invalid package format');
+    const ALLOWED_KEYS = ['apiKey', 'agentId', 'endpoint', 'vaultId', 'orgId', 'modules', 'version', 'credentials', 'tier'];
+    const keys = Object.keys(pkg);
+    const unexpected = keys.filter(k => !ALLOWED_KEYS.includes(k));
+    if (unexpected.length) {
+      console.warn('Credential package contains unexpected keys:', unexpected);
+    }
     const connections = getStoredConnections();
     connections.google = { connected: true, accessToken: pkg.credentials.accessToken };
     setStoredConnections(connections);
@@ -334,7 +344,7 @@ const PocAuthModules = (function() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': config.oneclawApiKey || 'test-key',
+          ...(config.oneclawApiKey ? { 'X-API-Key': config.oneclawApiKey } : {}),
           'X-User-Auth': config.userAuthKey || '',
           'X-Operator-Auth': config.operatorAuthKey || ''
         },
@@ -374,7 +384,7 @@ const PocAuthModules = (function() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-API-Key': config.oneclawApiKey || 'test-key'
+          ...(config.oneclawApiKey ? { 'X-API-Key': config.oneclawApiKey } : {})
         },
         body: JSON.stringify({ key, agentId: config.agentId })
       });

@@ -9,6 +9,9 @@ import {ProofOfClawINFT} from "../src/ProofOfClawINFT.sol";
 ///         using the OCMB v0.1 soul backup format.
 contract MintMasterClaw is Script {
     function run() external {
+        // Guard: only allow execution on local Anvil (chain ID 31337)
+        require(block.chainid == 31337, "MintMasterClaw: local only");
+
         // Anvil default private key #0
         uint256 deployerKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 

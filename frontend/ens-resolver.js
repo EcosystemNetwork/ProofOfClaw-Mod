@@ -20,8 +20,15 @@
 
 const ENSResolver = (() => {
   // ── Config ──
+  // Check for configured RPC URL from environment config
+  const CONFIGURED_RPC = window.__POC_ENV__?.RPC_URL;
+
+  if (!CONFIGURED_RPC) {
+    console.warn('ENS Resolver: Using demo Alchemy API key — configure RPC_URL for production');
+  }
+
   const RPC_ENDPOINTS = {
-    sepolia: 'https://eth-sepolia.g.alchemy.com/v2/demo',
+    sepolia: CONFIGURED_RPC || 'https://eth-sepolia.g.alchemy.com/v2/demo',
     mainnet: 'https://eth.llamarpc.com',
     og_testnet: 'https://evmrpc-testnet.0g.ai',
   };

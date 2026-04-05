@@ -50,6 +50,7 @@ struct AgentPolicy {
 struct VerifiedOutput {
     agent_id: String,
     policy_hash: [u8; 32],
+    inference_commitment: [u8; 32],
     output_commitment: [u8; 32],
     all_checks_passed: bool,
     requires_ledger_approval: bool,
@@ -61,7 +62,20 @@ risc0_zkvm::guest::entry!(main);
 fn main() {
     let trace: ExecutionTrace = env::read();
     let policy: AgentPolicy = env::read();
-    
+
+    // Validate inference commitment
+    let mut inference_hasher = Sha256::new();
+    for invocation in &trace.tool_invocations {
+        inference_hasher.update(invocation.tool_name.as_bytes());
+        inference_hasher.update(&invocation.input_hash);
+        inference_hasher.update(&invocation.output_hash);
+    }
+    let computed_commitment: [u8; 32] = inference_hasher.finalize().into();
+    assert_eq!(
+        computed_commitment, trace.inference_commitment,
+        "Inference commitment mismatch: declared commitment does not match actual tool invocations"
+    );
+
     let mut all_passed = true;
     
     for invocation in &trace.tool_invocations {
@@ -82,7 +96,7 @@ fn main() {
     
     let requires_approval = trace.action_value > policy.max_value_autonomous;
     
-    let policy_bytes = serde_json::to_vec(&policy).unwrap();
+    let policy_bytes = serde_json::to_vec(&policy).expect("Failed to serialize policy to JSON");
     let mut hasher = Sha256::new();
     hasher.update(&policy_bytes);
     let policy_hash: [u8; 32] = hasher.finalize().into();
@@ -90,6 +104,7 @@ fn main() {
     let output = VerifiedOutput {
         agent_id: trace.agent_id.clone(),
         policy_hash,
+        inference_commitment: trace.inference_commitment,
         output_commitment: trace.output_commitment,
         all_checks_passed: all_passed,
         requires_ledger_approval: requires_approval,

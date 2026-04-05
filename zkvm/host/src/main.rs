@@ -1,5 +1,6 @@
 use risc0_zkvm::{compute_image_id, default_prover, ExecutorEnv, Receipt};
 use serde::{Deserialize, Serialize};
+use sha2::{Sha256, Digest};
 use anyhow::Result;
 
 #[derive(Serialize, Deserialize)]
@@ -21,10 +22,18 @@ struct ToolInvocation {
     within_policy: bool,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+enum PolicySeverity {
+    Block,
+    Warn,
+    Sanitize,
+    Pass,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 struct PolicyResult {
     rule_id: String,
-    severity: String,
+    severity: PolicySeverity,
     details: String,
 }
 
@@ -40,6 +49,7 @@ struct AgentPolicy {
 struct VerifiedOutput {
     agent_id: String,
     policy_hash: [u8; 32],
+    inference_commitment: [u8; 32],
     output_commitment: [u8; 32],
     all_checks_passed: bool,
     requires_ledger_approval: bool,
@@ -58,18 +68,29 @@ fn main() -> Result<()> {
     println!("Guest ELF: {} bytes", GUEST_ELF.len());
 
     // Simulate an agent execution trace
+    let tool_invocations = vec![
+        ToolInvocation {
+            tool_name: "swap_tokens".to_string(),
+            input_hash: [1u8; 32],
+            output_hash: [2u8; 32],
+            capability_hash: [3u8; 32],
+            within_policy: true,
+        },
+    ];
+
+    // Compute inference commitment: SHA-256 over tool_name + input_hash + output_hash
+    let mut inference_hasher = Sha256::new();
+    for invocation in &tool_invocations {
+        inference_hasher.update(invocation.tool_name.as_bytes());
+        inference_hasher.update(&invocation.input_hash);
+        inference_hasher.update(&invocation.output_hash);
+    }
+    let inference_commitment: [u8; 32] = inference_hasher.finalize().into();
+
     let trace = ExecutionTrace {
         agent_id: "alice.proofofclaw.eth".to_string(),
-        inference_commitment: [0u8; 32],
-        tool_invocations: vec![
-            ToolInvocation {
-                tool_name: "swap_tokens".to_string(),
-                input_hash: [1u8; 32],
-                output_hash: [2u8; 32],
-                capability_hash: [3u8; 32],
-                within_policy: true,
-            },
-        ],
+        inference_commitment,
+        tool_invocations,
         policy_check_results: vec![],
         output_commitment: [0u8; 32],
         action_value: 50_000_000_000_000_000, // 0.05 ETH

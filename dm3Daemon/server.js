@@ -13,6 +13,15 @@ const fs = require('fs');
 const multer = require('multer');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason?.message || reason);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error.message);
+  process.exit(1);
+});
+
 // ── File upload configuration ──
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -25,9 +34,18 @@ const storage = multer.diskStorage({
   }
 });
 
+const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp', 'application/json'];
+
 const upload = multer({
   storage,
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB max
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
+  fileFilter: (req, file, cb) => {
+    if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} not allowed. Allowed: ${ALLOWED_MIME_TYPES.join(', ')}`), false);
+    }
+  }
 });
 
 const app = express();
@@ -62,12 +80,96 @@ const ALLOWED_TOOLS = (process.env.ALLOWED_TOOLS || 'query,read').split(',').map
 const ENDPOINT_ALLOWLIST = (process.env.ENDPOINT_ALLOWLIST || '').split(',').map(s => s.trim()).filter(Boolean);
 const MAX_VALUE_AUTONOMOUS_WEI = parseInt(process.env.MAX_VALUE_AUTONOMOUS_WEI || '1000000000000000000', 10);
 
+// ── Security: API key authentication + SIWE ──
+const API_KEY = process.env.API_KEY || process.env.ONECLAW_API_KEY || '';
+if (!API_KEY) console.warn('WARNING: No API_KEY set — running without authentication (dev mode)');
+
+// SIWE (Sign-In with Ethereum) session management
+const siweSessions = new Map();
+const siweNonces = new Map(); // nonce -> expiresAt
+
+let ethersVerifyMessage;
+try {
+  const ethers = require('ethers');
+  ethersVerifyMessage = ethers.verifyMessage;
+} catch { /* ethers not available — SIWE disabled */ }
+
+function authenticateRequest(req, res, next) {
+  if (!API_KEY && siweSessions.size === 0) return next(); // dev mode
+
+  // Check Bearer token (SIWE session)
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.slice(7);
+    const session = siweSessions.get(token);
+    if (session && session.expiresAt > Date.now()) {
+      req.walletAddress = session.address;
+      return next();
+    }
+  }
+
+  // Check API key
+  if (API_KEY) {
+    const provided = req.headers['x-api-key'];
+    if (provided && provided === API_KEY) return next();
+  }
+
+  return res.status(401).json({ error: 'Unauthorized' });
+}
+
+// ── Security: rate limiting (in-memory) ──
+const rateLimitStore = new Map();
+function rateLimit(windowMs = 60000, max = 100) {
+  return (req, res, next) => {
+    const key = req.ip;
+    const now = Date.now();
+    const record = rateLimitStore.get(key) || { count: 0, resetAt: now + windowMs };
+    if (now > record.resetAt) { record.count = 0; record.resetAt = now + windowMs; }
+    record.count++;
+    rateLimitStore.set(key, record);
+    if (record.count > max) return res.status(429).json({ error: 'Too many requests' });
+    next();
+  };
+}
+
+// ── Security: cap in-memory stores ──
+const MAX_MESSAGES = 10000;
+
+function pruneMap(map, max) {
+  if (map.size <= max) return;
+  const keys = [...map.keys()];
+  const toRemove = keys.length - max;
+  for (let i = 0; i < toRemove; i++) {
+    map.delete(keys[i]);
+  }
+}
+
+// ── Security headers ──
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  next();
+});
+
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 
-// Serve uploaded files
-app.use('/uploads', express.static(UPLOADS_DIR));
+// Global rate limit
+app.use(rateLimit());
+
+// Serve uploaded files with Content-Disposition: attachment
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Content-Disposition', 'attachment');
+  next();
+}, express.static(UPLOADS_DIR));
 
 // Agent state
 const agentState = {
@@ -84,6 +186,31 @@ const agentState = {
 // In-memory message store (in production, use persistent storage)
 const messageStore = new Map(); // contactId -> messages[]
 const conversations = new Map(); // sessionId -> { messages, context }
+
+// Periodically prune in-memory stores to prevent unbounded growth
+setInterval(() => {
+  // Prune messageStore: keep only the latest messages per contact
+  let totalMessages = 0;
+  for (const [, msgs] of messageStore) totalMessages += msgs.length;
+  if (totalMessages > MAX_MESSAGES) {
+    for (const [key, msgs] of messageStore) {
+      if (msgs.length > 100) {
+        messageStore.set(key, msgs.slice(-100));
+      }
+    }
+  }
+  // Prune conversations
+  pruneMap(conversations, MAX_MESSAGES);
+  // Prune proofStore (defined later, guarded)
+  if (typeof proofStore !== 'undefined' && proofStore.length > MAX_MESSAGES) {
+    proofStore.splice(0, proofStore.length - MAX_MESSAGES);
+  }
+  // Prune rate limit store (expired entries)
+  const now = Date.now();
+  for (const [key, record] of rateLimitStore) {
+    if (now > record.resetAt) rateLimitStore.delete(key);
+  }
+}, 60000);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // WebSocket — real-time push to dashboard clients
@@ -199,7 +326,7 @@ class DM3Client {
           content: content,
           timestamp: Date.now()
         }),
-        encryptionEnvelopeType: 'x25519-xsalsa20-poly1305',
+        encryptionEnvelopeType: 'plaintext',
         timestamp: Math.floor(Date.now() / 1000)
       };
 
@@ -370,6 +497,58 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ── SIWE Authentication Endpoints (unauthenticated) ──
+if (ethersVerifyMessage) {
+  app.get('/auth/nonce', (req, res) => {
+    const nonce = crypto.randomBytes(16).toString('hex');
+    siweNonces.set(nonce, Date.now() + 5 * 60 * 1000); // 5 min expiry
+    res.json({ nonce });
+  });
+
+  app.post('/auth/siwe', express.json(), (req, res) => {
+    try {
+      const { message, signature } = req.body;
+      if (!message || !signature) return res.status(400).json({ error: 'Missing message or signature' });
+
+      // Extract address (EIP-4361: second line is the 0x address)
+      const addressMatch = message.match(/^(0x[a-fA-F0-9]{40})$/m);
+      if (!addressMatch) return res.status(400).json({ error: 'No address in SIWE message' });
+      const claimedAddress = addressMatch[1];
+
+      // Validate and consume nonce
+      const nonceMatch = message.match(/Nonce:\s*([^\n]+)/);
+      if (nonceMatch) {
+        const nonce = nonceMatch[1].trim();
+        const expiry = siweNonces.get(nonce);
+        if (!expiry || Date.now() > expiry) return res.status(400).json({ error: 'Invalid or expired nonce' });
+        siweNonces.delete(nonce);
+      }
+
+      // Verify signature recovers to claimed address
+      const recovered = ethersVerifyMessage(message, signature);
+      if (recovered.toLowerCase() !== claimedAddress.toLowerCase()) {
+        return res.status(401).json({ error: 'Signature mismatch' });
+      }
+
+      // Issue session token
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+      siweSessions.set(token, { address: recovered, expiresAt });
+
+      // Prune expired sessions
+      for (const [t, s] of siweSessions) { if (s.expiresAt < Date.now()) siweSessions.delete(t); }
+      for (const [n, e] of siweNonces) { if (Date.now() > e) siweNonces.delete(n); }
+
+      res.json({ token, address: recovered, expiresAt });
+    } catch (err) {
+      res.status(400).json({ error: 'SIWE verification failed' });
+    }
+  });
+}
+
+// Apply API key auth to all /api/* routes
+app.use('/api', authenticateRequest);
+
 /**
  * GET /api/status
  * Agent status and configuration
@@ -461,7 +640,12 @@ function sseBroadcast(evt) {
  * GET /api/traces/stream
  * Server-Sent Events endpoint for kanban live trace feed
  */
+const MAX_SSE_CLIENTS = 100;
+
 app.get('/api/traces/stream', (req, res) => {
+  if (sseClients.size >= MAX_SSE_CLIENTS) {
+    return res.status(429).json({ error: 'Too many streaming connections' });
+  }
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -675,7 +859,7 @@ app.post('/api/chat', async (req, res) => {
  * POST /api/upload
  * Upload files (any type) — returns file metadata
  */
-app.post('/api/upload', upload.array('files', 10), (req, res) => {
+app.post('/api/upload', rateLimit(60000, 10), upload.array('files', 10), (req, res) => {
   if (!req.files || req.files.length === 0) {
     return res.status(400).json({ error: 'No files provided' });
   }
@@ -839,6 +1023,14 @@ async function startServer() {
   const wss = new WebSocketServer({ server, path: '/ws' });
 
   wss.on('connection', (ws, req) => {
+    if (API_KEY) {
+      const url = new URL(req.url, 'http://localhost');
+      const wsKey = url.searchParams.get('api_key') || req.headers['x-api-key'];
+      if (!wsKey || wsKey !== API_KEY) {
+        ws.close(4001, 'Unauthorized');
+        return;
+      }
+    }
     wsClients.add(ws);
     console.log(`WebSocket: client connected (${wsClients.size} total)`);
 

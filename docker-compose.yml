@@ -62,7 +62,7 @@ services:
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
       # API auth keys
-      - ONECLAW_API_KEY=${ONECLAW_API_KEY:-poc-dev-key}
+      - ONECLAW_API_KEY=${ONECLAW_API_KEY:?ONECLAW_API_KEY must be set in .env}
       - USER_AUTH_KEY=${USER_AUTH_KEY:-}
       - OPERATOR_AUTH_KEY=${OPERATOR_AUTH_KEY:-}
     volumes:
@@ -91,7 +91,7 @@ services:
       # Required agent config — override in .env
       - AGENT_ID=${AGENT_ID:-alice-agent}
       - ENS_NAME=${ENS_NAME:-alice.proofofclaw.eth}
-      - PRIVATE_KEY=${PRIVATE_KEY:-0xe770f73a119b637161fe37282ea41cffb9219eb586b29d2818ad3437f78a1860}
+      - PRIVATE_KEY=${PRIVATE_KEY:?PRIVATE_KEY must be set in .env}
       - RPC_URL=${RPC_URL:-https://eth-sepolia.g.alchemy.com/v2/demo}
       - NETWORK=${NETWORK:-sepolia}
       # Point to the delivery service inside the Docker network

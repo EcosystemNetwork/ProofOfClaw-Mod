@@ -220,7 +220,7 @@ const PocAPI = (() => {
   async function connect(url, origin) {
     // Normalize URL
     let baseUrl = url.replace(/\/+$/, '');
-    if (!baseUrl.startsWith('http')) baseUrl = 'http://' + baseUrl;
+    if (!baseUrl.startsWith('http')) baseUrl = 'https://' + baseUrl;
 
     // Health check (probes all known paths)
     const ok = await healthCheck(baseUrl);

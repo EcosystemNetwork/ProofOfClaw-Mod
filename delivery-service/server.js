@@ -53,12 +53,72 @@ function notifySubscribers(recipient, envelope) {
 }
 
 // ---------------------------------------------------------------------------
+// Security: API key authentication
+// ---------------------------------------------------------------------------
+
+const API_KEY = process.env.API_KEY || '';
+if (!API_KEY) console.warn('WARNING: No API_KEY set — running without authentication (dev mode)');
+
+function authenticateRequest(req, res, next) {
+  if (!API_KEY) return next(); // dev mode
+  const provided = req.headers['x-api-key'];
+  if (!provided || provided !== API_KEY) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
+}
+
+// ---------------------------------------------------------------------------
+// Security: rate limiting (in-memory)
+// ---------------------------------------------------------------------------
+
+const rateLimitStore = new Map();
+function rateLimit(windowMs = 60000, max = 100) {
+  return (req, res, next) => {
+    const key = req.ip;
+    const now = Date.now();
+    const record = rateLimitStore.get(key) || { count: 0, resetAt: now + windowMs };
+    if (now > record.resetAt) { record.count = 0; record.resetAt = now + windowMs; }
+    record.count++;
+    rateLimitStore.set(key, record);
+    if (record.count > max) return res.status(429).json({ error: 'Too many requests' });
+    next();
+  };
+}
+
+// Clean up expired rate limit entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of rateLimitStore) {
+    if (now > record.resetAt) rateLimitStore.delete(key);
+  }
+}, 60000);
+
+// ---------------------------------------------------------------------------
 // Express app
 // ---------------------------------------------------------------------------
 
 const app = express();
-app.use(cors());
+
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Content-Security-Policy', "default-src 'self'");
+  next();
+});
+
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:8080',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true
+}));
 app.use(express.json());
+
+// Global rate limit
+app.use(rateLimit());
 
 // --- Health ---
 app.get("/health", (_req, res) => {
@@ -66,7 +126,7 @@ app.get("/health", (_req, res) => {
 });
 
 // --- POST /messages — receive a DM3 envelope ---
-app.post("/messages", (req, res) => {
+app.post("/messages", authenticateRequest, (req, res) => {
   const { to, from, message, encryptionEnvelopeType, timestamp } = req.body;
 
   if (!to || !from || !message) {
@@ -94,7 +154,7 @@ app.post("/messages", (req, res) => {
 });
 
 // --- GET /messages/incoming?ensName=... — retrieve pending messages ---
-app.get("/messages/incoming", (req, res) => {
+app.get("/messages/incoming", authenticateRequest, (req, res) => {
   const ensName = req.query.ensName;
   if (!ensName) {
     return res.status(400).json({ error: "ensName query parameter is required" });
@@ -106,7 +166,7 @@ app.get("/messages/incoming", (req, res) => {
 });
 
 // --- POST /profile — register a DM3 profile ---
-app.post("/profile", (req, res) => {
+app.post("/profile", authenticateRequest, (req, res) => {
   const { ensName, publicSigningKey, publicEncryptionKey, deliveryServiceUrl } = req.body;
 
   if (!ensName) {
@@ -127,7 +187,7 @@ app.post("/profile", (req, res) => {
 });
 
 // --- GET /profile/:ensName — look up a DM3 profile ---
-app.get("/profile/:ensName", (req, res) => {
+app.get("/profile/:ensName", authenticateRequest, (req, res) => {
   const profile = profileStore.get(req.params.ensName);
   if (!profile) {
     return res.status(404).json({ error: "profile not found" });
@@ -143,6 +203,15 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server, path: "/ws" });
 
 wss.on("connection", (ws, req) => {
+  // WebSocket authentication
+  if (API_KEY) {
+    const url = new URL(req.url, 'http://localhost');
+    if (url.searchParams.get('api_key') !== API_KEY) {
+      ws.close(4001, 'Unauthorized');
+      return;
+    }
+  }
+
   log("WS", "new connection", req.url);
 
   ws.on("message", (raw) => {

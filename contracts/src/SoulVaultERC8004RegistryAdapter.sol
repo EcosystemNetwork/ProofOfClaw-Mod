@@ -124,6 +124,24 @@ contract SoulVaultERC8004RegistryAdapter {
         return _walletAgentIds[wallet];
     }
 
+    /// @notice Return a paginated slice of agent IDs for a given wallet.
+    function agentIdsForWalletPaginated(address wallet, uint256 offset, uint256 limit) external view returns (bytes32[] memory) {
+        bytes32[] storage ids = _walletAgentIds[wallet];
+        if (offset >= ids.length) return new bytes32[](0);
+        uint256 end = offset + limit;
+        if (end > ids.length) end = ids.length;
+        bytes32[] memory result = new bytes32[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            result[i - offset] = ids[i];
+        }
+        return result;
+    }
+
+    /// @notice Return the number of agent IDs registered by a given wallet.
+    function agentCountForWallet(address wallet) external view returns (uint256) {
+        return _walletAgentIds[wallet].length;
+    }
+
     /// @notice Check whether an agentId has been registered.
     function isRegistered(bytes32 agentId) external view returns (bool) {
         return _agentWallets[agentId] != address(0);

@@ -2,6 +2,12 @@
 
 use crate::types::AgentMessage;
 use anyhow::{Context, Result};
+use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
+use crypto_box::{
+    aead::Aead,
+    PublicKey, SecretKey, SalsaBox,
+};
+use rand::rngs::OsRng;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tokio::sync::mpsc;
@@ -36,6 +42,41 @@ struct DM3Envelope {
     #[serde(rename = "encryptionEnvelopeType")]
     encryption_type: String,
     timestamp: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    nonce: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ephemeral_public_key: Option<String>,
+}
+
+/// Encrypt a message using x25519-xsalsa20-poly1305 (NaCl crypto_box).
+/// Returns (ciphertext_b64, nonce_b64, ephemeral_pk_b64).
+fn encrypt_dm3_message(
+    plaintext: &[u8],
+    recipient_public_key_b64: &str,
+) -> Result<(String, String, String)> {
+    let recipient_pk_bytes = BASE64.decode(recipient_public_key_b64)
+        .context("Failed to decode recipient x25519 public key")?;
+    let recipient_pk: PublicKey = recipient_pk_bytes
+        .as_slice()
+        .try_into()
+        .map_err(|_| anyhow::anyhow!("Invalid x25519 public key length (expected 32 bytes)"))?;
+
+    // Generate ephemeral keypair for forward secrecy
+    let ephemeral_sk = SecretKey::generate(&mut OsRng);
+    let ephemeral_pk = ephemeral_sk.public_key();
+
+    // Create NaCl box and encrypt
+    let salsa_box = SalsaBox::new(&recipient_pk, &ephemeral_sk);
+    let nonce = crypto_box::generate_nonce(&mut OsRng);
+    let ciphertext = salsa_box
+        .encrypt(&nonce, plaintext)
+        .map_err(|_| anyhow::anyhow!("x25519-xsalsa20-poly1305 encryption failed"))?;
+
+    Ok((
+        BASE64.encode(&ciphertext),
+        BASE64.encode(nonce.as_slice()),
+        BASE64.encode(ephemeral_pk.as_bytes()),
+    ))
 }
 
 impl DM3Client {
@@ -63,15 +104,34 @@ impl DM3Client {
             &profile.delivery_service_url
         };
 
-        let envelope = DM3Envelope {
-            to: recipient_ens.to_string(),
-            from: String::new(), // TODO: populate with sender's ENS name from config
-            message: serde_json::to_string(message)?,
-            // NOTE: message is sent as plaintext JSON — real x25519-xsalsa20-poly1305
-            // encryption requires the recipient's public encryption key from their DM3 profile.
-            // This field declares the *intended* scheme for the delivery service envelope.
-            encryption_type: "plaintext".to_string(),
-            timestamp: chrono::Utc::now().timestamp(),
+        let plaintext = serde_json::to_vec(message)?;
+
+        let envelope = if !profile.public_encryption_key.is_empty() {
+            let (ciphertext_b64, nonce_b64, ephemeral_pk_b64) =
+                encrypt_dm3_message(&plaintext, &profile.public_encryption_key)?;
+            tracing::info!("Sending encrypted DM3 message to {recipient_ens}");
+            DM3Envelope {
+                to: recipient_ens.to_string(),
+                from: String::new(),
+                message: ciphertext_b64,
+                encryption_type: "x25519-xsalsa20-poly1305".to_string(),
+                timestamp: chrono::Utc::now().timestamp(),
+                nonce: Some(nonce_b64),
+                ephemeral_public_key: Some(ephemeral_pk_b64),
+            }
+        } else {
+            tracing::warn!(
+                "Recipient {recipient_ens} has no encryption key — sending plaintext"
+            );
+            DM3Envelope {
+                to: recipient_ens.to_string(),
+                from: String::new(),
+                message: serde_json::to_string(message)?,
+                encryption_type: "plaintext".to_string(),
+                timestamp: chrono::Utc::now().timestamp(),
+                nonce: None,
+                ephemeral_public_key: None,
+            }
         };
 
         let resp = self

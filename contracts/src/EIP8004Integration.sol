@@ -39,6 +39,10 @@ contract EIP8004Integration {
         address _validationRegistry,
         address _verifier
     ) {
+        require(_identityRegistry != address(0), "Zero identity registry");
+        require(_reputationRegistry != address(0), "Zero reputation registry");
+        require(_validationRegistry != address(0), "Zero validation registry");
+        require(_verifier != address(0), "Zero verifier");
         identityRegistry = IEIP8004IdentityRegistry(_identityRegistry);
         reputationRegistry = IEIP8004ReputationRegistry(_reputationRegistry);
         validationRegistry = IEIP8004ValidationRegistry(_validationRegistry);

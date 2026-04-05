@@ -60,10 +60,16 @@ const PocPersist = (() => {
     const wallet = getWallet();
     if (!wallet) return null;
 
-    const opts = {
-      method,
-      headers: { 'Content-Type': 'application/json', 'x-wallet-address': wallet },
-    };
+    // SECURITY NOTE: x-wallet-address alone is not cryptographic auth — any
+    // client can spoof it. Include the gateway Bearer token when available so
+    // the server can verify session identity. A full fix requires server-side
+    // signature verification (EIP-4361 / SIWE).
+    const headers = { 'Content-Type': 'application/json', 'x-wallet-address': wallet };
+    try {
+      const token = localStorage.getItem('poc_gateway_token');
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+    } catch (_) {}
+    const opts = { method, headers };
     if (body !== undefined) opts.body = JSON.stringify(body);
 
     try {
@@ -128,9 +134,11 @@ const PocPersist = (() => {
     const keysToSync = [
       'poc_sidebar_collapsed', 'poc_org', 'poc_swarms',
       'poc_auth_connections', 'poc_agent_tasks', 'poc_agents',
-      'poc_connection', 'poc_gateway_token', 'poc_ens_domain',
-      'poc_custom_secrets', 'gcal_oneclaw_reference',
+      'poc_connection', 'poc_ens_domain',
+      'gcal_oneclaw_reference',
       'last_1claw_package_key', 'poc_wallet_connected'
+      // SECURITY: poc_custom_secrets and poc_gateway_token are intentionally
+      // excluded — secrets and auth tokens must never leave the browser.
     ];
     for (const key of keysToSync) {
       try {

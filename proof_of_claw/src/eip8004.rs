@@ -14,6 +14,8 @@ pub struct EIP8004Client {
     reputation_registry: String,
     validation_registry: String,
     integration_contract: String,
+    private_key: Option<String>,
+    chain_id: u64,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,6 +71,8 @@ pub struct ReputationFeedback {
 
 impl EIP8004Client {
     pub async fn new(config: &AgentConfig) -> Result<Self> {
+        let pk = &config.private_key;
+        let private_key = if pk.is_empty() { None } else { Some(pk.clone()) };
         Ok(Self {
             client: Client::new(),
             rpc_url: config.rpc_url.clone(),
@@ -85,6 +89,8 @@ impl EIP8004Client {
                 .eip8004_integration_contract
                 .clone()
                 .unwrap_or_default(),
+            private_key,
+            chain_id: config.chain_id.unwrap_or(11155111),
         })
     }
 
@@ -145,7 +151,8 @@ impl EIP8004Client {
         ]);
         let calldata = [selector.to_vec(), encoded].concat();
         let result_hex = self.eth_call(&self.reputation_registry, &calldata).await?;
-        let result_bytes = hex::decode(result_hex.trim_start_matches("0x")).unwrap_or_default();
+        let result_bytes = hex::decode(result_hex.trim_start_matches("0x"))
+            .map_err(|e| anyhow::anyhow!("Failed to decode hex response from reputation registry: {}", e))?;
 
         if result_bytes.len() < 96 {
             return Ok(ReputationSummary {
@@ -203,7 +210,8 @@ impl EIP8004Client {
         let encoded = ethers::abi::encode(&[ethers::abi::Token::FixedBytes(agent_id.to_vec())]);
         let calldata = [selector.to_vec(), encoded].concat();
         let result_hex = self.eth_call(&self.validation_registry, &calldata).await?;
-        let result_bytes = hex::decode(result_hex.trim_start_matches("0x")).unwrap_or_default();
+        let result_bytes = hex::decode(result_hex.trim_start_matches("0x"))
+            .map_err(|e| anyhow::anyhow!("Failed to decode hex response from validation registry: {}", e))?;
 
         if result_bytes.len() < 64 {
             return Ok(ValidationSummary {
@@ -292,7 +300,7 @@ impl EIP8004Client {
         let validation = self.get_validation_summary(agent_id).await?;
 
         if reputation.count == 0 && validation.count == 0 {
-            return Ok(true);
+            return Ok(false); // Unknown agents must build reputation first
         }
 
         let rep_ok = reputation.count == 0 || reputation.summary_value >= min_reputation;
@@ -327,14 +335,12 @@ impl EIP8004Client {
         Ok(json["result"].as_str().unwrap_or("0x").to_string())
     }
 
-    async fn send_transaction(&self, to: &str, calldata: &[u8]) -> Result<String> {
+    /// Generic JSON-RPC call returning the result string.
+    async fn rpc_call(&self, method: &str, params: serde_json::Value) -> Result<String> {
         let body = serde_json::json!({
             "jsonrpc": "2.0",
-            "method": "eth_sendTransaction",
-            "params": [{
-                "to": to,
-                "data": format!("0x{}", hex::encode(calldata))
-            }],
+            "method": method,
+            "params": params,
             "id": 1
         });
         let resp = self
@@ -343,15 +349,80 @@ impl EIP8004Client {
             .json(&body)
             .send()
             .await
-            .context("eth_sendTransaction failed")?;
-
+            .with_context(|| format!("{method} RPC call failed"))?;
         let json: serde_json::Value = resp.json().await?;
         if let Some(err) = json.get("error") {
-            anyhow::bail!("RPC error: {err}");
+            anyhow::bail!("RPC error in {method}: {err}");
         }
-        json["result"]
-            .as_str()
-            .map(String::from)
-            .context("No tx hash in response")
+        Ok(json["result"].as_str().unwrap_or("0x").to_string())
+    }
+
+    /// Send a transaction with local signing (eth_sendRawTransaction) when a
+    /// private key is configured, falling back to eth_sendTransaction otherwise.
+    async fn send_transaction(&self, to: &str, calldata: &[u8]) -> Result<String> {
+        let to_addr: ethers::types::Address = to.parse().context("Invalid to address")?;
+        let data_bytes = ethers::types::Bytes::from(calldata.to_vec());
+
+        if let Some(ref pk) = self.private_key {
+            use ethers::signers::{LocalWallet, Signer};
+            use ethers::types::transaction::eip2718::TypedTransaction;
+
+            let stripped = pk.trim_start_matches("0x");
+            let wallet: LocalWallet = stripped
+                .parse::<LocalWallet>()
+                .context("Invalid private key for local signing")?
+                .with_chain_id(self.chain_id);
+
+            // Get nonce
+            let nonce_hex = self
+                .rpc_call("eth_getTransactionCount",
+                    serde_json::json!([format!("{:?}", wallet.address()), "pending"]))
+                .await?;
+            let nonce = u64::from_str_radix(nonce_hex.trim_start_matches("0x"), 16)
+                .unwrap_or(0);
+
+            // Get gas price
+            let gas_price_hex = self.rpc_call("eth_gasPrice", serde_json::json!([])).await?;
+            let gas_price = u64::from_str_radix(gas_price_hex.trim_start_matches("0x"), 16)
+                .unwrap_or(20_000_000_000);
+
+            // Build and sign transaction
+            let tx = ethers::types::TransactionRequest::new()
+                .to(to_addr)
+                .data(data_bytes)
+                .nonce(nonce)
+                .gas_price(gas_price)
+                .gas(200_000u64)
+                .chain_id(self.chain_id);
+
+            let typed_tx: TypedTransaction = tx.into();
+            let signature = wallet
+                .sign_transaction(&typed_tx)
+                .await
+                .context("Failed to sign transaction locally")?;
+
+            let rlp_signed = typed_tx.rlp_signed(&signature);
+            let raw_tx = format!("0x{}", hex::encode(&rlp_signed));
+
+            let tx_hash = self
+                .rpc_call("eth_sendRawTransaction", serde_json::json!([raw_tx]))
+                .await?;
+
+            tracing::info!("Transaction sent via eth_sendRawTransaction: {tx_hash}");
+            return Ok(tx_hash);
+        }
+
+        // Fallback: eth_sendTransaction (for unlocked nodes in dev)
+        tracing::warn!(
+            "No private key configured — using eth_sendTransaction (requires unlocked node). \
+             Set PRIVATE_KEY for secure local signing."
+        );
+        let tx_hash = self
+            .rpc_call("eth_sendTransaction", serde_json::json!([{
+                "to": to,
+                "data": format!("0x{}", hex::encode(calldata))
+            }]))
+            .await?;
+        Ok(tx_hash)
     }
 }

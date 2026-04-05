@@ -10,12 +10,15 @@ repository = "https://github.com/Proof-of-Claw/ProofOfClaw"
 
 [dependencies]
 # Ethereum / smart contracts
-ethers = { version = "2.0", default-features = false, features = ["rustls", "abigen", "eip712"] }
+ethers = { version = "2.0", default-features = false, features = ["rustls", "abigen", "eip712", "signers"] }
 
 # Cryptography
 blake3 = "1"
 sha2 = "0.10"
 hex = "0.4"
+crypto_box = "0.9"
+rand = "0.8"
+base64 = "0.22"
 
 # ZK proving
 risc0-zkvm = { version = "1.0", default-features = false, features = ["client"] }

@@ -475,11 +475,100 @@ export function formatAddress(address) {
  * Get explorer URL for transaction
  */
 export function getExplorerUrl(txHash, network = 'sepolia') {
-  const base = network === 'sepolia' ? 'https://sepolia.etherscan.io'
-    : network === 'og_testnet' ? 'https://chainscan-dev.0g.ai'
+  const base = getExplorerBase(network);
+  return `${base}/tx/${txHash}`;
+}
+
+/**
+ * Get explorer URL for an address (contract or wallet)
+ */
+export function getExplorerAddressUrl(address, network = 'sepolia') {
+  const base = getExplorerBase(network);
+  return `${base}/address/${address}`;
+}
+
+/**
+ * Get explorer URL for a token (contract + tokenId)
+ */
+export function getExplorerTokenUrl(contractAddress, tokenId, network = 'sepolia') {
+  const base = getExplorerBase(network);
+  return `${base}/token/${contractAddress}?a=${tokenId}`;
+}
+
+function getExplorerBase(network) {
+  return network === 'sepolia' ? 'https://sepolia.etherscan.io'
+    : network === 'og_testnet' ? 'https://chainscan-galileo.0g.ai'
     : network === 'og_mainnet' ? 'https://chainscan.0g.ai'
     : 'https://etherscan.io';
-  return `${base}/tx/${txHash}`;
+}
+
+/**
+ * Fetch ALL minted iNFTs from on-chain AgentMinted events (no owner filter).
+ * @param {string} network - Network key ('sepolia' | 'og_testnet')
+ * @returns {Promise<Array>}
+ */
+export async function getAllMintedINFTs(network = 'sepolia') {
+  if (!publicClient) initViem(network);
+
+  const addresses = CONTRACT_ADDRESSES[network] || CONTRACT_ADDRESSES.sepolia;
+
+  const BLOCK_WINDOW = 9000n;
+  let fromBlock;
+  try {
+    const latest = await publicClient.getBlockNumber();
+    fromBlock = latest > BLOCK_WINDOW ? latest - BLOCK_WINDOW : 0n;
+  } catch {
+    fromBlock = 0n;
+  }
+
+  const logs = await publicClient.getLogs({
+    address: addresses.inft,
+    event: {
+      type: 'event',
+      name: 'AgentMinted',
+      inputs: [
+        { type: 'uint256', name: 'tokenId', indexed: true },
+        { type: 'bytes32', name: 'agentId', indexed: true },
+        { type: 'address', name: 'owner', indexed: true },
+        { type: 'string', name: 'ensName', indexed: false },
+      ],
+    },
+    fromBlock,
+    toBlock: 'latest',
+  });
+
+  const results = [];
+  for (const log of logs) {
+    const tokenId = log.args.tokenId;
+    try {
+      const agent = await publicClient.readContract({
+        address: addresses.inft,
+        abi: CONTRACT_ABIS.inft,
+        functionName: 'agents',
+        args: [tokenId],
+      });
+
+      results.push({
+        tokenId: tokenId.toString(),
+        owner: agent[0],
+        agentId: agent[1],
+        policyHash: agent[2],
+        riscZeroImageId: agent[3],
+        encryptedURI: agent[4],
+        metadataHash: agent[5],
+        ensName: agent[6],
+        reputationScore: agent[7].toString(),
+        totalProofs: agent[8].toString(),
+        mintedAt: new Date(Number(agent[9]) * 1000).toISOString(),
+        active: agent[10],
+        txHash: log.transactionHash,
+      });
+    } catch (e) {
+      console.warn(`Failed to fetch details for token ${tokenId}:`, e.message);
+    }
+  }
+
+  return results;
 }
 
 // ═══════════════════════════════════════
@@ -495,6 +584,8 @@ export function getExplorerUrl(txHash, network = 'sepolia') {
 export function generateAgentWallet() {
   const randomBytes = crypto.getRandomValues(new Uint8Array(32));
   const privateKey = '0x' + Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  // Clear random bytes from memory to reduce exposure window
+  randomBytes.fill(0);
   const account = privateKeyToAccount(privateKey);
   return {
     address: account.address,
@@ -502,7 +593,12 @@ export function generateAgentWallet() {
   };
 }
 
-// Make available globally for non-module scripts
+// Make available globally for non-module scripts.
+// SECURITY WARNING: generateAgentWallet is exposed on window.PocViem, meaning any
+// script running on this page (including third-party scripts, browser extensions,
+// or XSS payloads) can call it to generate wallets. The returned private key could
+// be intercepted. Consider restricting access or removing it from the global object
+// if the calling code can import this module directly instead.
 document.addEventListener('DOMContentLoaded', () => {
   window.PocViem = {
     init: initViem,
@@ -514,9 +610,12 @@ document.addEventListener('DOMContentLoaded', () => {
     checkAgentRegistration,
     getAgentDetails,
     getWalletINFTs,
+    getAllMintedINFTs,
     switchNetwork,
     formatAddress,
     getExplorerUrl,
+    getExplorerAddressUrl,
+    getExplorerTokenUrl,
     generateAgentWallet,
   };
 });
